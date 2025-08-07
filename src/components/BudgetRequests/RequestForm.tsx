@@ -7,16 +7,18 @@ interface RequestFormProps {
   isOpen: boolean;
   onClose: () => void;
   projectId?: string;
+  requestType?: 'constructor' | 'supplier';
 }
 
-const RequestForm: React.FC<RequestFormProps> = ({ isOpen, onClose, projectId }) => {
+const RequestForm: React.FC<RequestFormProps> = ({ isOpen, onClose, projectId, requestType = 'constructor' }) => {
   const { budgetRequests, setBudgetRequests, projects, user } = useApp();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     projectId: projectId || '',
     priority: 'medium' as const,
-    dueDate: ''
+    dueDate: '',
+    type: 'combined' as 'labor' | 'materials' | 'combined'
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,7 +33,8 @@ const RequestForm: React.FC<RequestFormProps> = ({ isOpen, onClose, projectId })
       priority: formData.priority,
       dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
       status: 'pending',
-      createdAt: new Date()
+      createdAt: new Date(),
+      requestType: requestType
     };
 
     setBudgetRequests([...budgetRequests, newRequest]);
@@ -42,7 +45,8 @@ const RequestForm: React.FC<RequestFormProps> = ({ isOpen, onClose, projectId })
       description: '',
       projectId: projectId || '',
       priority: 'medium',
-      dueDate: ''
+      dueDate: '',
+      type: 'combined'
     });
     
     onClose();
@@ -54,7 +58,14 @@ const RequestForm: React.FC<RequestFormProps> = ({ isOpen, onClose, projectId })
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Solicitar Presupuesto</h2>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {requestType === 'constructor' ? 'Solicitar Presupuesto a Constructor' : 'Solicitar Presupuesto de Materiales'}
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {requestType === 'constructor' ? 'Mano de obra y/o materiales' : 'Corralones, ferreterías, etc.'}
+            </p>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -64,6 +75,28 @@ const RequestForm: React.FC<RequestFormProps> = ({ isOpen, onClose, projectId })
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Tipo de Presupuesto */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Presupuesto
+            </label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            >
+              {requestType === 'constructor' ? (
+                <>
+                  <option value="labor">Solo Mano de Obra</option>
+                  <option value="combined">Mano de Obra + Materiales</option>
+                </>
+              ) : (
+                <option value="materials">Solo Materiales</option>
+              )}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Obra
@@ -85,13 +118,13 @@ const RequestForm: React.FC<RequestFormProps> = ({ isOpen, onClose, projectId })
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Título del Presupuesto
+              {requestType === 'constructor' ? 'Título del Trabajo' : 'Lista de Materiales'}
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Ej: Colocación de cerámicos"
+              placeholder={requestType === 'constructor' ? 'Ej: Colocación de cerámicos' : 'Ej: Materiales para fundación'}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
@@ -104,7 +137,11 @@ const RequestForm: React.FC<RequestFormProps> = ({ isOpen, onClose, projectId })
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe en detalle lo que necesitas: materiales, superficie, especificaciones técnicas, etc."
+              placeholder={
+                requestType === 'constructor' 
+                  ? 'Describe en detalle lo que necesitas: superficie, especificaciones técnicas, materiales incluidos, etc.'
+                  : 'Lista detallada de materiales: cantidades, especificaciones, marcas preferidas, etc.'
+              }
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required

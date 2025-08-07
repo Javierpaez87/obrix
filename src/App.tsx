@@ -6,8 +6,7 @@ import Layout from './components/Layout/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
-import BudgetRequests from './pages/BudgetRequests';
-import Budgets from './pages/Budgets';
+import BudgetManagement from './pages/BudgetManagement';
 import Collections from './pages/Collections';
 import Payments from './pages/Payments';
 import Profile from './pages/Profile';
@@ -25,8 +24,7 @@ const AppContent: React.FC = () => {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/projects" element={<Projects />} />
-        <Route path="/budget-requests" element={<BudgetRequests />} />
-        <Route path="/budgets" element={<Budgets />} />
+        <Route path="/budget-management" element={<BudgetManagement />} />
         <Route path="/collections" element={<Collections />} />
         <Route path="/payments" element={<Payments />} />
         <Route path="/agenda" element={<Agenda />} />

@@ -28,8 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const baseNavItems = [
     { to: '/', icon: Home, label: 'Dashboard' },
     { to: '/projects', icon: FolderOpen, label: 'Proyectos' },
-    { to: '/budget-requests', icon: MessageSquare, label: 'Solicitudes' },
-    { to: '/budgets', icon: FileText, label: 'Presupuestos' },
+    { to: '/budget-management', icon: FileText, label: 'Presupuestos' },
     { to: '/payments', icon: TrendingDown, label: 'Pagos' },
   ];
 

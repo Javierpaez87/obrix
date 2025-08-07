@@ -75,6 +75,8 @@ export interface BudgetRequest {
   dueDate?: Date;
   status: 'pending' | 'quoted' | 'approved' | 'rejected';
   createdAt: Date;
+  requestType?: 'constructor' | 'supplier';
+  type?: 'labor' | 'materials' | 'combined';
 }
 
 // Task types
