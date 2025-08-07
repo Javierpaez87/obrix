@@ -160,6 +160,7 @@ export interface Collection {
 export interface Expense {
   id: string;
   projectId: string;
+  taskId?: string; // Vinculación opcional con tarea específica
   category: 'materials' | 'labor' | 'equipment' | 'services' | 'other';
   description: string;
   amount: number;
