@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Budget, BudgetRequest } from '../types';
+import { Budget, BudgetRequest, Task } from '../types';
 import { 
   PlusIcon, 
   EyeIcon, 
@@ -12,14 +12,17 @@ import {
   DocumentTextIcon,
   BuildingStorefrontIcon,
   UserIcon,
-  WrenchScrewdriverIcon
+  WrenchScrewdriverIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import RequestForm from '../components/BudgetRequests/RequestForm';
 import QuoteForm from '../components/BudgetRequests/QuoteForm';
 import BudgetReview from '../components/BudgetRequests/BudgetReview';
+import { useNavigate } from 'react-router-dom';
 
 const BudgetManagement: React.FC = () => {
-  const { budgetRequests, budgets, projects, user, contacts } = useApp();
+  const { budgetRequests, budgets, projects, user, contacts, tasks, setTasks } = useApp();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'requests' | 'quotes' | 'sent'>('requests');
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
@@ -44,6 +47,28 @@ const BudgetManagement: React.FC = () => {
     isConstructor ? budget.requestedBy !== user?.id : budget.requestedBy === user?.id
   );
 
+  const createTaskFromBudget = (budget: Budget) => {
+    const project = getProject(budget.projectId);
+    if (!project) return;
+
+    const newTask: Task = {
+      id: Date.now().toString(),
+      projectId: budget.projectId,
+      budgetId: budget.id,
+      title: budget.title,
+      description: budget.description,
+      status: 'pending',
+      priority: 'medium',
+      requestedBy: budget.requestedBy,
+      assignedTo: isClient ? '1' : budget.requestedBy, // Asignar al constructor
+      createdAt: new Date(),
+      paymentPlan: budget.paymentPlan,
+      materialRequests: []
+    };
+
+    setTasks([...tasks, newTask]);
+    navigate('/projects');
+  };
   const getProject = (projectId: string) => {
     return projects.find(p => p.id === projectId);
   };
@@ -391,6 +416,17 @@ const BudgetManagement: React.FC = () => {
                           <span className="hidden sm:inline">Ver Detalle</span>
                           <span className="sm:hidden">Ver</span>
                         </button>
+                        
+                        {budget.status === 'approved' && (
+                          <button 
+                            onClick={() => createTaskFromBudget(budget)}
+                            className="flex items-center justify-center px-3 py-2 text-xs sm:text-sm bg-green-50 text-green-600 rounded-md hover:bg-green-100 transition-colors"
+                          >
+                            <ArrowRightIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden sm:inline">Ir a Tarea</span>
+                            <span className="sm:hidden">Tarea</span>
+                          </button>
+                        )}
                         
                         <button 
                           onClick={() => openWhatsApp(

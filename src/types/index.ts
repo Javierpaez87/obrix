@@ -83,15 +83,49 @@ export interface BudgetRequest {
 export interface Task {
   id: string;
   projectId: string;
+  budgetId?: string; // Vinculado a presupuesto aprobado
   title: string;
   description: string;
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high';
   assignedTo?: string;
   requestedBy: string;
+  startDate?: Date;
+  endDate?: Date;
+  estimatedStartDate?: Date;
+  estimatedEndDate?: Date;
   dueDate?: Date;
   completedAt?: Date;
   createdAt: Date;
+  paymentPlan?: PaymentPlanItem[];
+  materialRequests?: MaterialRequest[];
+}
+
+// Material Request types
+export interface MaterialRequest {
+  id: string;
+  taskId: string;
+  projectId: string;
+  title: string;
+  description: string;
+  items: MaterialItem[];
+  status: 'sent_to_client' | 'sent_to_suppliers' | 'purchased' | 'delivered';
+  requestedBy: string; // constructor
+  requestedAt: Date;
+  sentToSuppliersAt?: Date;
+  purchasedAt?: Date;
+  deliveredAt?: Date;
+  estimatedDeliveryDate?: Date;
+  notes?: string;
+}
+
+export interface MaterialItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  specifications?: string;
+  brand?: string;
 }
 
 // Payment types

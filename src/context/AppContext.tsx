@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User, Project, Budget, BudgetRequest, Task, Payment, Collection, Expense, ChangeOrder, Contact } from '../types';
+import { User, Project, Budget, BudgetRequest, Task, Payment, Collection, Expense, ChangeOrder, Contact, MaterialRequest } from '../types';
 
 interface AppContextType {
   user: User | null;
@@ -24,6 +24,8 @@ interface AppContextType {
   setChangeOrders: (changeOrders: ChangeOrder[]) => void;
   contacts: Contact[];
   setContacts: (contacts: Contact[]) => void;
+  materialRequests: MaterialRequest[];
+  setMaterialRequests: (materialRequests: MaterialRequest[]) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -210,6 +212,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>([]);
 
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+
   const [contacts, setContacts] = useState<Contact[]>([
     // Proveedores de Materiales
     {
@@ -353,7 +357,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       collections, setCollections,
       expenses, setExpenses,
       changeOrders, setChangeOrders,
-      contacts, setContacts
+      contacts, setContacts,
+      materialRequests, setMaterialRequests
     }}>
       {children}
     </AppContext.Provider>
