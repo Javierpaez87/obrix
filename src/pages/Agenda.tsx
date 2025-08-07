@@ -8,14 +8,17 @@ import {
   PlusIcon,
   StarIcon,
   ChatBubbleLeftRightIcon,
-  XMarkIcon
+  XMarkIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 const Agenda: React.FC = () => {
   const { contacts, setContacts, user } = useApp();
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showEditContact, setShowEditContact] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'materials' | 'labor' | 'clients'>('materials');
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [newContact, setNewContact] = useState<Partial<Contact>>({
     name: '',
     company: '',
@@ -24,7 +27,7 @@ const Agenda: React.FC = () => {
     category: 'materials',
     subcategory: '',
     notes: '',
-    rating: 0
+    rating: undefined
   });
 
   const isClient = user?.role === 'client';
@@ -75,7 +78,7 @@ const Agenda: React.FC = () => {
         category: newContact.category!,
         subcategory: newContact.subcategory!,
         notes: newContact.notes,
-        rating: newContact.rating,
+        rating: undefined, // No rating on creation
         createdAt: new Date()
       };
       
@@ -88,12 +91,66 @@ const Agenda: React.FC = () => {
         category: 'materials',
         subcategory: '',
         notes: '',
-        rating: 0
+        rating: undefined
       });
       setShowAddContact(false);
     }
   };
 
+  const handleEditContact = (contact: Contact) => {
+    setEditingContact(contact);
+    setNewContact({
+      name: contact.name,
+      company: contact.company,
+      phone: contact.phone,
+      email: contact.email,
+      category: contact.category,
+      subcategory: contact.subcategory,
+      notes: contact.notes,
+      rating: contact.rating
+    });
+    setShowEditContact(true);
+  };
+
+  const handleUpdateContact = () => {
+    if (editingContact && newContact.name && newContact.company && newContact.phone && newContact.subcategory) {
+      const updatedContacts = contacts.map(contact => 
+        contact.id === editingContact.id 
+          ? {
+              ...contact,
+              name: newContact.name!,
+              company: newContact.company!,
+              phone: newContact.phone!,
+              email: newContact.email,
+              subcategory: newContact.subcategory!,
+              notes: newContact.notes,
+              rating: newContact.rating
+            }
+          : contact
+      );
+      
+      setContacts(updatedContacts);
+      setNewContact({
+        name: '',
+        company: '',
+        phone: '',
+        email: '',
+        category: 'materials',
+        subcategory: '',
+        notes: '',
+        rating: undefined
+      });
+      setEditingContact(null);
+      setShowEditContact(false);
+    }
+  };
+
+  const handleDeleteContact = (contactId: string) => {
+    if (confirm('¿Estás seguro de que quieres eliminar este contacto?')) {
+      const updatedContacts = contacts.filter(contact => contact.id !== contactId);
+      setContacts(updatedContacts);
+    }
+  };
   const renderStars = (rating: number) => {
     return (
       <div className="flex items-center">
@@ -262,6 +319,20 @@ const Agenda: React.FC = () => {
                       📋 Proyecto
                     </button>
                   )}
+                  <button 
+                    onClick={() => handleEditContact(contact)}
+                    className="flex items-center justify-center px-2 sm:px-3 py-2 bg-gray-500 text-white text-xs sm:text-sm rounded-md hover:bg-gray-600 transition-colors"
+                  >
+                    <PencilIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    Editar
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteContact(contact.id)}
+                    className="flex items-center justify-center px-2 sm:px-3 py-2 bg-red-500 text-white text-xs sm:text-sm rounded-md hover:bg-red-600 transition-colors"
+                  >
+                    <TrashIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    Eliminar
+                  </button>
                 </div>
               </div>
             ))}
@@ -284,13 +355,29 @@ const Agenda: React.FC = () => {
       </div>
 
       {/* Add Contact Modal */}
-      {showAddContact && (
+      {(showAddContact || showEditContact) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Agregar Contacto</h3>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                {showEditContact ? 'Editar Contacto' : 'Agregar Contacto'}
+              </h3>
               <button
-                onClick={() => setShowAddContact(false)}
+                onClick={() => {
+                  setShowAddContact(false);
+                  setShowEditContact(false);
+                  setEditingContact(null);
+                  setNewContact({
+                    name: '',
+                    company: '',
+                    phone: '',
+                    email: '',
+                    category: 'materials',
+                    subcategory: '',
+                    notes: '',
+                    rating: undefined
+                  });
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -409,27 +496,38 @@ const Agenda: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Calificación
-                </label>
-                <div className="flex items-center space-x-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
+              {showEditContact && (
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                    Calificación
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setNewContact({ ...newContact, rating: star })}
+                        className="focus:outline-none"
+                      >
+                        {star <= (newContact.rating || 0) ? (
+                          <StarIconSolid className="h-6 w-6 text-yellow-400" />
+                        ) : (
+                          <StarIcon className="h-6 w-6 text-gray-300" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2">
                     <button
-                      key={star}
                       type="button"
-                      onClick={() => setNewContact({ ...newContact, rating: star })}
-                      className="focus:outline-none"
+                      onClick={() => setNewContact({ ...newContact, rating: undefined })}
+                      className="text-xs text-gray-500 hover:text-gray-700"
                     >
-                      {star <= (newContact.rating || 0) ? (
-                        <StarIconSolid className="h-6 w-6 text-yellow-400" />
-                      ) : (
-                        <StarIcon className="h-6 w-6 text-gray-300" />
-                      )}
+                      Limpiar calificación
                     </button>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
@@ -447,16 +545,30 @@ const Agenda: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200">
               <button
-                onClick={() => setShowAddContact(false)}
+                onClick={() => {
+                  setShowAddContact(false);
+                  setShowEditContact(false);
+                  setEditingContact(null);
+                  setNewContact({
+                    name: '',
+                    company: '',
+                    phone: '',
+                    email: '',
+                    category: 'materials',
+                    subcategory: '',
+                    notes: '',
+                    rating: undefined
+                  });
+                }}
                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
               >
                 Cancelar
               </button>
               <button
-                onClick={handleAddContact}
+                onClick={showEditContact ? handleUpdateContact : handleAddContact}
                 className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Agregar Contacto
+                {showEditContact ? 'Actualizar Contacto' : 'Agregar Contacto'}
               </button>
             </div>
           </div>

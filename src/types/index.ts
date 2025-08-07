@@ -198,7 +198,7 @@ export interface Contact {
   category: 'materials' | 'labor' | 'clients';
   subcategory: string; // For materials: 'corralon', 'ferreteria', etc. For labor: 'constructor', 'albanil', etc.
   notes?: string;
-  rating?: number; // 1-5 stars
+  rating?: number; // 1-5 stars, undefined when not rated
   lastContact?: Date;
   createdAt: Date;
 }
