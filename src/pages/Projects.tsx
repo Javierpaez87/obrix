@@ -17,6 +17,15 @@ const Projects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  const [showCreateMaterialRequest, setShowCreateMaterialRequest] = useState(false);
+  const [showProvidersList, setShowProvidersList] = useState(false);
+  const [newMaterialRequest, setNewMaterialRequest] = useState({
+    title: '',
+    description: '',
+    items: [{ id: '1', description: '', quantity: 1, unit: 'unidad', specifications: '', brand: '' }],
+    notes: '',
+    estimatedDeliveryDate: ''
+  });
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,6 +102,87 @@ const Projects: React.FC = () => {
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setShowTaskDetail(true);
+  };
+
+  const handleSendToSuppliers = (request: MaterialRequest) => {
+    // Actualizar estado a 'sent_to_suppliers'
+    console.log('Enviando a proveedores:', request.title);
+    // Aquí se actualizaría el estado en el contexto
+  };
+
+  const handleMarkAsPurchased = (request: MaterialRequest) => {
+    // Actualizar estado a 'purchased'
+    console.log('Marcando como comprado:', request.title);
+  };
+
+  const handleMarkAsDelivered = (request: MaterialRequest) => {
+    // Actualizar estado a 'delivered'
+    console.log('Marcando como entregado:', request.title);
+  };
+
+  const openMaterialWhatsApp = (request: MaterialRequest) => {
+    const phone = user?.role === 'client' ? '+54 9 11 1234-5678' : '+54 9 11 9876-5432';
+    const itemsList = request.items.map(item => 
+      `• ${item.description} - ${item.quantity} ${item.unit}${item.specifications ? ` (${item.specifications})` : ''}${item.brand ? ` - ${item.brand}` : ''}`
+    ).join('\n');
+    
+    const message = `Hola! Sobre la lista de materiales: ${request.title}\n\n${itemsList}\n\n¿Podrías cotizar estos materiales?`;
+    const cleanPhone = phone.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const addMaterialItem = () => {
+    setNewMaterialRequest({
+      ...newMaterialRequest,
+      items: [...newMaterialRequest.items, {
+        id: Date.now().toString(),
+        description: '',
+        quantity: 1,
+        unit: 'unidad',
+        specifications: '',
+        brand: ''
+      }]
+    });
+  };
+
+  const removeMaterialItem = (index: number) => {
+    if (newMaterialRequest.items.length > 1) {
+      setNewMaterialRequest({
+        ...newMaterialRequest,
+        items: newMaterialRequest.items.filter((_, i) => i !== index)
+      });
+    }
+  };
+
+  const handleCreateMaterialRequest = () => {
+    if (selectedTask && newMaterialRequest.title && newMaterialRequest.items.some(item => item.description)) {
+      const materialRequest: MaterialRequest = {
+        id: Date.now().toString(),
+        taskId: selectedTask.id,
+        projectId: selectedTask.projectId,
+        title: newMaterialRequest.title,
+        description: newMaterialRequest.description,
+        items: newMaterialRequest.items.filter(item => item.description),
+        status: 'sent_to_client',
+        requestedBy: user?.id || '1',
+        requestedAt: new Date(),
+        estimatedDeliveryDate: newMaterialRequest.estimatedDeliveryDate ? new Date(newMaterialRequest.estimatedDeliveryDate) : undefined,
+        notes: newMaterialRequest.notes
+      };
+
+      // Aquí se agregaría al contexto
+      console.log('Nueva solicitud de materiales:', materialRequest);
+      
+      // Reset form
+      setNewMaterialRequest({
+        title: '',
+        description: '',
+        items: [{ id: '1', description: '', quantity: 1, unit: 'unidad', specifications: '', brand: '' }],
+        notes: '',
+        estimatedDeliveryDate: ''
+      });
+      setShowCreateMaterialRequest(false);
+    }
   };
   return (
     <div className="space-y-6">
