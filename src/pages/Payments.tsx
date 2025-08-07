@@ -108,10 +108,6 @@ const Payments: React.FC = () => {
   const totalPending = expenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0);
   const pendingCount = expenses.filter(e => e.status === 'pending').length;
 
-  const getProject = (projectId: string) => {
-    return projects.find(p => p.id === projectId);
-  };
-
   const getTask = (taskId: string) => {
     return tasks.find(t => t.id === taskId);
   };
