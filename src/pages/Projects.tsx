@@ -499,6 +499,246 @@ const Projects: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Create Material Request Modal */}
+      {showCreateMaterialRequest && selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Enviar Lista de Materiales</h2>
+                <p className="text-sm text-gray-600 mt-1">Para: {selectedTask.title}</p>
+              </div>
+              <button
+                onClick={() => setShowCreateMaterialRequest(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Título de la Lista *
+                  </label>
+                  <input
+                    type="text"
+                    value={newMaterialRequest.title}
+                    onChange={(e) => setNewMaterialRequest({ ...newMaterialRequest, title: e.target.value })}
+                    placeholder="Ej: Materiales para fundación"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha Estimada de Entrega
+                  </label>
+                  <input
+                    type="date"
+                    value={newMaterialRequest.estimatedDeliveryDate}
+                    onChange={(e) => setNewMaterialRequest({ ...newMaterialRequest, estimatedDeliveryDate: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Descripción
+                </label>
+                <textarea
+                  value={newMaterialRequest.description}
+                  onChange={(e) => setNewMaterialRequest({ ...newMaterialRequest, description: e.target.value })}
+                  placeholder="Descripción general de los materiales necesarios..."
+                  rows={2}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Lista de Materiales */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Lista de Materiales</h3>
+                  <button
+                    type="button"
+                    onClick={addMaterialItem}
+                    className="flex items-center px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Agregar Material
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {newMaterialRequest.items.map((item, index) => (
+                    <div key={item.id} className="grid grid-cols-12 gap-3 items-end p-4 bg-gray-50 rounded-lg">
+                      <div className="col-span-4">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Material *
+                        </label>
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={(e) => {
+                            const newItems = [...newMaterialRequest.items];
+                            newItems[index].description = e.target.value;
+                            setNewMaterialRequest({ ...newMaterialRequest, items: newItems });
+                          }}
+                          placeholder="Ej: Cemento Portland"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Cantidad *
+                        </label>
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const newItems = [...newMaterialRequest.items];
+                            newItems[index].quantity = parseFloat(e.target.value) || 0;
+                            setNewMaterialRequest({ ...newMaterialRequest, items: newItems });
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          min="0"
+                          step="0.01"
+                          required
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Unidad
+                        </label>
+                        <select
+                          value={item.unit}
+                          onChange={(e) => {
+                            const newItems = [...newMaterialRequest.items];
+                            newItems[index].unit = e.target.value;
+                            setNewMaterialRequest({ ...newMaterialRequest, items: newItems });
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="unidad">unidad</option>
+                          <option value="kg">kg</option>
+                          <option value="m">m</option>
+                          <option value="m²">m²</option>
+                          <option value="m³">m³</option>
+                          <option value="litros">litros</option>
+                          <option value="bolsas">bolsas</option>
+                          <option value="cajas">cajas</option>
+                        </select>
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Especificaciones
+                        </label>
+                        <input
+                          type="text"
+                          value={item.specifications}
+                          onChange={(e) => {
+                            const newItems = [...newMaterialRequest.items];
+                            newItems[index].specifications = e.target.value;
+                            setNewMaterialRequest({ ...newMaterialRequest, items: newItems });
+                          }}
+                          placeholder="Ej: 50kg"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div className="col-span-1">
+                        <button
+                          type="button"
+                          onClick={() => removeMaterialItem(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          disabled={newMaterialRequest.items.length === 1}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notas Adicionales
+                </label>
+                <textarea
+                  value={newMaterialRequest.notes}
+                  onChange={(e) => setNewMaterialRequest({ ...newMaterialRequest, notes: e.target.value })}
+                  placeholder="Observaciones especiales, urgencia, etc..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-4 px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowCreateMaterialRequest(false)}
+                className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateMaterialRequest}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Enviar Lista al Cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Providers List Modal */}
+      {showProvidersList && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Proveedores de Materiales</h2>
+              <button
+                onClick={() => setShowProvidersList(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-600 mb-4">Selecciona proveedores de tu agenda para enviar la lista por WhatsApp:</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">Corralón Central</p>
+                    <p className="text-sm text-gray-600">+54 9 11 2345-6789</p>
+                  </div>
+                  <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                    WhatsApp
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">Ferretería MN</p>
+                    <p className="text-sm text-gray-600">+54 9 11 3456-7890</p>
+                  </div>
+                  <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                    WhatsApp
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
