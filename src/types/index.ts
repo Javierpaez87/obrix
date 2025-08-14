@@ -65,6 +65,14 @@ export interface Budget {
   constructorApproved: boolean;
 }
 
+export interface BudgetItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  category: string;
+}
 export interface BudgetRequest {
   id: string;
   projectId: string;

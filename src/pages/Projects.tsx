@@ -362,17 +362,11 @@ const Projects: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0">
               <div className="flex gap-1 sm:gap-2">
-                <button 
-                  onClick={() => handleViewProject(project)}
-                  className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors flex-1 sm:flex-none"
-                >
+                <button className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors flex-1 sm:flex-none">
                   <EyeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   <span className="hidden sm:inline">Ver</span>
                 </button>
-                <button 
-                  onClick={() => handleEditProject(project)}
-                  className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors flex-1 sm:flex-none"
-                >
+                <button className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm bg-gray-50 text-gray-600 rounded-md hover:bg-gray-100 transition-colors flex-1 sm:flex-none">
                   <PencilIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   <span className="hidden sm:inline">Editar</span>
                 </button>
@@ -523,6 +517,422 @@ const Projects: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Edit Project Modal */}
+      {showProjectForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {editingProject ? 'Editar Proyecto' : 'Crear Nuevo Proyecto'}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {editingProject ? 'Modifica los datos del proyecto' : 'Incluye presupuesto para enviar al cliente'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowProjectForm(false);
+                  setEditingProject(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-8">
+              {/* Información del Proyecto */}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Información del Proyecto</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre del Proyecto *
+                    </label>
+                    <input
+                      type="text"
+                      value={newProject.name}
+                      onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                      placeholder="Ej: Casa Familia Rodríguez"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cliente *
+                    </label>
+                    <select
+                      value={newProject.clientId}
+                      onChange={(e) => setNewProject({ ...newProject, clientId: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Seleccionar cliente</option>
+                      <option value="2">María Rodríguez</option>
+                      <option value="3">Carlos Empresas</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Descripción
+                    </label>
+                    <textarea
+                      value={newProject.description}
+                      onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                      placeholder="Descripción detallada del proyecto..."
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Dirección
+                    </label>
+                    <input
+                      type="text"
+                      value={newProject.address}
+                      onChange={(e) => setNewProject({ ...newProject, address: e.target.value })}
+                      placeholder="Dirección de la obra"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha de Inicio
+                    </label>
+                    <input
+                      type="date"
+                      value={newProject.startDate}
+                      onChange={(e) => setNewProject({ ...newProject, startDate: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Presupuesto (solo para nuevos proyectos) */}
+              {!editingProject && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Presupuesto Inicial</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Título del Presupuesto *
+                      </label>
+                      <input
+                        type="text"
+                        value={newProject.budgetTitle}
+                        onChange={(e) => setNewProject({ ...newProject, budgetTitle: e.target.value })}
+                        placeholder="Ej: Presupuesto construcción casa"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tipo de Presupuesto
+                      </label>
+                      <select
+                        value={newProject.budgetType}
+                        onChange={(e) => setNewProject({ ...newProject, budgetType: e.target.value as any })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="labor">Solo Mano de Obra</option>
+                        <option value="materials">Solo Materiales</option>
+                        <option value="combined">Mano de Obra + Materiales</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Días Estimados
+                      </label>
+                      <input
+                        type="number"
+                        value={newProject.estimatedDays}
+                        onChange={(e) => setNewProject({ ...newProject, estimatedDays: e.target.value })}
+                        placeholder="30"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Descripción del Presupuesto
+                    </label>
+                    <textarea
+                      value={newProject.budgetDescription}
+                      onChange={(e) => setNewProject({ ...newProject, budgetDescription: e.target.value })}
+                      placeholder="Descripción detallada del trabajo a realizar..."
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Items del Presupuesto */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-md font-medium text-gray-700">Detalle del Presupuesto</h4>
+                      <button
+                        type="button"
+                        onClick={addBudgetItem}
+                        className="flex items-center px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        <PlusIcon className="h-4 w-4 mr-1" />
+                        Agregar Item
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {newProject.budgetItems.map((item, index) => (
+                        <div key={item.id} className="grid grid-cols-12 gap-3 items-end p-4 bg-gray-50 rounded-lg">
+                          <div className="col-span-4">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Descripción
+                            </label>
+                            <input
+                              type="text"
+                              value={item.description}
+                              onChange={(e) => {
+                                const newItems = [...newProject.budgetItems];
+                                newItems[index].description = e.target.value;
+                                setNewProject({ ...newProject, budgetItems: newItems });
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              required
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Cantidad
+                            </label>
+                            <input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const quantity = parseFloat(e.target.value) || 0;
+                                const newItems = [...newProject.budgetItems];
+                                newItems[index].quantity = quantity;
+                                setNewProject({ ...newProject, budgetItems: newItems });
+                                updateBudgetItemTotal(index, quantity, item.unitPrice);
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              min="0"
+                              step="0.01"
+                              required
+                            />
+                          </div>
+
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Precio Unit.
+                            </label>
+                            <input
+                              type="number"
+                              value={item.unitPrice}
+                              onChange={(e) => {
+                                const unitPrice = parseFloat(e.target.value) || 0;
+                                const newItems = [...newProject.budgetItems];
+                                newItems[index].unitPrice = unitPrice;
+                                setNewProject({ ...newProject, budgetItems: newItems });
+                                updateBudgetItemTotal(index, item.quantity, unitPrice);
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              min="0"
+                              step="0.01"
+                              required
+                            />
+                          </div>
+
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Categoría
+                            </label>
+                            <input
+                              type="text"
+                              value={item.category}
+                              onChange={(e) => {
+                                const newItems = [...newProject.budgetItems];
+                                newItems[index].category = e.target.value;
+                                setNewProject({ ...newProject, budgetItems: newItems });
+                              }}
+                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div className="col-span-1">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Total
+                            </label>
+                            <div className="px-3 py-2 text-sm bg-gray-100 border border-gray-300 rounded-md">
+                              ${item.total.toLocaleString('es-AR')}
+                            </div>
+                          </div>
+
+                          <div className="col-span-1">
+                            <button
+                              type="button"
+                              onClick={() => removeBudgetItem(index)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                              disabled={newProject.budgetItems.length === 1}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-medium text-gray-900">Total del Presupuesto:</span>
+                        <span className="text-2xl font-bold text-blue-600">
+                          ${newProject.budgetItems.reduce((sum, item) => sum + item.total, 0).toLocaleString('es-AR')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Notas del Presupuesto
+                    </label>
+                    <textarea
+                      value={newProject.budgetNotes}
+                      onChange={(e) => setNewProject({ ...newProject, budgetNotes: e.target.value })}
+                      placeholder="Condiciones especiales, garantías, observaciones..."
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-4 px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowProjectForm(false);
+                  setEditingProject(null);
+                }}
+                className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateProject}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {editingProject ? 'Actualizar Proyecto' : 'Crear Proyecto y Enviar Presupuesto'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project Detail Modal */}
+      {showProjectDetail && selectedProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">{selectedProject.name}</h2>
+                <p className="text-sm text-gray-600 mt-1">{selectedProject.description}</p>
+              </div>
+              <button
+                onClick={() => setShowProjectDetail(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Información del Proyecto</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Dirección:</p>
+                      <p className="font-medium text-gray-900">{selectedProject.address}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Fecha de inicio:</p>
+                      <p className="font-medium text-gray-900">{selectedProject.startDate.toLocaleDateString('es-AR')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Estado:</p>
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedProject.status)}`}>
+                        {getStatusText(selectedProject.status)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Información Financiera</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Presupuesto total:</p>
+                      <p className="text-xl font-bold text-blue-600">${selectedProject.budget.toLocaleString('es-AR')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Gastado:</p>
+                      <p className="text-lg font-medium text-red-600">${selectedProject.spent.toLocaleString('es-AR')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Restante:</p>
+                      <p className="text-lg font-medium text-green-600">${(selectedProject.budget - selectedProject.spent).toLocaleString('es-AR')}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div>
+                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                  <span>Progreso del Presupuesto</span>
+                  <span>{Math.round((selectedProject.spent / selectedProject.budget) * 100)}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-blue-600 h-3 rounded-full" 
+                    style={{ width: `${Math.min((selectedProject.spent / selectedProject.budget) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-4 px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowProjectDetail(false)}
+                className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => {
+                  setShowProjectDetail(false);
+                  handleEditProject(selectedProject);
+                }}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Editar Proyecto
+              </button>
             </div>
           </div>
         </div>
