@@ -13,10 +13,14 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Projects: React.FC = () => {
-  const { projects, tasks, user } = useApp();
+  const { projects, tasks, user, setProjects, budgets, setBudgets } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [showProjectDetail, setShowProjectDetail] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [showCreateMaterialRequest, setShowCreateMaterialRequest] = useState(false);
   const [showProvidersList, setShowProvidersList] = useState(false);
   const [newMaterialRequest, setNewMaterialRequest] = useState({
@@ -25,6 +29,24 @@ const Projects: React.FC = () => {
     items: [{ id: '1', description: '', quantity: 1, unit: 'unidad', specifications: '', brand: '' }],
     notes: '',
     estimatedDeliveryDate: ''
+  });
+
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+    clientId: '',
+    address: '',
+    budget: '',
+    startDate: '',
+    // Presupuesto incluido
+    budgetTitle: '',
+    budgetDescription: '',
+    budgetType: 'combined' as const,
+    estimatedDays: '',
+    budgetItems: [
+      { id: '1', description: '', quantity: 1, unitPrice: 0, total: 0, category: '' }
+    ],
+    budgetNotes: ''
   });
 
   const filteredProjects = projects.filter(project =>
