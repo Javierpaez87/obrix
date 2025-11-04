@@ -8,9 +8,19 @@ export type LoginProps = {
   onLogin?: (email: string, userType: 'constructor' | 'client') => void;
 };
 
+// Color único: verde neón
+const NEON = '#39FF14';
+
 const NeonPanel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-  <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 to-emerald-500/60 ${className}`}>
-    <div className="rounded-2xl bg-neutral-950/95 backdrop-blur border border-white/10">
+  <div
+    className={`relative rounded-2xl p-[1px] ${className}`}
+    style={{
+      backgroundColor: `${NEON}40`, // leve tinte
+      boxShadow: `0 0 20px 2px ${NEON}55`,
+      borderRadius: '1rem',
+    }}
+  >
+    <div className="rounded-2xl bg-neutral-950/95 backdrop-blur border" style={{ borderColor: `${NEON}33` }}>
       {children}
     </div>
   </div>
@@ -27,12 +37,21 @@ const ToggleButton: React.FC<{
     onClick={onClick}
     className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition w-full select-none ${
       active
-        ? 'border-white/20 bg-white/10 text-white shadow-[0_0_0_1px_rgba(255,255,255,0.06)_inset]'
-        : 'border-white/10 text-white/70 hover:bg-white/5 hover:text-white'
+        ? 'bg-white/5 text-white'
+        : 'text-white/70 hover:bg-white/5 hover:text-white'
     }`}
+    style={{
+      borderColor: active ? `${NEON}66` : 'rgba(255,255,255,0.1)',
+      boxShadow: active ? `inset 0 0 0 1px ${NEON}33` : undefined,
+    }}
     aria-pressed={active}
   >
-    <span className="p-2 rounded-lg bg-white/5 border border-white/10">{icon}</span>
+    <span
+      className="p-2 rounded-lg border"
+      style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+    >
+      {icon}
+    </span>
     <span className="text-sm font-medium">{label}</span>
   </button>
 );
@@ -50,9 +69,9 @@ const InputField: React.FC<{
     <label htmlFor={name} className="block text-xs text-white/70 mb-1">{label}</label>
     <div className="relative">
       {icon === 'mail' ? (
-        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'rgba(255,255,255,0.5)' }} />
       ) : (
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'rgba(255,255,255,0.5)' }} />
       )}
       <input
         id={name}
@@ -63,7 +82,19 @@ const InputField: React.FC<{
         placeholder={placeholder}
         autoComplete={type === 'email' ? 'email' : 'current-password'}
         required
-        className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+        className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border text-white placeholder-white/40 outline-none"
+        style={{
+          borderColor: 'rgba(255,255,255,0.1)',
+          boxShadow: 'none',
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.boxShadow = `0 0 0 2px ${NEON}CC`;
+          e.currentTarget.style.borderColor = 'transparent';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+        }}
       />
     </div>
   </div>
@@ -104,8 +135,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
-              <Building2 className="w-10 h-10 text-cyan-300" />
+            <div
+              className="p-2.5 rounded-xl border"
+              style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+            >
+              <Building2 className="w-10 h-10" style={{ color: NEON }} />
             </div>
             <div className="text-left">
               <h1 className="text-3xl font-semibold tracking-tight">Obrix</h1>
@@ -124,13 +158,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <ToggleButton
                   active={formData.userType === 'constructor'}
                   onClick={() => setFormData({ ...formData, userType: 'constructor' })}
-                  icon={<Building2 className="w-6 h-6 text-cyan-300" />}
+                  icon={<Building2 className="w-6 h-6" style={{ color: NEON }} />}
                   label="Constructor/a"
                 />
                 <ToggleButton
                   active={formData.userType === 'client'}
                   onClick={() => setFormData({ ...formData, userType: 'client' })}
-                  icon={<User className="w-6 h-6 text-emerald-300" />}
+                  icon={<User className="w-6 h-6" style={{ color: NEON }} />}
                   label="Cliente"
                 />
               </div>
@@ -159,7 +193,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 py-3 text-sm font-medium text-black/90 hover:opacity-90 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full rounded-xl py-3 text-sm font-medium text-black transition disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: NEON,
+                boxShadow: `0 0 12px 0 ${NEON}99`,
+                filter: isLoading ? 'grayscale(0.2) brightness(0.95)' : undefined,
+              }}
+              onMouseDown={(e) => (e.currentTarget.style.filter = 'brightness(0.9)')}
+              onMouseUp={(e) => (e.currentTarget.style.filter = 'none')}
+              onMouseLeave={(e) => (e.currentTarget.style.filter = 'none')}
             >
               {isLoading ? 'Iniciando sesión…' : 'Iniciar sesión'}
             </button>
@@ -177,10 +219,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <button
                 onClick={() => quickLogin('juan@construcciones.com', 'constructor')}
                 disabled={isLoading}
-                className="w-full text-left p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition disabled:opacity-60"
+                className="w-full text-left p-3 rounded-xl border transition"
+                style={{ borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)' }}
               >
                 <div className="flex items-center gap-3">
-                  <Building2 className="w-5 h-5 text-cyan-300" />
+                  <Building2 className="w-5 h-5" style={{ color: NEON }} />
                   <div>
                     <div className="text-sm font-medium">Juan Pérez — Constructor</div>
                     <div className="text-xs text-white/60">juan@construcciones.com</div>
@@ -191,10 +234,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <button
                 onClick={() => quickLogin('maria@gmail.com', 'client')}
                 disabled={isLoading}
-                className="w-full text-left p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition disabled:opacity-60"
+                className="w-full text-left p-3 rounded-xl border transition"
+                style={{ borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)' }}
               >
                 <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-emerald-300" />
+                  <User className="w-5 h-5" style={{ color: NEON }} />
                   <div>
                     <div className="text-sm font-medium">María Rodríguez — Cliente</div>
                     <div className="text-xs text-white/60">maria@gmail.com</div>
@@ -215,10 +259,44 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
 export default Login;
 
-// Demos simples para validar el componente sin contexto
+// ------------------------------
+// Demos de integración:
+// ------------------------------
+
+// DEMO 1: Sigue haciendo console.log (no navega)
 export const LoginDemoConstructor: React.FC = () => (
-  <Login onLogin={(email) => console.log('demo login constructor', email)} />
+  <Login onLogin={(email, _type) => console.log('demo login constructor', email)} />
 );
 export const LoginDemoClient: React.FC = () => (
-  <Login onLogin={(email) => console.log('demo login client', email)} />
+  <Login onLogin={(email, _type) => console.log('demo login client', email)} />
 );
+
+// DEMO 2 (React Router): Navegar después de login
+// Descomentar si usás react-router-dom
+// import { useNavigate } from 'react-router-dom';
+// export const LoginDemoNavigate: React.FC = () => {
+//   const navigate = useNavigate();
+//   return (
+//     <Login
+//       onLogin={(email, type) => {
+//         console.log('login ok', { email, type });
+//         navigate('/dashboard'); // <-- acá pasa a la siguiente page
+//       }}
+//     />
+//   );
+// };
+
+// DEMO 3 (Next.js): Navegar después de login
+// Descomentar si usás Next 13+
+// import { useRouter } from 'next/navigation';
+// export const LoginDemoNext: React.FC = () => {
+//   const router = useRouter();
+//   return (
+//     <Login
+//       onLogin={(email, type) => {
+//         console.log('login ok', { email, type });
+//         router.push('/dashboard'); // <-- navegación en Next
+//       }}
+//     />
+//   );
+// };
