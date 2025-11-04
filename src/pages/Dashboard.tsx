@@ -10,22 +10,20 @@ import {
 } from '@heroicons/react/24/outline';
 
 /**
- * Dashboard – props‑first (build‑safe)
- * -----------------------------------
- * ✅ No importa '../context/AppContext' (evita error de ruta en build)
- * ✅ Acepta props { projects, user }
- * ✅ Fallbacks seguros cuando no hay datos
- * ✅ Blanco/negro + destellos neon (sin deps extra)
- * ✅ Incluye "demos" como test manuales (EmptyDemo, SampleDemo)
- *
- * ℹ️ Si querés volver a usar tu contexto `useApp`, indicame la ubicación exacta del archivo
- * y actualizo esta versión con la importación correcta (p.ej.,
- *   - si este archivo está en `src/pages/Dashboard.tsx` → `../context/AppContext`
- *   - si está en `src/pages/admin/Dashboard.tsx` → `../../context/AppContext`
- *   - si usás alias de Vite → `@/context/AppContext`)
- */
+ import React from 'react';
+import {
+  BuildingOfficeIcon,
+  CurrencyDollarIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ArrowUpRightIcon,
+  ChatBubbleLeftRightIcon,
+  ChartBarIcon,
+} from '@heroicons/react/24/outline';
 
-// ===== Tipos =====
+// 🎨 Nueva paleta: tonos restringidos a cian-verde (sin fucsias/violetas)
+// Más coherente y profesional, con leves acentos en cyan, teal y verde esmeralda
+
 export type ObrixUser = { name?: string } | null | undefined;
 export type ObrixProject = {
   id: string;
@@ -43,7 +41,6 @@ export type DashboardProps = {
   user?: ObrixUser;
 };
 
-// ===== Helpers =====
 const toNumber = (v: unknown, def = 0) => {
   const n = typeof v === 'string' ? Number(v) : (v as number);
   return Number.isFinite(n) ? (n as number) : def;
@@ -57,7 +54,7 @@ const formatARS = (n: number) =>
   }).format(n);
 
 const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
-  <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 via-fuchsia-500/40 to-emerald-500/60 ${className}`}>
+  <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 to-emerald-500/60 ${className}`}>
     <div className="rounded-2xl bg-neutral-950/95 backdrop-blur-sm border border-white/10">
       {children}
     </div>
@@ -92,7 +89,7 @@ const StatusPill: React.FC<{ status?: string }> = ({ status }) => {
   const map: Record<string, { label: string; cls: string }> = {
     in_progress: { label: 'En progreso', cls: 'bg-cyan-400/15 text-cyan-300 border-cyan-300/20' },
     completed: { label: 'Completada', cls: 'bg-emerald-400/15 text-emerald-300 border-emerald-300/20' },
-    planning: { label: 'Planificación', cls: 'bg-yellow-400/15 text-yellow-300 border-yellow-300/20' },
+    planning: { label: 'Planificación', cls: 'bg-teal-400/15 text-teal-300 border-teal-300/20' },
   };
   const { label, cls } = map[status || 'planning'] || map.planning;
   return (
@@ -105,7 +102,7 @@ const StatusPill: React.FC<{ status?: string }> = ({ status }) => {
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
     <div
-      className="h-full bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-emerald-400"
+      className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400"
       style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
     />
   </div>
@@ -127,7 +124,6 @@ const WhatsAppButton: React.FC<{ phone?: string; text: string }> = ({ phone, tex
   );
 };
 
-// ===== Componente principal =====
 const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: inputUser }) => {
   const projects = (inputProjects ?? []) as ObrixProject[];
   const user = inputUser ?? { name: '—' };
@@ -135,15 +131,14 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
   const activeProjects = projects.filter((p) => p.status === 'in_progress').length;
   const totalBudget = projects.reduce((sum, p) => sum + toNumber(p?.budget), 0);
   const totalSpent = projects.reduce((sum, p) => sum + toNumber(p?.spent), 0);
-  const pendingTasks = 5; // TODO: conectar a tu fuente real
+  const pendingTasks = 5;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
-      {/* Header */}
       <div className="sticky top-0 z-10 backdrop-blur bg-neutral-950/70 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-fuchsia-500" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500" />
             <div>
               <h1 className="text-lg sm:text-2xl font-semibold tracking-tight">Dashboard</h1>
               <p className="text-xs text-white/60">Bienvenido, {user?.name}</p>
@@ -156,17 +151,14 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <StatCard icon={<BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />} label="Obras activas" value={activeProjects} hint="+3 este mes" />
           <StatCard icon={<CurrencyDollarIcon className="w-5 h-5 text-emerald-300" />} label="Presupuesto total" value={formatARS(totalBudget)} />
-          <StatCard icon={<ClockIcon className="w-5 h-5 text-yellow-300" />} label="Tareas pendientes" value={pendingTasks} />
-          <StatCard icon={<CheckCircleIcon className="w-5 h-5 text-fuchsia-300" />} label="Gastado" value={formatARS(totalSpent)} />
+          <StatCard icon={<ClockIcon className="w-5 h-5 text-teal-300" />} label="Tareas pendientes" value={pendingTasks} />
+          <StatCard icon={<CheckCircleIcon className="w-5 h-5 text-emerald-300" />} label="Gastado" value={formatARS(totalSpent)} />
         </div>
 
-        {/* Projects */}
         <NeonCard>
           <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-semibold tracking-tight">Obras recientes</h2>
@@ -209,14 +201,13 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           </div>
         </NeonCard>
 
-        {/* Quick actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
           <NeonCard>
             <div className="p-5 sm:p-6">
               <p className="text-sm text-white/70">Acción rápida</p>
               <h3 className="text-lg font-semibold mt-1">Crear solicitud de presupuesto</h3>
               <p className="text-sm text-white/60 mt-1">Guía paso a paso con adjuntos y alcance.</p>
-              <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-4 py-2 text-sm font-medium hover:opacity-90 transition">
+              <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 px-4 py-2 text-sm font-medium hover:opacity-90 transition">
                 Iniciar <ArrowUpRightIcon className="w-4 h-4" />
               </button>
             </div>
@@ -248,15 +239,3 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
 };
 
 export default Dashboard;
-
-// ===== DEMOS (tests manuales) =====
-export const EmptyDemo: React.FC = () => <Dashboard projects={[]} user={{ name: 'Javier' }} />;
-
-export const SampleDemo: React.FC = () => {
-  const demoProjects: ObrixProject[] = [
-    { id: '1', name: 'Casa Lago Hermoso', address: 'SMA', budget: 12000000, spent: 4200000, status: 'in_progress', progress: 38, whatsapp: '+5491122334455' },
-    { id: '2', name: 'Refacción Dpto Centro', address: 'CABA', budget: 3800000, spent: 900000, status: 'planning', progress: 10, whatsapp: '+5491166677788' },
-    { id: '3', name: 'Local Comercial Patagonia IT', address: 'Junín', budget: 8200000, spent: 8200000, status: 'completed', progress: 100, whatsapp: '+5491144455566' },
-  ];
-  return <Dashboard projects={demoProjects} user={{ name: 'Javier' }} />;
-};
