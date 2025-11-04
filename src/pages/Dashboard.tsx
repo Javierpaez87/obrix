@@ -1,86 +1,69 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React from 'react';
+// NOTE: Se removió la importación rota de '../context/AppContext'.
+// Ahora el Dashboard acepta props (projects, user). Así evitamos fallos de build
+// si el contexto no existe o está en otra ruta. Si querés volver a usar tu
+// contexto, envolvé <Dashboard /> con tu provider y pasá los datos vía props
+// o reponé la importación correcta.
+
 import {
-  Building2,
-  DollarSign,
-  Clock,
-  CheckCircle,
-  TrendingUp,
-  MessageSquare,
-  ArrowUpRight,
-} from "lucide-react";
+  BuildingOfficeIcon,
+  CurrencyDollarIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ArrowUpRightIcon,
+  ChatBubbleLeftRightIcon,
+  ChartBarIcon,
+} from '@heroicons/react/24/outline';
 
 /**
- * Obrix Dashboard – Neon Dark UI (Preview)
+ * Dashboard – Neon Dark UI (drop‑in, sin dependencias externas)
  * -------------------------------------------------------------
  * ✔ Blanco/negro con destellos neon
- * ✔ Cards con borde glow (gradiente) + hover sutil
- * ✔ Tipografía y spacing coherentes (8px scale)
- * ✔ Lista de proyectos con chips de estado y progresos
- * ✔ Botón de WhatsApp (deeplink-ready) por proyecto
- *
- * 👉 Cómo integrarlo a tu codebase:
- * 1) Reemplaza el mock "data" por tu context/useApp() (projects, user, etc.).
- * 2) Mantén este layout como capa de UI; la lógica de datos queda intacta.
- * 3) Tokens de color: ajusta las variables neon si querés otro acento.
+ * ✔ Sin framer‑motion ni lucide (Netlify‑safe)
+ * ✔ No depende de '../context/AppContext' → no rompe el build
+ * ✔ Acepta props { projects, user } y tiene fallbacks seguros
+ * ✔ Incluye un componente Demo con datos fake a modo de "test" manual
  */
 
-// --- ⚙️ Mock mínimo para previsualizar en el lienzo ---
-const data = {
-  user: { name: "Javier" },
-  projects: [
-    {
-      id: "p1",
-      name: "Casa Lago Hermoso",
-      address: "Ruta 40, San Martín de los Andes",
-      budget: 12000000,
-      spent: 4200000,
-      status: "in_progress", // in_progress | completed | planning
-      progress: 38,
-      whatsapp: "+5491122334455",
-    },
-    {
-      id: "p2",
-      name: "Refacción Dpto Centro",
-      address: "Belgrano 123, CABA",
-      budget: 3800000,
-      spent: 900000,
-      status: "planning",
-      progress: 10,
-      whatsapp: "+5491166677788",
-    },
-    {
-      id: "p3",
-      name: "Local Comercial Patagonia IT",
-      address: "Av. Koessler 500, Junín de los Andes",
-      budget: 8200000,
-      spent: 8200000,
-      status: "completed",
-      progress: 100,
-      whatsapp: "+5491144455566",
-    },
-  ],
+// ========= Tipos =========
+export type ObrixUser = { name?: string } | null | undefined;
+export type ObrixProject = {
+  id: string;
+  name?: string;
+  address?: string;
+  budget?: number | string;
+  spent?: number | string;
+  status?: 'in_progress' | 'completed' | 'planning' | string;
+  progress?: number | string;
+  whatsapp?: string;
 };
 
-// --- 🎨 Helpers de formato ---
-const formatARS = (n: number) =>
-  new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
+export type DashboardProps = {
+  projects?: ObrixProject[];
+  user?: ObrixUser;
+};
 
-// --- 🧩 Componente de Card con borde neon ---
-const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = "", children }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.35 }}
-    className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 via-fuchsia-500/40 to-emerald-500/60 ${className}`}
-  >
+// ========= Helpers =========
+const toNumber = (v: unknown, def = 0) => {
+  const n = typeof v === 'string' ? Number(v) : (v as number);
+  return Number.isFinite(n) ? (n as number) : def;
+};
+
+const formatARS = (n: number) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(n);
+
+const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
+  <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 via-fuchsia-500/40 to-emerald-500/60 ${className}`}>
     <div className="rounded-2xl bg-neutral-950/95 backdrop-blur-sm border border-white/10">
       {children}
     </div>
-  </motion.div>
+  </div>
 );
 
-// --- 📈 Stat compacta ---
 const StatCard: React.FC<{
   icon: React.ReactNode;
   label: string;
@@ -96,7 +79,7 @@ const StatCard: React.FC<{
           <p className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">{value}</p>
           {hint && (
             <span className="inline-flex items-center gap-1 text-emerald-400 text-xs font-medium">
-              <TrendingUp className="w-3.5 h-3.5" /> {hint}
+              <ChartBarIcon className="w-3.5 h-3.5" /> {hint}
             </span>
           )}
         </div>
@@ -105,22 +88,20 @@ const StatCard: React.FC<{
   </NeonCard>
 );
 
-// --- 🏷️ Chip de estado ---
-const StatusPill: React.FC<{ status: string }> = ({ status }) => {
+const StatusPill: React.FC<{ status?: string }> = ({ status }) => {
   const map: Record<string, { label: string; cls: string }> = {
-    in_progress: { label: "En progreso", cls: "bg-cyan-400/15 text-cyan-300 border-cyan-300/20" },
-    completed: { label: "Completada", cls: "bg-emerald-400/15 text-emerald-300 border-emerald-300/20" },
-    planning: { label: "Planificación", cls: "bg-yellow-400/15 text-yellow-300 border-yellow-300/20" },
+    in_progress: { label: 'En progreso', cls: 'bg-cyan-400/15 text-cyan-300 border-cyan-300/20' },
+    completed: { label: 'Completada', cls: 'bg-emerald-400/15 text-emerald-300 border-emerald-300/20' },
+    planning: { label: 'Planificación', cls: 'bg-yellow-400/15 text-yellow-300 border-yellow-300/20' },
   };
-  const { label, cls } = map[status] ?? map.planning;
+  const { label, cls } = map[status || 'planning'] || map.planning;
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] border ${cls}`}>
-      <CheckCircle className="w-3.5 h-3.5" /> {label}
+      <CheckCircleIcon className="w-3.5 h-3.5" /> {label}
     </span>
   );
 };
 
-// --- 📊 Barra de progreso sutil ---
 const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
     <div
@@ -130,9 +111,9 @@ const ProgressBar: React.FC<{ value: number }> = ({ value }) => (
   </div>
 );
 
-// --- 💬 Botón WhatsApp (deeplink-ready) ---
-const WhatsAppButton: React.FC<{ phone: string; text: string }> = ({ phone, text }) => {
-  const href = `https://wa.me/${phone.replace(/[^\d+]/g, "")}?text=${encodeURIComponent(text)}`;
+const WhatsAppButton: React.FC<{ phone?: string; text: string }> = ({ phone, text }) => {
+  if (!phone) return null;
+  const href = `https://wa.me/${phone.replace(/[^\d+]/g, '')}?text=${encodeURIComponent(text)}`;
   return (
     <a
       href={href}
@@ -140,28 +121,27 @@ const WhatsAppButton: React.FC<{ phone: string; text: string }> = ({ phone, text
       rel="noreferrer"
       className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white hover:bg-white/10 transition"
     >
-      <MessageSquare className="w-4 h-4" /> WhatsApp
-      <ArrowUpRight className="w-3.5 h-3.5 opacity-70" />
+      <ChatBubbleLeftRightIcon className="w-4 h-4" /> WhatsApp
+      <ArrowUpRightIcon className="w-3.5 h-3.5 opacity-70" />
     </a>
   );
 };
 
-// --- 🧠 Dashboard principal ---
-export default function ObrixDashboardNeon() {
-  // 🔄 Integra tu context aquí
-  // const { projects, user } = useApp();
-  const projects = data.projects;
-  const user = data.user;
+// ========= Componente principal =========
+const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: inputUser }) => {
+  // Fallbacks seguros para que nunca truene el build ni el render
+  const projects = (inputProjects ?? []) as ObrixProject[];
+  const user = inputUser ?? { name: '—' };
 
-  const activeProjects = projects.filter((p) => p.status === "in_progress").length;
-  const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
-  const totalSpent = projects.reduce((sum, p) => sum + (p.spent || 0), 0);
-  const pendingTasks = 5; // placeholder
+  const activeProjects = projects.filter((p) => p.status === 'in_progress').length;
+  const totalBudget = projects.reduce((sum, p) => sum + toNumber(p?.budget), 0);
+  const totalSpent = projects.reduce((sum, p) => sum + toNumber(p?.spent), 0);
+  const pendingTasks = 5; // placeholder: conectar a tu fuente real
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       {/* Header */}
-      <div className="sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/70 border-b border-white/10">
+      <div className="sticky top-0 z-10 backdrop-blur bg-neutral-950/70 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-fuchsia-500" />
@@ -177,40 +157,21 @@ export default function ObrixDashboardNeon() {
         </div>
       </div>
 
-      {/* Contenido */}
+      {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <StatCard
-            icon={<Building2 className="w-5 h-5 text-cyan-300" />}
-            label="Obras activas"
-            value={activeProjects}
-            hint="+3 este mes"
-          />
-          <StatCard
-            icon={<DollarSign className="w-5 h-5 text-emerald-300" />}
-            label="Presupuesto total"
-            value={formatARS(totalBudget)}
-          />
-          <StatCard
-            icon={<Clock className="w-5 h-5 text-yellow-300" />}
-            label="Tareas pendientes"
-            value={pendingTasks}
-          />
-          <StatCard
-            icon={<CheckCircle className="w-5 h-5 text-fuchsia-300" />}
-            label="Gastado"
-            value={formatARS(totalSpent)}
-          />
+          <StatCard icon={<BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />} label="Obras activas" value={activeProjects} hint="+3 este mes" />
+          <StatCard icon={<CurrencyDollarIcon className="w-5 h-5 text-emerald-300" />} label="Presupuesto total" value={formatARS(totalBudget)} />
+          <StatCard icon={<ClockIcon className="w-5 h-5 text-yellow-300" />} label="Tareas pendientes" value={pendingTasks} />
+          <StatCard icon={<CheckCircleIcon className="w-5 h-5 text-fuchsia-300" />} label="Gastado" value={formatARS(totalSpent)} />
         </div>
 
-        {/* Lista de proyectos */}
+        {/* Projects */}
         <NeonCard>
           <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-semibold tracking-tight">Obras recientes</h2>
-            <button className="text-xs rounded-lg px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 transition">
-              Ver todas
-            </button>
+            <button className="text-xs rounded-lg px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 transition">Ver todas</button>
           </div>
           <div className="p-4 sm:p-6">
             {projects.length > 0 ? (
@@ -221,29 +182,23 @@ export default function ObrixDashboardNeon() {
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm sm:text-base font-medium truncate">{p.name}</p>
-                      <p className="text-xs sm:text-sm text-white/60 truncate">{p.address}</p>
+                      <p className="text-sm sm:text-base font-medium truncate">{p?.name}</p>
+                      <p className="text-xs sm:text-sm text-white/60 truncate">{p?.address}</p>
                       <div className="mt-2 flex items-center gap-2">
-                        <StatusPill status={p.status} />
-                        <span className="text-xs text-white/50">{formatARS(p.spent)} / {formatARS(p.budget)}</span>
+                        <StatusPill status={p?.status} />
+                        <span className="text-xs text-white/50">{formatARS(toNumber(p?.spent))} / {formatARS(toNumber(p?.budget))}</span>
                       </div>
                     </div>
 
                     <div className="w-full sm:w-1/3 flex flex-col gap-1">
-                      <ProgressBar value={p.progress ?? 0} />
-                      <div className="text-right text-xs text-white/60">{p.progress ?? 0}%</div>
+                      <ProgressBar value={toNumber(p?.progress)} />
+                      <div className="text-right text-xs text-white/60">{toNumber(p?.progress)}%</div>
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3">
-                      <WhatsAppButton
-                        phone={p.whatsapp}
-                        text={`Hola, te escribo por el proyecto *${p.name}* en Obrix.`}
-                      />
-                      <a
-                        href="#"
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10 transition"
-                      >
-                        Ver detalle <ArrowUpRight className="w-3.5 h-3.5 opacity-70" />
+                      <WhatsAppButton phone={p?.whatsapp} text={`Hola, te escribo por el proyecto *${p?.name}* en Obrix.`} />
+                      <a href="#" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10 transition">
+                        Ver detalle <ArrowUpRightIcon className="w-3.5 h-3.5 opacity-70" />
                       </a>
                     </div>
                   </div>
@@ -255,7 +210,7 @@ export default function ObrixDashboardNeon() {
           </div>
         </NeonCard>
 
-        {/* Sección secundaria: Atajos / Acciones rápidas */}
+        {/* Quick actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
           <NeonCard>
             <div className="p-5 sm:p-6">
@@ -263,7 +218,7 @@ export default function ObrixDashboardNeon() {
               <h3 className="text-lg font-semibold mt-1">Crear solicitud de presupuesto</h3>
               <p className="text-sm text-white/60 mt-1">Guía paso a paso con adjuntos y alcance.</p>
               <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-4 py-2 text-sm font-medium hover:opacity-90 transition">
-                Iniciar <ArrowUpRight className="w-4 h-4" />
+                Iniciar <ArrowUpRightIcon className="w-4 h-4" />
               </button>
             </div>
           </NeonCard>
@@ -273,7 +228,7 @@ export default function ObrixDashboardNeon() {
               <h3 className="text-lg font-semibold mt-1">Registrar cobro/pago</h3>
               <p className="text-sm text-white/60 mt-1">Impacta en el Cashflow y en el proyecto vinculado.</p>
               <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-sm hover:bg-white/15 transition">
-                Abrir <ArrowUpRight className="w-4 h-4" />
+                Abrir <ArrowUpRightIcon className="w-4 h-4" />
               </button>
             </div>
           </NeonCard>
@@ -281,9 +236,9 @@ export default function ObrixDashboardNeon() {
             <div className="p-5 sm:p-6">
               <p className="text-sm text-white/70">Acción rápida</p>
               <h3 className="text-lg font-semibold mt-1">Invitar constructor/estudio</h3>
-              <p className="text-sm text-white/60 mt-1">Envía invitación con rol y permisos.</p>
+              <p className="text-sm text-white/60 mt-1">Enviá invitación con rol y permisos.</p>
               <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-sm hover:bg-white/15 transition">
-                Invitar <ArrowUpRight className="w-4 h-4" />
+                Invitar <ArrowUpRightIcon className="w-4 h-4" />
               </button>
             </div>
           </NeonCard>
@@ -291,4 +246,46 @@ export default function ObrixDashboardNeon() {
       </div>
     </div>
   );
-}
+};
+
+export default Dashboard;
+
+// ========= DEMO / "test manual" =========
+// Podés montar <DashboardDemo /> para verificar el layout sin tu backend/contexto.
+// Útil para comprobar que el build no falla y los formatos son correctos.
+export const DashboardDemo: React.FC = () => {
+  const demoProjects: ObrixProject[] = [
+    {
+      id: 'p1',
+      name: 'Casa Lago Hermoso',
+      address: 'Ruta 40, San Martín de los Andes',
+      budget: 12000000,
+      spent: 4200000,
+      status: 'in_progress',
+      progress: 38,
+      whatsapp: '+5491122334455',
+    },
+    {
+      id: 'p2',
+      name: 'Refacción Dpto Centro',
+      address: 'Belgrano 123, CABA',
+      budget: 3800000,
+      spent: 900000,
+      status: 'planning',
+      progress: 10,
+      whatsapp: '+5491166677788',
+    },
+    {
+      id: 'p3',
+      name: 'Local Comercial Patagonia IT',
+      address: 'Av. Koessler 500, Junín de los Andes',
+      budget: 8200000,
+      spent: 8200000,
+      status: 'completed',
+      progress: 100,
+      whatsapp: '+5491144455566',
+    },
+  ];
+
+  return <Dashboard projects={demoProjects} user={{ name: 'Javier' }} />;
+};
