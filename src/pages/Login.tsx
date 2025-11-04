@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
 import { Building2, User, Lock, Mail } from 'lucide-react';
 
-// Build-safe: este Login NO importa useApp. Recibe onLogin por props.
-// Integrelo así en producción: <Login onLogin={(email, type) => login(email, type)} />
-
 export type LoginProps = {
   onLogin?: (email: string, userType: 'constructor' | 'client') => void;
 };
 
-// Color único: verde neón
-const NEON = '#39FF14';
+// Color único
+const NEON = '#00ffa3';
 
 const NeonPanel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
   <div
     className={`relative rounded-2xl p-[1px] ${className}`}
     style={{
-      backgroundColor: `${NEON}40`, // leve tinte
+      backgroundColor: `${NEON}40`,
       boxShadow: `0 0 20px 2px ${NEON}55`,
       borderRadius: '1rem',
     }}
@@ -48,7 +45,10 @@ const ToggleButton: React.FC<{
   >
     <span
       className="p-2 rounded-lg border"
-      style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+      style={{
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderColor: 'rgba(255,255,255,0.1)',
+      }}
     >
       {icon}
     </span>
@@ -85,7 +85,7 @@ const InputField: React.FC<{
         className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border text-white placeholder-white/40 outline-none"
         style={{
           borderColor: 'rgba(255,255,255,0.1)',
-          boxShadow: 'none',
+          transition: '0.2s',
         }}
         onFocus={(e) => {
           e.currentTarget.style.boxShadow = `0 0 0 2px ${NEON}CC`;
@@ -199,9 +199,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 boxShadow: `0 0 12px 0 ${NEON}99`,
                 filter: isLoading ? 'grayscale(0.2) brightness(0.95)' : undefined,
               }}
-              onMouseDown={(e) => (e.currentTarget.style.filter = 'brightness(0.9)')}
-              onMouseUp={(e) => (e.currentTarget.style.filter = 'none')}
-              onMouseLeave={(e) => (e.currentTarget.style.filter = 'none')}
             >
               {isLoading ? 'Iniciando sesión…' : 'Iniciar sesión'}
             </button>
@@ -258,45 +255,3 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 };
 
 export default Login;
-
-// ------------------------------
-// Demos de integración:
-// ------------------------------
-
-// DEMO 1: Sigue haciendo console.log (no navega)
-export const LoginDemoConstructor: React.FC = () => (
-  <Login onLogin={(email, _type) => console.log('demo login constructor', email)} />
-);
-export const LoginDemoClient: React.FC = () => (
-  <Login onLogin={(email, _type) => console.log('demo login client', email)} />
-);
-
-// DEMO 2 (React Router): Navegar después de login
-// Descomentar si usás react-router-dom
-// import { useNavigate } from 'react-router-dom';
-// export const LoginDemoNavigate: React.FC = () => {
-//   const navigate = useNavigate();
-//   return (
-//     <Login
-//       onLogin={(email, type) => {
-//         console.log('login ok', { email, type });
-//         navigate('/dashboard'); // <-- acá pasa a la siguiente page
-//       }}
-//     />
-//   );
-// };
-
-// DEMO 3 (Next.js): Navegar después de login
-// Descomentar si usás Next 13+
-// import { useRouter } from 'next/navigation';
-// export const LoginDemoNext: React.FC = () => {
-//   const router = useRouter();
-//   return (
-//     <Login
-//       onLogin={(email, type) => {
-//         console.log('login ok', { email, type });
-//         router.push('/dashboard'); // <-- navegación en Next
-//       }}
-//     />
-//   );
-// };
