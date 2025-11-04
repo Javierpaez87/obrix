@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
 import { Building2, User, Lock, Mail } from 'lucide-react';
 
 export type LoginProps = {
   onLogin?: (email: string, userType: 'constructor' | 'client') => void;
 };
 
-// Color único
 const NEON = '#00ffa3';
 
-const NeonPanel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+const NeonPanel: React.FC<{ children: React.ReactNode; className?: string }> = ({ children }) => (
   <div
-    className={`relative rounded-2xl p-[1px] ${className}`}
+    className="relative rounded-2xl p-[1px]"
     style={{
       backgroundColor: `${NEON}40`,
       boxShadow: `0 0 20px 2px ${NEON}55`,
@@ -33,15 +33,12 @@ const ToggleButton: React.FC<{
     type="button"
     onClick={onClick}
     className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition w-full select-none ${
-      active
-        ? 'bg-white/5 text-white'
-        : 'text-white/70 hover:bg-white/5 hover:text-white'
+      active ? 'bg-white/5 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
     }`}
     style={{
       borderColor: active ? `${NEON}66` : 'rgba(255,255,255,0.1)',
       boxShadow: active ? `inset 0 0 0 1px ${NEON}33` : undefined,
     }}
-    aria-pressed={active}
   >
     <span
       className="p-2 rounded-lg border"
@@ -101,6 +98,9 @@ const InputField: React.FC<{
 );
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const { login } = useApp();
+  const doLogin = onLogin ?? login;
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -108,16 +108,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const safeLogin = (email: string, userType: 'constructor' | 'client') => {
-    if (onLogin) onLogin(email, userType);
-    else console.log('[Login demo] onLogin', { email, userType });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setTimeout(() => {
-      safeLogin(formData.email, formData.userType);
+      doLogin(formData.email, formData.userType);
       setIsLoading(false);
     }, 700);
   };
@@ -125,7 +120,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const quickLogin = (email: string, type: 'constructor' | 'client') => {
     setIsLoading(true);
     setTimeout(() => {
-      safeLogin(email, type);
+      doLogin(email, type);
       setIsLoading(false);
     }, 400);
   };
@@ -133,22 +128,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div
-              className="p-2.5 rounded-xl border"
-              style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
-            >
-              <Building2 className="w-10 h-10" style={{ color: NEON }} />
-            </div>
-            <div className="text-left">
-              <h1 className="text-3xl font-semibold tracking-tight">Obrix</h1>
-              <p className="text-sm text-white/60 -mt-0.5">Gestión de Obras</p>
-            </div>
-          </div>
-          <h2 className="text-2xl font-semibold tracking-tight">Iniciar sesión</h2>
-          <p className="text-sm text-white/60">Accedé a tu panel de control</p>
+        {/* ---------- Logo superior reemplazado ---------- */}
+        <div className="text-center mb-2">
+          <img
+            src="/obrix-logo.png"
+            alt="Obrix logo"
+            className="mx-auto w-40 h-auto mb-4 drop-shadow-[0_0_15px_rgba(0,255,163,0.6)]"
+          />
+          <p className="text-sm text-white/60">Gestión de Obras</p>
         </div>
+        {/* --------------------------------------------- */}
 
         <NeonPanel>
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
