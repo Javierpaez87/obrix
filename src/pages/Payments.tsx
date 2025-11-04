@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Expense } from '../types';
-import { 
-  PlusIcon, 
-  EyeIcon, 
+import {
+  PlusIcon,
+  EyeIcon,
   PencilIcon,
   TrashIcon,
   CurrencyDollarIcon,
@@ -16,8 +16,13 @@ import {
   PhotoIcon
 } from '@heroicons/react/24/outline';
 
-const Payments: React.FC = () => {
-  const { expenses, setExpenses, projects, tasks, user } = useApp();
+type PaymentsProps = {
+  /** Permite diferenciar dashboards (ej: '#00ffa3', '#00e5ff', '#ff3b7b') */
+  neonColor?: string;
+};
+
+const Payments: React.FC<PaymentsProps> = ({ neonColor }) => {
+  const { expenses, setExpenses, projects, tasks } = useApp();
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
@@ -36,101 +41,57 @@ const Payments: React.FC = () => {
     receipt: null as File | null
   });
 
-  const filteredExpenses = expenses.filter(expense => {
-    return (selectedProject === '' || expense.projectId === selectedProject) &&
-           (selectedCategory === '' || expense.category === selectedCategory) &&
-           (selectedStatus === '' || expense.status === selectedStatus);
-  });
+  // === THEME (cian por defecto para "Pagos") ===
+  const NEON = neonColor ?? '#00e5ff'; // cambia acá para otro color
+  const neonStyle = { ['--neon' as any]: NEON } as React.CSSProperties;
 
-  const getProject = (projectId: string) => {
-    return projects.find(p => p.id === projectId);
-  };
+  const filteredExpenses = expenses.filter(e =>
+    (selectedProject === '' || e.projectId === selectedProject) &&
+    (selectedCategory === '' || e.category === selectedCategory) &&
+    (selectedStatus === '' || e.status === selectedStatus)
+  );
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'materials': return 'bg-blue-100 text-blue-800';
-      case 'labor': return 'bg-green-100 text-green-800';
-      case 'equipment': return 'bg-yellow-100 text-yellow-800';
-      case 'services': return 'bg-purple-100 text-purple-800';
-      case 'other': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const getProject = (projectId: string) => projects.find(p => p.id === projectId);
 
-  const getCategoryText = (category: string) => {
-    switch (category) {
-      case 'materials': return 'Materiales';
-      case 'labor': return 'Mano de Obra';
-      case 'equipment': return 'Equipos';
-      case 'services': return 'Servicios';
-      case 'other': return 'Otros';
-      default: return category;
-    }
-  };
+  const getCategoryText = (category: string) => ({
+    materials: 'Materiales',
+    labor: 'Mano de Obra',
+    equipment: 'Equipos',
+    services: 'Servicios',
+    other: 'Otros'
+  } as const)[category as keyof any] ?? category;
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'materials': return BuildingStorefrontIcon;
-      case 'labor': return UserIcon;
-      case 'equipment': return WrenchScrewdriverIcon;
-      case 'services': return DocumentArrowUpIcon;
-      default: return CurrencyDollarIcon;
-    }
-  };
+  const getCategoryIcon = (category: string) => ({
+    materials: BuildingStorefrontIcon,
+    labor: UserIcon,
+    equipment: WrenchScrewdriverIcon,
+    services: DocumentArrowUpIcon,
+    other: CurrencyDollarIcon
+  } as const)[category as keyof any] ?? CurrencyDollarIcon;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'paid': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const getStatusText = (status: string) =>
+    status === 'pending' ? 'Pendiente' : status === 'paid' ? 'Pagado' : status;
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return 'Pendiente';
-      case 'paid': return 'Pagado';
-      default: return status;
-    }
-  };
+  const getMethodText = (method: string) =>
+    ({ cash: 'Efectivo', transfer: 'Transferencia', check: 'Cheque', card: 'Tarjeta' } as any)[method] ?? method;
 
-  const getMethodText = (method: string) => {
-    switch (method) {
-      case 'cash': return 'Efectivo';
-      case 'transfer': return 'Transferencia';
-      case 'check': return 'Cheque';
-      case 'card': return 'Tarjeta';
-      default: return method;
-    }
-  };
-
-  const totalPaid = expenses.filter(e => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0);
-  const totalPending = expenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0);
+  const totalPaid = expenses.filter(e => e.status === 'paid').reduce((s, e) => s + e.amount, 0);
+  const totalPending = expenses.filter(e => e.status === 'pending').reduce((s, e) => s + e.amount, 0);
   const pendingCount = expenses.filter(e => e.status === 'pending').length;
 
-  const getTask = (taskId: string) => {
-    return tasks.find(t => t.id === taskId);
-  };
-
-  const projectTasks = tasks.filter(task => 
-    newPayment.projectId ? task.projectId === newPayment.projectId : true
-  );
+  const projectTasks = tasks.filter(t => (newPayment.projectId ? t.projectId === newPayment.projectId : true));
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setNewPayment({ ...newPayment, receipt: file });
-    }
+    if (file) setNewPayment({ ...newPayment, receipt: file });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!newPayment.description || !newPayment.amount || !newPayment.projectId) {
       alert('Por favor completa todos los campos obligatorios');
       return;
     }
-
     const expense: Expense = {
       id: Date.now().toString(),
       projectId: newPayment.projectId,
@@ -146,34 +107,30 @@ const Payments: React.FC = () => {
       status: 'paid',
       receipt: newPayment.receipt ? `comprobante-${Date.now()}.pdf` : undefined
     };
-
     setExpenses([...expenses, expense]);
-    
-    // Reset form
     setNewPayment({
-      projectId: '',
-      taskId: '',
-      category: 'materials',
-      description: '',
-      amount: '',
-      method: 'transfer',
-      paymentDate: new Date().toISOString().split('T')[0],
-      supplier: '',
-      employee: '',
-      notes: '',
-      receipt: null
+      projectId: '', taskId: '', category: 'materials', description: '', amount: '',
+      method: 'transfer', paymentDate: new Date().toISOString().split('T')[0],
+      supplier: '', employee: '', notes: '', receipt: null
     });
-    
     setShowPaymentForm(false);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Gestión de Pagos</h1>
-        <button 
+    <div
+      className="min-h-screen bg-black text-gray-200 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8"
+      style={neonStyle}
+    >
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 border-b border-[var(--neon)]/30 pb-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--neon)] drop-shadow-[0_0_8px_var(--neon)]">
+          💸 Gestión de Pagos
+        </h1>
+        <button
           onClick={() => setShowPaymentForm(true)}
-          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 rounded-lg
+                     bg-[var(--neon)] text-black font-semibold
+                     shadow-[0_0_10px_var(--neon)] hover:shadow-[0_0_18px_var(--neon)] transition-all"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           Registrar Pago
@@ -181,74 +138,54 @@ const Payments: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <CurrencyDollarIcon className="h-8 w-8 text-red-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-red-600">Total Pagado</p>
-              <p className="text-2xl font-bold text-red-900">
-                ${totalPaid.toLocaleString('es-AR')}
-              </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        {[
+          { icon: CurrencyDollarIcon, label: 'Total Pagado', value: `$${totalPaid.toLocaleString('es-AR')}` },
+          { icon: CalendarIcon, label: 'Pendiente de Pago', value: `$${totalPending.toLocaleString('es-AR')}` },
+          { icon: DocumentArrowUpIcon, label: 'Pagos Pendientes', value: pendingCount },
+        ].map((item, i) => (
+          <div
+            key={i}
+            className="bg-black rounded-xl p-4 sm:p-6 border border-[var(--neon)]/25
+                       shadow-[0_0_10px_color-mix(in_srgb,var(--neon)_30%,transparent)]
+                       hover:shadow-[0_0_20px_color-mix(in_srgb,var(--neon)_55%,transparent)]
+                       transition-all"
+          >
+            <div className="flex items-center">
+              <item.icon className="h-7 w-7 sm:h-8 sm:w-8 text-[var(--neon)] drop-shadow-[0_0_6px_var(--neon)]" />
+              <div className="ml-3">
+                <p className="text-xs sm:text-sm font-medium text-[var(--neon)]">{item.label}</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{item.value}</p>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <CalendarIcon className="h-8 w-8 text-yellow-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-yellow-600">Pendiente de Pago</p>
-              <p className="text-2xl font-bold text-yellow-900">
-                ${totalPending.toLocaleString('es-AR')}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <DocumentArrowUpIcon className="h-8 w-8 text-blue-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-blue-600">Pagos Pendientes</p>
-              <p className="text-2xl font-bold text-blue-900">
-                {pendingCount}
-              </p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-black/70 rounded-xl border border-[var(--neon)]/20 p-4 sm:p-6 shadow-[0_0_12px_color-mix(in_srgb,var(--neon)_25%,transparent)]">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Obra
-            </label>
-            <select 
+            <label className="block text-sm font-medium text-gray-300 mb-2">Obra</label>
+            <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                         focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
             >
               <option value="">Todas las obras</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
+              {projects.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Categoría
-            </label>
-            <select 
+            <label className="block text-sm font-medium text-gray-300 mb-2">Categoría</label>
+            <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                         focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
             >
-              <option value="">Todas las categorías</option>
+              <option value="">Todas</option>
               <option value="materials">Materiales</option>
               <option value="labor">Mano de Obra</option>
               <option value="equipment">Equipos</option>
@@ -257,27 +194,23 @@ const Payments: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado
-            </label>
-            <select 
+            <label className="block text-sm font-medium text-gray-300 mb-2">Estado</label>
+            <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                         focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
             >
-              <option value="">Todos los estados</option>
+              <option value="">Todos</option>
               <option value="pending">Pendiente</option>
               <option value="paid">Pagado</option>
             </select>
           </div>
           <div className="flex items-end">
-            <button 
-              onClick={() => {
-                setSelectedProject('');
-                setSelectedCategory('');
-                setSelectedStatus('');
-              }}
-              className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            <button
+              onClick={() => { setSelectedProject(''); setSelectedCategory(''); setSelectedStatus(''); }}
+              className="w-full px-4 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                         hover:bg-[var(--neon)]/10 transition-colors"
             >
               Limpiar Filtros
             </button>
@@ -286,99 +219,106 @@ const Payments: React.FC = () => {
       </div>
 
       {/* Expenses List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Registro de Pagos</h2>
+      <div className="bg-black/70 rounded-xl border border-[var(--neon)]/25 shadow-[0_0_12px_color-mix(in_srgb,var(--neon)_25%,transparent)]">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[var(--neon)]/20">
+          <h2 className="text-base sm:text-lg font-semibold text-[var(--neon)]">Registro de Pagos</h2>
         </div>
-        
-        <div className="p-6">
+
+        <div className="p-4 sm:p-6">
           {filteredExpenses.length > 0 ? (
-            <div className="space-y-4">
-              {filteredExpenses.map((expense) => {
+            <div className="space-y-3 sm:space-y-4">
+              {filteredExpenses.map(expense => {
                 const project = getProject(expense.projectId);
                 const CategoryIcon = getCategoryIcon(expense.category);
-                
                 return (
-                  <div key={expense.id} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4">
-                        <div className={`p-3 rounded-full ${getCategoryColor(expense.category)}`}>
+                  <div
+                    key={expense.id}
+                    className="rounded-lg p-4 sm:p-6 bg-black/60
+                               border border-[var(--neon)]/15 hover:shadow-[0_0_15px_var(--neon)]
+                               transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-full bg-[var(--neon)]/15 text-[var(--neon)]
+                                        border border-[var(--neon)]/40">
                           <CategoryIcon className="h-6 w-6" />
                         </div>
-                        
+
                         <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {expense.description}
-                            </h3>
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(expense.category)}`}>
+                          <div className="flex items-center flex-wrap gap-2 mb-2">
+                            <h3 className="text-base sm:text-lg font-semibold text-white">{expense.description}</h3>
+                            <span className="inline-flex px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full
+                                             bg-[var(--neon)]/12 text-[var(--neon)] border border-[var(--neon)]/35">
                               {getCategoryText(expense.category)}
                             </span>
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
+                            <span className={`inline-flex px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded-full
+                                              ${expense.status === 'paid'
+                                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
+                                                : 'bg-yellow-500/15 text-yellow-300 border border-yellow-400/30'}`}>
                               {getStatusText(expense.status)}
                             </span>
                           </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 text-sm">
                             <div>
-                              <p className="text-gray-600">Obra:</p>
-                              <p className="font-medium text-gray-900">{project?.name}</p>
+                              <p className="text-gray-400">Obra:</p>
+                              <p className="font-medium text-white">{project?.name}</p>
                             </div>
                             <div>
-                              <p className="text-gray-600">Monto:</p>
-                              <p className="font-medium text-gray-900 text-lg">
+                              <p className="text-gray-400">Monto:</p>
+                              <p className="font-semibold text-white text-lg">
                                 ${expense.amount.toLocaleString('es-AR')}
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600">Fecha de pago:</p>
-                              <p className="font-medium text-gray-900">
+                              <p className="text-gray-400">Fecha de pago:</p>
+                              <p className="font-medium text-white">
                                 {expense.paymentDate.toLocaleDateString('es-AR')}
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600">Método:</p>
-                              <p className="font-medium text-gray-900">{getMethodText(expense.method)}</p>
+                              <p className="text-gray-400">Método:</p>
+                              <p className="font-medium text-white">{getMethodText(expense.method)}</p>
                             </div>
                           </div>
-                          
+
                           {(expense.supplier || expense.employee) && (
-                            <div className="mt-3">
-                              <p className="text-gray-600 text-sm">
+                            <div className="mt-2 sm:mt-3">
+                              <p className="text-gray-400 text-xs sm:text-sm">
                                 {expense.supplier ? 'Proveedor:' : 'Empleado:'}
                               </p>
-                              <p className="text-gray-900 text-sm font-medium">
+                              <p className="text-gray-200 text-xs sm:text-sm font-medium">
                                 {expense.supplier || expense.employee}
                               </p>
                             </div>
                           )}
-                          
+
                           {expense.notes && (
-                            <div className="mt-3">
-                              <p className="text-gray-600 text-sm">Notas:</p>
-                              <p className="text-gray-900 text-sm">{expense.notes}</p>
+                            <div className="mt-2 sm:mt-3">
+                              <p className="text-gray-400 text-xs sm:text-sm">Notas:</p>
+                              <p className="text-gray-200 text-xs sm:text-sm">{expense.notes}</p>
                             </div>
                           )}
-                          
+
                           {expense.receipt && (
-                            <div className="mt-3">
-                              <p className="text-blue-600 text-sm">
+                            <div className="mt-2 sm:mt-3">
+                              <p className="text-[var(--neon)] text-xs sm:text-sm break-words">
                                 📎 Comprobante: {expense.receipt}
                               </p>
                             </div>
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Actions */}
-                      <div className="flex items-center space-x-2 ml-4">
-                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                      <div className="flex items-center gap-2 ml-2">
+                        <button className="p-2 rounded-lg text-[var(--neon)] border border-[var(--neon)]/30 hover:bg-[var(--neon)]/10 transition">
                           <EyeIcon className="h-5 w-5" />
                         </button>
-                        <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                        <button className="p-2 rounded-lg text-gray-300 border border-[var(--neon)]/20 hover:bg-white/5 transition">
                           <PencilIcon className="h-5 w-5" />
                         </button>
-                        <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <button className="p-2 rounded-lg text-rose-400 border border-rose-400/30 hover:bg-rose-500/10 transition">
                           <TrashIcon className="h-5 w-5" />
                         </button>
                       </div>
@@ -388,84 +328,72 @@ const Payments: React.FC = () => {
               })}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <CurrencyDollarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <div className="text-gray-400 text-lg mb-2">No hay pagos registrados</div>
-              <p className="text-gray-500">Registra tu primer pago para comenzar</p>
+            <div className="text-center py-10 sm:py-12">
+              <CurrencyDollarIcon className="h-10 w-10 sm:h-12 sm:w-12 text-[var(--neon)]/60 mx-auto mb-3 sm:mb-4" />
+              <div className="text-[var(--neon)] text-base sm:text-lg mb-1">No hay pagos registrados</div>
+              <p className="text-gray-500 text-sm">Registra tu primer pago para comenzar</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Payment Registration Modal */}
+      {/* Modal */}
       {showPaymentForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-black rounded-xl border border-[var(--neon)]/30 shadow-[0_0_20px_var(--neon)]
+                          max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-[var(--neon)]/20">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Registrar Pago</h2>
-                <p className="text-sm text-gray-600 mt-1">Registra un nuevo pago realizado</p>
+                <h2 className="text-xl font-semibold text-[var(--neon)]">Registrar Pago</h2>
+                <p className="text-sm text-gray-400 mt-1">Registra un nuevo pago realizado</p>
               </div>
               <button
                 onClick={() => setShowPaymentForm(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-white transition"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Project and Task Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Proyecto *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Proyecto *</label>
                   <select
                     value={newPayment.projectId}
                     onChange={(e) => setNewPayment({ ...newPayment, projectId: e.target.value, taskId: '' })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                               focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                     required
                   >
                     <option value="">Seleccionar proyecto</option>
-                    {projects.map((project) => (
-                      <option key={project.id} value={project.id}>
-                        {project.name}
-                      </option>
-                    ))}
+                    {projects.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tarea (Opcional)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Tarea (Opcional)</label>
                   <select
                     value={newPayment.taskId}
                     onChange={(e) => setNewPayment({ ...newPayment, taskId: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                               disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                     disabled={!newPayment.projectId}
                   >
                     <option value="">Sin tarea específica</option>
-                    {projectTasks.map((task) => (
-                      <option key={task.id} value={task.id}>
-                        {task.title}
-                      </option>
-                    ))}
+                    {projectTasks.map(t => (<option key={t.id} value={t.id}>{t.title}</option>))}
                   </select>
                 </div>
               </div>
 
-              {/* Category and Description */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Categoría *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Categoría *</label>
                   <select
                     value={newPayment.category}
                     onChange={(e) => setNewPayment({ ...newPayment, category: e.target.value as any })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                               focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                     required
                   >
                     <option value="materials">Materiales</option>
@@ -477,15 +405,14 @@ const Payments: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Monto *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Monto *</label>
                   <input
                     type="number"
                     value={newPayment.amount}
                     onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
                     placeholder="0.00"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                               focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                     min="0"
                     step="0.01"
                     required
@@ -493,31 +420,27 @@ const Payments: React.FC = () => {
                 </div>
               </div>
 
-              {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Descripción *</label>
                 <input
                   type="text"
                   value={newPayment.description}
                   onChange={(e) => setNewPayment({ ...newPayment, description: e.target.value })}
-                  placeholder="Ej: Compra de cemento y arena"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ej: Pago de hormigón"
+                  className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                             focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                   required
                 />
               </div>
 
-              {/* Payment Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Método de Pago *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Método de Pago *</label>
                   <select
                     value={newPayment.method}
                     onChange={(e) => setNewPayment({ ...newPayment, method: e.target.value as any })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                               focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                     required
                   >
                     <option value="cash">Efectivo</option>
@@ -528,102 +451,87 @@ const Payments: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha de Pago *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Fecha de Pago *</label>
                   <input
                     type="date"
                     value={newPayment.paymentDate}
                     onChange={(e) => setNewPayment({ ...newPayment, paymentDate: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                               focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                     required
                   />
                 </div>
               </div>
 
-              {/* Supplier or Employee */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {newPayment.category === 'labor' ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Empleado/Contratista
-                    </label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Empleado/Contratista</label>
                     <input
                       type="text"
                       value={newPayment.employee}
                       onChange={(e) => setNewPayment({ ...newPayment, employee: e.target.value })}
                       placeholder="Nombre del trabajador"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                                 focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Proveedor
-                    </label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Proveedor</label>
                     <input
                       type="text"
                       value={newPayment.supplier}
                       onChange={(e) => setNewPayment({ ...newPayment, supplier: e.target.value })}
                       placeholder="Nombre del proveedor"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                                 focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                     />
                   </div>
                 )}
 
-                {/* Receipt Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Comprobante
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="file"
-                      onChange={handleFileChange}
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      className="hidden"
-                      id="receipt-upload"
-                    />
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Comprobante</label>
+                  <div className="flex items-center gap-2">
+                    <input id="receipt-upload" type="file" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
                     <label
                       htmlFor="receipt-upload"
-                      className="flex items-center px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-gray-300"
+                      className="flex items-center px-4 py-2 rounded-lg cursor-pointer
+                                 bg-black border border-[var(--neon)]/25 text-gray-200
+                                 hover:bg-[var(--neon)]/10 transition"
                     >
                       <PhotoIcon className="h-4 w-4 mr-2" />
                       {newPayment.receipt ? newPayment.receipt.name : 'Subir archivo'}
                     </label>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    PDF, JPG, PNG (máx. 5MB)
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">PDF, JPG, PNG (máx. 5MB)</p>
                 </div>
               </div>
 
-              {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notas Adicionales
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Notas Adicionales</label>
                 <textarea
                   value={newPayment.notes}
                   onChange={(e) => setNewPayment({ ...newPayment, notes: e.target.value })}
-                  placeholder="Observaciones, detalles adicionales..."
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Observaciones, detalles adicionales…"
+                  className="w-full px-3 py-2 rounded-lg bg-black border border-[var(--neon)]/25 text-gray-200
+                             focus:outline-none focus:ring-2 focus:ring-[var(--neon)]/60"
                 />
               </div>
 
-              {/* Submit Buttons */}
-              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+              <div className="flex justify-end gap-3 pt-4 border-t border-[var(--neon)]/15">
                 <button
                   type="button"
                   onClick={() => setShowPaymentForm(false)}
-                  className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2 rounded-lg border border-[var(--neon)]/25 text-gray-200 hover:bg-white/5 transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="px-6 py-2 rounded-lg bg-[var(--neon)] text-black font-semibold
+                             shadow-[0_0_10px_var(--neon)] hover:shadow-[0_0_18px_var(--neon)] transition"
                 >
                   Registrar Pago
                 </button>
