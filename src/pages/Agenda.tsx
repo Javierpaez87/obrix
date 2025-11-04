@@ -20,13 +20,23 @@ import {
 
 const NEON = '#00FFA3';
 
-// Borde neón en TODO
-const card = 'bg-zinc-900/80 rounded-xl p-4 shadow-sm border border-[--neon]/40';
-const tabBtn =
-  'flex-1 py-2 px-3 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap';
+// Glow reutilizable (borde + halo)
+const neonBorder =
+  'border border-[--neon]/60 shadow-[0_0_0_1px_rgba(0,255,163,0.45),0_0_22px_rgba(0,255,163,0.22),0_0_45px_rgba(0,255,163,0.18)]';
+const neonBorderHover =
+  'hover:shadow-[0_0_0_1px_rgba(0,255,163,0.55),0_0_30px_rgba(0,255,163,0.30),0_0_70px_rgba(0,255,163,0.22)]';
+
+// Card base con glow
+const card = `bg-zinc-900/80 rounded-xl p-4 ${neonBorder} ${neonBorderHover} transition-shadow`;
+
+// Inputs y labels
 const field =
   'w-full px-3 sm:px-4 py-2 rounded-md bg-zinc-900/70 border border-[--neon]/30 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[--neon]';
 const label = 'block text-xs sm:text-sm font-medium text-white/80 mb-1';
+
+// Tabs
+const tabBtn =
+  'flex-1 py-2 px-3 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap';
 
 // Grúa blanca (SVG) para “Materiales”
 const CraneIconWhite: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
@@ -40,7 +50,7 @@ const CraneIconWhite: React.FC<{ className?: string }> = ({ className = 'h-5 w-5
 
 // Ícono de WhatsApp (solo icono)
 const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'h-4 w-4' }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
     <path d="M20.52 3.48A11.94 11.94 0 0 0 12.06 0C5.46.03.15 5.34.18 11.94c0 2.1.54 4.15 1.56 5.96L0 24l6.22-1.62a12 12 0 0 0 5.84 1.49h.01c6.6-.03 11.91-5.34 11.94-11.94a11.86 11.86 0 0 0-3.49-8.45ZM12.07 22.1h-.01a9.98 9.98 0 0 1-5.08-1.4l-.36-.21-3.69.96.98-3.6-.24-.37a9.96 9.96 0 0 1-1.55-5.33C2.09 6.45 6.54 2 12.06 2c2.67 0 5.18 1.04 7.07 2.93a9.94 9.94 0 0 1 2.92 7.06c-.03 5.52-4.5 9.98-9.98 10.11Zm5.76-7.49c-.31-.16-1.85-.91-2.14-1.02-.29-.11-.5-.16-.72.16-.21.31-.82 1.02-1.01 1.23-.19.21-.37.23-.68.08-.31-.16-1.32-.49-2.51-1.56-.93-.83-1.57-1.85-1.76-2.16-.19-.31-.02-.48.14-.64.14-.14.31-.37.47-.56.16-.19.21-.31.31-.52.1-.21.05-.39-.03-.56-.08-.16-.72-1.73-.98-2.36-.26-.62-.52-.53-.72-.54-.19-.01-.41-.01-.63-.01-.23 0-.56.08-.86.39-.29.31-1.12 1.1-1.12 2.68 0 1.58 1.15 3.11 1.31 3.32.16.21 2.26 3.45 5.47 4.83.76.33 1.36.53 1.83.68.77.24 1.46.21 2.01.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.28-.21-.59-.37Z" />
   </svg>
 );
@@ -221,10 +231,14 @@ const Agenda: React.FC = () => {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className={`${card} overflow-hidden`}>
+      {/* CONTENEDOR PRINCIPAL con glow */}
+      <div
+        className={`bg-zinc-900/80 rounded-2xl overflow-hidden p-0 ${neonBorder} ${neonBorderHover} transition-shadow`}
+      >
         <div className="p-4 sm:p-5">
-          <div className="flex gap-1 bg-zinc-950/60 border border-[--neon]/30 p-1 rounded-lg mb-5 overflow-x-auto">
+          {/* TABS con borde y halo */}
+          <div className={`flex gap-1 bg-zinc-950/60 p-1 rounded-lg mb-5 overflow-x-auto
+            border border-[--neon]/40 shadow-[0_0_16px_rgba(0,255,163,0.18)]`}>
             <button
               onClick={() => setSelectedCategory('materials')}
               className={`${tabBtn} ${
@@ -268,16 +282,18 @@ const Agenda: React.FC = () => {
             )}
           </div>
 
-          {/* Lista */}
+          {/* LISTA DE CONTACTOS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {list.map(contact => (
-              <div key={contact.id} className={`${card} hover:shadow-md transition-shadow flex flex-col h-full`}>
+              <div key={contact.id} className={`${card} flex flex-col h-full`}>
                 {/* Título + rating */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm sm:text-base font-semibold leading-tight">{contact.name}</h3>
                     <p className="text-xs sm:text-sm text-white/70 truncate">{contact.company}</p>
-                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-1 text-xs rounded-full border border-[--neon]/20 text-white/90 bg-zinc-900/60">
+                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-1 text-xs rounded-full
+                      border border-[--neon]/25 bg-zinc-900/60
+                      shadow-[0_0_10px_rgba(0,255,163,0.12)]">
                       <TagIcon className="h-3.5 w-3.5 text-[--neon]" />
                       {getSubcategoryLabel(contact.subcategory, contact.category)}
                     </span>
@@ -313,41 +329,47 @@ const Agenda: React.FC = () => {
                 {/* Acciones */}
                 <div className="mt-auto">
                   <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-                    {/* (2) WhatsApp SOLO ÍCONO */}
+                    {/* WhatsApp SOLO ÍCONO */}
                     <button
                       onClick={() => openWhatsApp(contact.phone, contact.name)}
                       aria-label="WhatsApp"
                       title="WhatsApp"
-                      className="flex items-center justify-center px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md hover:bg-[--neon]/10 transition"
+                      className="flex items-center justify-center px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md
+                                 hover:bg-[--neon]/10 transition"
                     >
                       <WhatsAppIcon className="h-4 w-4" />
                     </button>
 
-                    {/* (3) Presupuesto / Proyecto con letra más chica */}
+                    {/* Presupuesto / Proyecto con letra chica para que entre */}
                     {selectedCategory !== 'clients' ? (
-                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis">
+                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md
+                                         hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis">
                         <CurrencyDollarIcon className="h-4 w-4" />
                         <span className="text-[11px] sm:text-xs md:text-sm">Presupuesto</span>
                       </button>
                     ) : (
-                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis">
+                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md
+                                         hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis">
                         <ClipboardDocumentListIcon className="h-4 w-4" />
                         <span className="text-[11px] sm:text-xs md:text-sm">Proyecto</span>
                       </button>
                     )}
 
+                    {/* Editar */}
                     <button
                       onClick={() => handleEditContact(contact)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-900/70 border border-[--neon]/25 text-white rounded-md hover:bg-zinc-800 transition whitespace-nowrap overflow-hidden text-ellipsis"
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-900/70 border border-[--neon]/25 text-white rounded-md
+                                 hover:bg-zinc-800 transition whitespace-nowrap overflow-hidden text-ellipsis"
                     >
                       <PencilIcon className="h-4 w-4" />
                       <span className="text-sm">Editar</span>
                     </button>
 
-                    {/* (4) Eliminar → botón VERDE con letras NEGRAS */}
+                    {/* Eliminar -> Botón verde, texto negro */}
                     <button
                       onClick={() => handleDeleteContact(contact.id)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 bg-[--neon] text-black rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis"
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-[--neon] text-black rounded-md
+                                 hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis"
                     >
                       <TrashIcon className="h-4 w-4 text-black" />
                       <span className="text-sm font-medium">Eliminar</span>
@@ -373,10 +395,10 @@ const Agenda: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* MODAL Add/Edit */}
       {(showAddContact || showEditContact) && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50" style={{ ['--neon' as any]: NEON }}>
-          <div className="bg-zinc-950 border border-[--neon]/30 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className={`bg-zinc-950 ${neonBorder} ${neonBorderHover} rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto transition-shadow`}>
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[--neon]/20">
               <h3 className="text-base sm:text-lg font-semibold text-white">
                 {showEditContact ? 'Editar contacto' : 'Agregar contacto'}
