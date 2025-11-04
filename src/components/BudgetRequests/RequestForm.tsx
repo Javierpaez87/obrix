@@ -188,10 +188,10 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
       {/* Modal */}
       <div
         className="relative rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border"
-        style={{ backgroundColor: LIGHT_SURFACE, borderColor: LIGHT_BORDER }}
+        style={{ backgroundColor: LIGHT_SURFACE, borderColor: NEON }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 sm:p-6 border-b" style={{ borderColor: LIGHT_BORDER }}>
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b" style={{ borderColor: NEON }}>
           <div>
             <h2 className="text-xl font-semibold" style={{ color: LIGHT_TEXT }}>
               {requestType === 'constructor' ? 'Solicitar Presupuesto a Constructor' : 'Solicitar Presupuesto de Materiales'}
@@ -213,7 +213,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-6">
           {/* Tipo de Presupuesto */}
-          <div className={sectionCard} style={{ borderColor: LIGHT_BORDER }}>
+          <div className={sectionCard} style={{ borderColor: NEON }}>
             <label className={labelBase}>Tipo de Presupuesto</label>
             <select
               value={formData.type}
@@ -233,7 +233,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           </div>
 
           {/* Obra */}
-          <div className={sectionCard} style={{ borderColor: LIGHT_BORDER }}>
+          <div className={sectionCard} style={{ borderColor: NEON }}>
             <label className={labelBase}>Obra</label>
             <select
               value={formData.projectId}
@@ -249,7 +249,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           </div>
 
           {/* Título */}
-          <div className={sectionCard} style={{ borderColor: LIGHT_BORDER }}>
+          <div className={sectionCard} style={{ borderColor: NEON }}>
             <label className={labelBase}>
               {requestType === 'constructor' ? 'Título del Trabajo' : 'Lista de Materiales'}
             </label>
@@ -264,7 +264,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           </div>
 
           {/* Descripción */}
-          <div className={sectionCard} style={{ borderColor: LIGHT_BORDER }}>
+          <div className={sectionCard} style={{ borderColor: NEON }}>
             <label className={labelBase}>Descripción Detallada</label>
             <textarea
               value={formData.description}
@@ -282,7 +282,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
           {/* Prioridad + Fechas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className={sectionCard} style={{ borderColor: LIGHT_BORDER }}>
+            <div className={sectionCard} style={{ borderColor: NEON }}>
               <label className={labelBase}>Prioridad</label>
               <select
                 value={formData.priority}
@@ -297,7 +297,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               </select>
             </div>
 
-            <div className={`${sectionCard} space-y-3`} style={{ borderColor: LIGHT_BORDER }}>
+            <div className={`${sectionCard} space-y-3`} style={{ borderColor: NEON }}>
               <div>
                 <label className={labelBase}>Fecha Límite (Opcional)</label>
                 <input
@@ -349,7 +349,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           </div>
 
           {/* Destinatarios WhatsApp */}
-          <div className={sectionCard} style={{ borderColor: LIGHT_BORDER }}>
+          <div className={sectionCard} style={{ borderColor: NEON }}>
             <label className={labelBase}>Destinatarios (WhatsApp)</label>
             <textarea
               value={formData.recipients}
@@ -365,25 +365,25 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             {/* Acciones WhatsApp */}
             <div className="mt-3 flex flex-wrap gap-3">
               <button
-                type="button"
-                onClick={handleWhatsAppBlast}
-                className="px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 hover:bg-[--neon]/10"
-                style={{ color: NEON, borderColor: `${NEON}80` }}
-                title="Abre una pestaña por destinatario en WhatsApp Web"
+                type=\"button\"
+                onClick=\{handleWhatsAppBlast\}
+                className=\"px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 flex items-center gap-2\"
+                style=\{{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: \`0 0 10px \${NEON}40\`, border: \`1px solid \${NEON}33\` \}}
+                title=\"Abre una pestaña por destinatario en WhatsApp Web\"
               >
-                <PaperAirplaneIcon className="h-5 w-5" />
+                <PaperAirplaneIcon className=\"h-5 w-5\" />
                 Enviar por WhatsApp
               </button>
             </div>
           </div>
 
           {/* Footer acciones */}
-          <div className={`flex flex-col sm:flex-row justify-end gap-3 pt-4 ${divider}`} style={{ borderColor: LIGHT_BORDER }}>
+          <div className={`flex flex-col sm:flex-row justify-end gap-3 pt-4 ${divider}`} style={{ borderColor: NEON }}>
             <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 rounded-lg border transition-colors hover:bg-black/5"
-              style={{ color: LIGHT_MUTED, borderColor: LIGHT_BORDER }}
+              type=\"button\"
+              onClick=\{onClose\}
+              className=\"px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90\"
+              style=\{{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: \`0 0 10px \${NEON}40\`, border: \`1px solid \${NEON}33\` \}}
             >
               Cancelar
             </button>
