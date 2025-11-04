@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { BudgetRequest } from '../../types';
 import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
@@ -365,13 +366,13 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             {/* Acciones WhatsApp */}
             <div className="mt-3 flex flex-wrap gap-3">
               <button
-                type=\"button\"
-                onClick=\{handleWhatsAppBlast\}
-                className=\"px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 flex items-center gap-2\"
-                style=\{{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: \`0 0 10px \${NEON}40\`, border: \`1px solid \${NEON}33\` \}}
-                title=\"Abre una pestaña por destinatario en WhatsApp Web\"
+                type="button"
+                onClick={handleWhatsAppBlast}
+                className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 flex items-center gap-2"
+                style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
+                title="Abre una pestaña por destinatario en WhatsApp Web"
               >
-                <PaperAirplaneIcon className=\"h-5 w-5\" />
+                <PaperAirplaneIcon className="h-5 w-5" />
                 Enviar por WhatsApp
               </button>
             </div>
@@ -380,10 +381,10 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           {/* Footer acciones */}
           <div className={`flex flex-col sm:flex-row justify-end gap-3 pt-4 ${divider}`} style={{ borderColor: NEON }}>
             <button
-              type=\"button\"
-              onClick=\{onClose\}
-              className=\"px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90\"
-              style=\{{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: \`0 0 10px \${NEON}40\`, border: \`1px solid \${NEON}33\` \}}
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
+              style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
             >
               Cancelar
             </button>
