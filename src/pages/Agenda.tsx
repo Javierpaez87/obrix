@@ -20,10 +20,10 @@ import {
 } from '@heroicons/react/24/solid';
 
 const NEON = '#00FFA3';
-const NEON_RED = '#FF3B5C'; // rojo neón para "Eliminar"
+const NEON_RED = '#FF3B5C';
 
-// 🔧 Toggles rápidos
-const USE_NEON_BORDERS = true; // poné false para bordes blancos
+// (2) Bordes neon ON
+const USE_NEON_BORDERS = true;
 
 const cardBase = 'bg-zinc-900/80 rounded-xl p-4 shadow-sm border';
 const cardBorder = USE_NEON_BORDERS ? 'border-[--neon]/40' : 'border-white/10';
@@ -34,6 +34,20 @@ const tabBtn =
 const field =
   'w-full px-3 sm:px-4 py-2 rounded-md bg-zinc-900/70 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[--neon]';
 const label = 'block text-xs sm:text-sm font-medium text-white/80 mb-1';
+
+// (1) “Grúa blanca” (SVG) para usar como si fuera emoji
+const CraneIconWhite: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
+  <svg viewBox="0 0 24 24" className={className + ' text-white'} fill="none" stroke="currentColor" strokeWidth="1.5">
+    {/* base */}
+    <path d="M3 20h18" />
+    {/* mástil */}
+    <path d="M6 20V9l4-3 4 3v11" />
+    {/* pluma */}
+    <path d="M10 6h8l-4 3" />
+    {/* gancho */}
+    <path d="M14 9v4a2 2 0 1 0 4 0v-1" />
+  </svg>
+);
 
 const Agenda: React.FC = () => {
   const { contacts, setContacts, user } = useApp();
@@ -172,6 +186,7 @@ const Agenda: React.FC = () => {
     }
   };
 
+  // (2) Estrellas: llenas NEÓN, vacías blanco translúcido
   const renderStars = (rating: number) => (
     <div className="flex items-center">
       {[1, 2, 3, 4, 5].map(star => (
@@ -211,13 +226,13 @@ const Agenda: React.FC = () => {
         </button>
       </div>
 
-      {/* Summary Cards */}
+      {/* Resumen */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className={card}>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-zinc-800 border border-white/10">
-              {/* (1) Emoji grúa */}
-              <span className="text-lg">🏗️</span>
+              {/* (1) Grúa BLANCA */}
+              <CraneIconWhite className="h-5 w-5" />
             </div>
             <div>
               <p className="text-xs sm:text-sm font-medium text-white/70">Proveedores de materiales</p>
@@ -239,10 +254,10 @@ const Agenda: React.FC = () => {
         </div>
       </div>
 
-      {/* Contact Agenda */}
+      {/* Agenda */}
       <div className={`${card} overflow-hidden`}>
         <div className="p-4 sm:p-5">
-          {/* Category Tabs */}
+          {/* Tabs (con grúa blanca) */}
           <div className={`flex gap-1 bg-zinc-950/60 ${USE_NEON_BORDERS ? 'border-[--neon]/30' : 'border-white/10'} border p-1 rounded-lg mb-5 overflow-x-auto`}>
             <button
               onClick={() => setSelectedCategory('materials')}
@@ -253,7 +268,7 @@ const Agenda: React.FC = () => {
               }`}
             >
               <span className="hidden sm:inline-flex items-center gap-2">
-                <span className="text-base">🏗️</span> Materiales ({materialsContacts.length})
+                <CraneIconWhite className="h-4 w-4" /> Materiales ({materialsContacts.length})
               </span>
               <span className="sm:hidden">Materiales ({materialsContacts.length})</span>
             </button>
@@ -287,18 +302,16 @@ const Agenda: React.FC = () => {
             )}
           </div>
 
-          {/* Contacts List */}
+          {/* Lista */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {list.map(contact => (
               <div key={contact.id} className={`${card} hover:shadow-md transition-shadow flex flex-col h-full`}>
-                {/* Top: Title + rating */}
+                {/* Título + rating */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm sm:text-base font-semibold leading-tight">{contact.name}</h3>
                     <p className="text-xs sm:text-sm text-white/70 truncate">{contact.company}</p>
-                    <span
-                      className="inline-flex items-center gap-1 mt-1 px-2 py-1 text-xs rounded-full border border-white/15 text-white/80 bg-zinc-800"
-                    >
+                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-1 text-xs rounded-full border border-white/15 text-white/80 bg-zinc-800">
                       <TagIcon className="h-3.5 w-3.5" />
                       {getSubcategoryLabel(contact.subcategory, contact.category)}
                     </span>
@@ -306,7 +319,7 @@ const Agenda: React.FC = () => {
                   {contact.rating && contact.rating > 0 && <div className="shrink-0">{renderStars(contact.rating)}</div>}
                 </div>
 
-                {/* Middle: info */}
+                {/* Info */}
                 <div className="space-y-2 mt-3 mb-4 text-white/80">
                   <div className="flex items-center text-xs sm:text-sm break-all">
                     <PhoneIcon className="h-4 w-4 mr-2" />
@@ -331,9 +344,10 @@ const Agenda: React.FC = () => {
                   </div>
                 )}
 
-                {/* Bottom: actions */}
+                {/* Acciones (4) textos garantizados dentro del botón) */}
                 <div className="mt-auto">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {/* WhatsApp (icono + texto) */}
                     <button
                       onClick={() => openWhatsApp(contact.phone, contact.name)}
                       className="flex items-center justify-center gap-2 px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md hover:bg-[--neon]/10 transition whitespace-nowrap overflow-hidden text-ellipsis"
@@ -342,18 +356,20 @@ const Agenda: React.FC = () => {
                       <span className="text-sm">WhatsApp</span>
                     </button>
 
+                    {/* Presupuesto / Proyecto (texto más pequeño para caber) */}
                     {selectedCategory !== 'clients' ? (
                       <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis">
                         <CurrencyDollarIcon className="h-4 w-4" />
-                        <span className="text-sm">Presupuesto</span>
+                        <span className="text-xs md:text-sm">Presupuesto</span>
                       </button>
                     ) : (
                       <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis">
                         <ClipboardDocumentListIcon className="h-4 w-4" />
-                        <span className="text-sm">Proyecto</span>
+                        <span className="text-xs md:text-sm">Proyecto</span>
                       </button>
                     )}
 
+                    {/* Editar */}
                     <button
                       onClick={() => handleEditContact(contact)}
                       className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 border border-white/10 text-white rounded-md hover:bg-zinc-700 transition whitespace-nowrap overflow-hidden text-ellipsis"
@@ -362,17 +378,15 @@ const Agenda: React.FC = () => {
                       <span className="text-sm">Editar</span>
                     </button>
 
+                    {/* (5) Eliminar: botón normal, texto rojo NEÓN */}
                     <button
                       onClick={() => handleDeleteContact(contact.id)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 text-black rounded-md transition whitespace-nowrap overflow-hidden text-ellipsis"
-                      style={{
-                        backgroundColor: 'var(--neon-red)',
-                        boxShadow: '0 0 0.5rem rgba(255, 59, 92, 0.55)',
-                        border: '1px solid rgba(255, 59, 92, 0.65)'
-                      }}
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 border border-white/10 rounded-md hover:bg-zinc-700 transition whitespace-nowrap overflow-hidden text-ellipsis"
                     >
-                      <TrashIcon className="h-4 w-4" />
-                      <span className="text-sm">Eliminar</span>
+                      <TrashIcon className="h-4 w-4 text-[--neon-red]" />
+                      <span className="text-sm font-medium" style={{ color: 'var(--neon-red)' }}>
+                        Eliminar
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -395,7 +409,7 @@ const Agenda: React.FC = () => {
         </div>
       </div>
 
-      {/* Add/Edit Contact Modal */}
+      {/* Modal Add/Edit */}
       {(showAddContact || showEditContact) && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
              style={{ ['--neon' as any]: NEON, ['--neon-red' as any]: NEON_RED }}>
