@@ -135,7 +135,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             alt="Obrix logo"
             className="mx-auto w-40 h-auto mb-4 drop-shadow-[0_0_15px_rgba(0,255,163,0.6)]"
           />
-          <p className="text-sm text-white/60">Gestión de Obras</p>
         </div>
         {/* --------------------------------------------- */}
 
