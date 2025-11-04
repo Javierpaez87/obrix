@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Contact } from '../types';
-import { 
+import {
   PhoneIcon,
   EnvelopeIcon,
   PencilIcon,
   PlusIcon,
-  StarIcon,
   ChatBubbleLeftRightIcon,
   XMarkIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+
+const NEON = '#00FFA3';
+const card = 'bg-zinc-900/80 border border-white/10 rounded-xl p-3 sm:p-4 shadow-sm';
+const tabBtn =
+  'flex-1 py-2 px-3 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap';
+const field =
+  'w-full px-3 sm:px-4 py-2 rounded-md bg-zinc-900/70 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[--neon]';
+const label = 'block text-xs sm:text-sm font-medium text-white/80 mb-1';
 
 const Agenda: React.FC = () => {
   const { contacts, setContacts, user } = useApp();
@@ -33,7 +40,6 @@ const Agenda: React.FC = () => {
   const isClient = user?.role === 'client';
   const isConstructor = user?.role === 'constructor';
 
-
   const materialsContacts = contacts.filter(c => c.category === 'materials');
   const laborContacts = contacts.filter(c => c.category === 'labor');
   const clientContacts = contacts.filter(c => c.category === 'clients');
@@ -41,29 +47,30 @@ const Agenda: React.FC = () => {
   const getSubcategoryLabel = (subcategory: string, category: string) => {
     const labels = {
       materials: {
-        'corralon': 'Corralón',
-        'ferreteria': 'Ferretería',
-        'ceramicos': 'Cerámicos',
-        'sanitarios': 'Sanitarios',
-        'electricidad': 'Electricidad',
-        'pintureria': 'Pinturería'
+        corralon: 'Corralón',
+        ferreteria: 'Ferretería',
+        ceramicos: 'Cerámicos',
+        sanitarios: 'Sanitarios',
+        electricidad: 'Electricidad',
+        pintureria: 'Pinturería'
       },
       labor: {
-        'constructor': 'Constructor',
-        'albanil': 'Albañil',
-        'plomero': 'Plomero',
-        'electricista': 'Electricista',
-        'carpintero': 'Carpintero',
-        'pintor': 'Pintor',
-        'techista': 'Techista'
+        constructor: 'Constructor',
+        albanil: 'Albañil',
+        plomero: 'Plomero',
+        electricista: 'Electricista',
+        carpintero: 'Carpintero',
+        pintor: 'Pintor',
+        techista: 'Techista'
       }
-    };
-    return labels[category as keyof typeof labels]?.[subcategory as keyof any] || subcategory;
+    } as const;
+    // @ts-ignore
+    return labels[category]?.[subcategory] || subcategory;
   };
 
   const openWhatsApp = (phone: string, name: string, company: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    const message = `Hola ${name}! Te contacto desde ConstructorApp. Me gustaría solicitar un presupuesto.`;
+    const message = `Hola ${name}! Te contacto desde Obrix. Me gustaría solicitar un presupuesto.`;
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
@@ -78,10 +85,9 @@ const Agenda: React.FC = () => {
         category: newContact.category!,
         subcategory: newContact.subcategory!,
         notes: newContact.notes,
-        rating: undefined, // No rating on creation
+        rating: newContact.rating,
         createdAt: new Date()
       };
-      
       setContacts([...contacts, contact]);
       setNewContact({
         name: '',
@@ -114,8 +120,8 @@ const Agenda: React.FC = () => {
 
   const handleUpdateContact = () => {
     if (editingContact && newContact.name && newContact.company && newContact.phone && newContact.subcategory) {
-      const updatedContacts = contacts.map(contact => 
-        contact.id === editingContact.id 
+      const updatedContacts = contacts.map(contact =>
+        contact.id === editingContact.id
           ? {
               ...contact,
               name: newContact.name!,
@@ -128,7 +134,6 @@ const Agenda: React.FC = () => {
             }
           : contact
       );
-      
       setContacts(updatedContacts);
       setNewContact({
         name: '',
@@ -151,35 +156,40 @@ const Agenda: React.FC = () => {
       setContacts(updatedContacts);
     }
   };
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <StarIcon
-            key={star}
-            className={`h-4 w-4 ${
-              star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-            }`}
-          />
-        ))}
-      </div>
-    );
-  };
+
+  const renderStars = (rating: number) => (
+    <div className="flex items-center">
+      {[1, 2, 3, 4, 5].map(star => (
+        <svg
+          key={star}
+          className={`h-4 w-4 ${star <= rating ? 'text-yellow-400' : 'text-white/25'}`}
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.802 2.036a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.802-2.036a1 1 0 00-1.175 0l-2.802 2.036c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.88 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
+    </div>
+  );
+
+  const list = selectedCategory === 'materials' ? materialsContacts : selectedCategory === 'labor' ? laborContacts : clientContacts;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-white" style={{ ['--neon' as any]: NEON }}>
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">📞 Agenda</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">
-            {isClient ? 'Gestiona tus proveedores y solicita presupuestos' : 'Gestiona tus proveedores y clientes'}
+          <h1 className="text-2xl sm:text-3xl font-bold">📞 Agenda</h1>
+          <p className="text-sm sm:text-base text-white/70 mt-1">
+            {isClient ? 'Gestioná tus proveedores y solicitá presupuestos' : 'Gestioná tus proveedores y clientes'}
           </p>
         </div>
         <button
           onClick={() => setShowAddContact(true)}
-          className="flex items-center px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          className="flex items-center px-3 sm:px-4 py-2 rounded-lg text-black bg-[--neon] hover:opacity-90 transition
+                     ring-1 ring-[--neon]/30 shadow-[0_0_15px_rgba(0,255,163,0.35)]"
         >
-          <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+          <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 stroke-black" />
           <span className="hidden sm:inline">Agregar Contacto</span>
           <span className="sm:hidden">Agregar</span>
         </button>
@@ -187,42 +197,38 @@ const Agenda: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className={card}>
           <div className="flex items-center">
-            <div className="p-2 sm:p-3 rounded-full bg-blue-50 text-blue-600">
-              🏗️
-            </div>
-            <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-blue-600">Proveedores de Materiales</p>
-              <p className="text-xl sm:text-2xl font-bold text-blue-900">{materialsContacts.length}</p>
+            <div className="p-2 sm:p-3 rounded-full bg-zinc-800 border border-white/10">🏗️</div>
+            <div className="ml-3">
+              <p className="text-xs sm:text-sm font-medium text-white/70">Proveedores de Materiales</p>
+              <p className="text-xl sm:text-2xl font-bold text-[--neon]">{materialsContacts.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className={card}>
           <div className="flex items-center">
-            <div className="p-2 sm:p-3 rounded-full bg-green-50 text-green-600">
-              👷‍♂️
-            </div>
-            <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-green-600">Proveedores de Mano de Obra</p>
-              <p className="text-xl sm:text-2xl font-bold text-green-900">{laborContacts.length}</p>
+            <div className="p-2 sm:p-3 rounded-full bg-zinc-800 border border-white/10">👷‍♂️</div>
+            <div className="ml-3">
+              <p className="text-xs sm:text-sm font-medium text-white/70">Proveedores de Mano de Obra</p>
+              <p className="text-xl sm:text-2xl font-bold text-[--neon]">{laborContacts.length}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Contact Agenda */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-3 sm:p-6">
+      <div className={`${card} overflow-hidden`}>
+        <div className="p-3 sm:p-5">
           {/* Category Tabs */}
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-4 sm:mb-6 overflow-x-auto">
+          <div className="flex gap-1 bg-zinc-950/60 border border-white/10 p-1 rounded-lg mb-4 sm:mb-6 overflow-x-auto">
             <button
               onClick={() => setSelectedCategory('materials')}
-              className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`${tabBtn} ${
                 selectedCategory === 'materials'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-[--neon]/10 text-[--neon] border border-[--neon]/40'
+                  : 'text-white/70 hover:text-white'
               }`}
             >
               <span className="hidden sm:inline">🏗️ Proveedores de Materiales ({materialsContacts.length})</span>
@@ -230,10 +236,10 @@ const Agenda: React.FC = () => {
             </button>
             <button
               onClick={() => setSelectedCategory('labor')}
-              className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`${tabBtn} ${
                 selectedCategory === 'labor'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-[--neon]/10 text-[--neon] border border-[--neon]/40'
+                  : 'text-white/70 hover:text-white'
               }`}
             >
               <span className="hidden sm:inline">👷‍♂️ Proveedores de Mano de Obra ({laborContacts.length})</span>
@@ -242,12 +248,12 @@ const Agenda: React.FC = () => {
             {isConstructor && (
               <button
                 onClick={() => setSelectedCategory('clients')}
-                className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`${tabBtn} ${
                   selectedCategory === 'clients'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-[--neon]/10 text-[--neon] border border-[--neon]/40'
+                    : 'text-white/70 hover:text-white'
                 }`}
-              >
+            >
                 <span className="hidden sm:inline">👤 Clientes ({clientContacts.length})</span>
                 <span className="sm:hidden">👤 Clientes ({clientContacts.length})</span>
               </button>
@@ -256,81 +262,83 @@ const Agenda: React.FC = () => {
 
           {/* Contacts List */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {(selectedCategory === 'materials' ? materialsContacts : 
-              selectedCategory === 'labor' ? laborContacts : clientContacts).map((contact) => (
-              <div key={contact.id} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow">
+            {list.map(contact => (
+              <div key={contact.id} className={`${card} hover:shadow-md transition-shadow`}>
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="text-sm sm:text-base font-semibold text-gray-900">{contact.name}</h3>
-                    <p className="text-xs sm:text-sm text-gray-600">{contact.company}</p>
-                    <span className={`inline-block mt-1 px-2 py-1 text-xs rounded-full ${
-                      selectedCategory === 'materials' ? 'bg-blue-100 text-blue-800' :
-                      selectedCategory === 'labor' ? 'bg-green-100 text-green-800' :
-                      'bg-purple-100 text-purple-800'
-                    }`}>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm sm:text-base font-semibold">{contact.name}</h3>
+                    <p className="text-xs sm:text-sm text-white/70 truncate">{contact.company}</p>
+                    <span
+                      className={`inline-block mt-1 px-2 py-1 text-xs rounded-full border ${
+                        contact.category === 'materials'
+                          ? 'border-white/15 text-white/80 bg-zinc-800'
+                          : contact.category === 'labor'
+                          ? 'border-white/15 text-white/80 bg-zinc-800'
+                          : 'border-white/15 text-white/80 bg-zinc-800'
+                      }`}
+                    >
                       {getSubcategoryLabel(contact.subcategory, contact.category)}
                     </span>
                   </div>
-                  {contact.rating && contact.rating > 0 && (
-                    <div className="ml-2">
-                      {renderStars(contact.rating)}
-                    </div>
-                  )}
+                  {contact.rating && contact.rating > 0 && <div className="ml-2">{renderStars(contact.rating)}</div>}
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                  <div className="flex items-center text-xs sm:text-sm text-white/80 break-all">
                     <PhoneIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                     {contact.phone}
                   </div>
                   {contact.email && (
-                    <div className="flex items-center text-xs sm:text-sm text-gray-600">
+                    <div className="flex items-center text-xs sm:text-sm text-white/80 break-all">
                       <EnvelopeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                       {contact.email}
                     </div>
                   )}
                   {contact.lastContact && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-white/60">
                       Último contacto: {contact.lastContact.toLocaleDateString('es-AR')}
                     </div>
                   )}
                 </div>
 
                 {contact.notes && (
-                  <div className="mb-4 p-2 bg-gray-50 rounded text-xs sm:text-sm text-gray-700">
+                  <div className="mb-4 p-2 bg-zinc-900 border border-white/10 rounded text-xs sm:text-sm text-white/80">
                     {contact.notes}
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={() => openWhatsApp(contact.phone, contact.name, contact.company)}
-                    className="flex-1 flex items-center justify-center px-2 sm:px-3 py-2 bg-green-500 text-white text-xs sm:text-sm rounded-md hover:bg-green-600 transition-colors"
+                    className="flex-1 flex items-center justify-center px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md hover:bg-[--neon]/10 transition"
                   >
-                    <ChatBubbleLeftRightIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
                     WhatsApp
                   </button>
+
                   {selectedCategory !== 'clients' ? (
-                    <button className="flex items-center justify-center px-2 sm:px-3 py-2 bg-blue-500 text-white text-xs sm:text-sm rounded-md hover:bg-blue-600 transition-colors">
+                    <button className="flex items-center justify-center px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30">
                       💰 Presupuesto
                     </button>
                   ) : (
-                    <button className="flex items-center justify-center px-2 sm:px-3 py-2 bg-purple-500 text-white text-xs sm:text-sm rounded-md hover:bg-purple-600 transition-colors">
+                    <button className="flex items-center justify-center px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30">
                       📋 Proyecto
                     </button>
                   )}
-                  <button 
+
+                  <button
                     onClick={() => handleEditContact(contact)}
-                    className="flex items-center justify-center px-2 sm:px-3 py-2 bg-gray-500 text-white text-xs sm:text-sm rounded-md hover:bg-gray-600 transition-colors"
+                    className="flex items-center justify-center px-3 py-2 bg-zinc-800 border border-white/10 text-white rounded-md hover:bg-zinc-700 transition"
                   >
-                    <PencilIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <PencilIcon className="h-4 w-4 mr-2" />
                     Editar
                   </button>
-                  <button 
+
+                  <button
                     onClick={() => handleDeleteContact(contact.id)}
-                    className="flex items-center justify-center px-2 sm:px-3 py-2 bg-red-500 text-white text-xs sm:text-sm rounded-md hover:bg-red-600 transition-colors"
+                    className="flex items-center justify-center px-3 py-2 bg-red-600/80 text-white rounded-md hover:bg-red-600 transition"
                   >
-                    <TrashIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <TrashIcon className="h-4 w-4 mr-2" />
                     Eliminar
                   </button>
                 </div>
@@ -338,28 +346,30 @@ const Agenda: React.FC = () => {
             ))}
           </div>
 
-          {(selectedCategory === 'materials' ? materialsContacts : 
-            selectedCategory === 'labor' ? laborContacts : clientContacts).length === 0 && (
+          {list.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-gray-400 text-base sm:text-lg mb-2">
-                {selectedCategory === 'materials' ? '🏗️' : 
-                 selectedCategory === 'labor' ? '👷‍♂️' : '👤'} No hay contactos
+              <div className="text-white/60 text-base sm:text-lg mb-2">
+                {selectedCategory === 'materials' ? '🏗️' : selectedCategory === 'labor' ? '👷‍♂️' : '👤'} No hay contactos
               </div>
-              <p className="text-sm sm:text-base text-gray-500">
-                Agrega tu primer {selectedCategory === 'materials' ? 'proveedor de materiales' : 
-                                 selectedCategory === 'labor' ? 'proveedor de mano de obra' : 'cliente'}
+              <p className="text-sm sm:text-base text-white/60">
+                Agregá tu primer{' '}
+                {selectedCategory === 'materials'
+                  ? 'proveedor de materiales'
+                  : selectedCategory === 'labor'
+                  ? 'proveedor de mano de obra'
+                  : 'cliente'}
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Add Contact Modal */}
+      {/* Add/Edit Contact Modal */}
       {(showAddContact || showEditContact) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50" style={{ ['--neon' as any]: NEON }}>
+          <div className="bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10">
+              <h3 className="text-base sm:text-lg font-semibold text-white">
                 {showEditContact ? 'Editar Contacto' : 'Agregar Contacto'}
               </h3>
               <button
@@ -378,22 +388,26 @@ const Agenda: React.FC = () => {
                     rating: undefined
                   });
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-white/60 hover:text-white transition p-2 rounded-lg hover:bg-white/5"
               >
                 <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
             </div>
 
             <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Categoría
-                  </label>
+                  <label className={label}>Categoría</label>
                   <select
                     value={newContact.category}
-                    onChange={(e) => setNewContact({ ...newContact, category: e.target.value as 'materials' | 'labor' | 'clients', subcategory: '' })}
-                    className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm"
+                    onChange={(e) =>
+                      setNewContact({
+                        ...newContact,
+                        category: e.target.value as 'materials' | 'labor' | 'clients',
+                        subcategory: ''
+                      })
+                    }
+                    className={field}
                   >
                     <option value="materials">Materiales</option>
                     <option value="labor">Mano de Obra</option>
@@ -402,13 +416,11 @@ const Agenda: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Tipo
-                  </label>
+                  <label className={label}>Tipo</label>
                   <select
                     value={newContact.subcategory}
                     onChange={(e) => setNewContact({ ...newContact, subcategory: e.target.value })}
-                    className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm"
+                    className={field}
                     required
                   >
                     <option value="">Seleccionar...</option>
@@ -445,64 +457,54 @@ const Agenda: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Nombre *
-                </label>
+                <label className={label}>Nombre *</label>
                 <input
                   type="text"
-                  value={newContact.name}
+                  value={newContact.name || ''}
                   onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm"
+                  className={field}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Empresa *
-                </label>
+                <label className={label}>Empresa *</label>
                 <input
                   type="text"
-                  value={newContact.company}
+                  value={newContact.company || ''}
                   onChange={(e) => setNewContact({ ...newContact, company: e.target.value })}
-                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm"
+                  className={field}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Teléfono *
-                </label>
+                <label className={label}>Teléfono *</label>
                 <input
                   type="tel"
-                  value={newContact.phone}
+                  value={newContact.phone || ''}
                   onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                  placeholder="+54 9 11 1234-5678"
-                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm"
+                placeholder="+54 9 11 1234-5678"
+                  className={field}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
+                <label className={label}>Email</label>
                 <input
                   type="email"
-                  value={newContact.email}
+                  value={newContact.email || ''}
                   onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm"
+                  className={field}
                 />
               </div>
 
               {showEditContact && (
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                    Calificación
-                  </label>
+                  <label className={label}>Calificación</label>
                   <div className="flex items-center space-x-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                    {[1, 2, 3, 4, 5].map(star => (
                       <button
                         key={star}
                         type="button"
@@ -512,7 +514,9 @@ const Agenda: React.FC = () => {
                         {star <= (newContact.rating || 0) ? (
                           <StarIconSolid className="h-6 w-6 text-yellow-400" />
                         ) : (
-                          <StarIcon className="h-6 w-6 text-gray-300" />
+                          <svg className="h-6 w-6 text-white/25" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.802 2.036a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.802-2.036a1 1 0 00-1.175 0l-2.802 2.036c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.88 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
                         )}
                       </button>
                     ))}
@@ -521,7 +525,7 @@ const Agenda: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setNewContact({ ...newContact, rating: undefined })}
-                      className="text-xs text-gray-500 hover:text-gray-700"
+                      className="text-xs text-white/60 hover:text-white"
                     >
                       Limpiar calificación
                     </button>
@@ -530,20 +534,18 @@ const Agenda: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  Notas
-                </label>
+                <label className={label}>Notas</label>
                 <textarea
-                  value={newContact.notes}
+                  value={newContact.notes || ''}
                   onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
                   rows={3}
-                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs sm:text-sm"
+                  className={field}
                   placeholder="Especialidades, horarios, observaciones..."
                 />
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t border-white/10">
               <button
                 onClick={() => {
                   setShowAddContact(false);
@@ -560,13 +562,13 @@ const Agenda: React.FC = () => {
                     rating: undefined
                   });
                 }}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 rounded-md text-white/80 border border-white/15 hover:bg-white/5 transition"
               >
                 Cancelar
               </button>
               <button
                 onClick={showEditContact ? handleUpdateContact : handleAddContact}
-                className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 rounded-md text-black bg-[--neon] hover:opacity-90 transition ring-1 ring-[--neon]/30 shadow-[0_0_15px_rgba(0,255,163,0.35)]"
               >
                 {showEditContact ? 'Actualizar Contacto' : 'Agregar Contacto'}
               </button>
