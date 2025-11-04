@@ -8,12 +8,20 @@ import {
   PlusIcon,
   ChatBubbleLeftRightIcon,
   XMarkIcon,
-  TrashIcon
+  TrashIcon,
+  TagIcon,
+  ClipboardDocumentListIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import {
+  StarIcon as StarIconSolid,
+  BuildingOffice2Icon,
+  WrenchScrewdriverIcon,
+  UserCircleIcon,
+} from '@heroicons/react/24/solid';
 
 const NEON = '#00FFA3';
-const card = 'bg-zinc-900/80 border border-white/10 rounded-xl p-3 sm:p-4 shadow-sm';
+const card = 'bg-zinc-900/80 border border-white/10 rounded-xl p-4 shadow-sm';
 const tabBtn =
   'flex-1 py-2 px-3 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap';
 const field =
@@ -68,7 +76,7 @@ const Agenda: React.FC = () => {
     return labels[category]?.[subcategory] || subcategory;
   };
 
-  const openWhatsApp = (phone: string, name: string, company: string) => {
+  const openWhatsApp = (phone: string, name: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
     const message = `Hola ${name}! Te contacto desde Obrix. Me gustaría solicitar un presupuesto.`;
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
@@ -172,14 +180,16 @@ const Agenda: React.FC = () => {
     </div>
   );
 
-  const list = selectedCategory === 'materials' ? materialsContacts : selectedCategory === 'labor' ? laborContacts : clientContacts;
+  const list =
+    selectedCategory === 'materials' ? materialsContacts :
+    selectedCategory === 'labor' ? laborContacts : clientContacts;
 
   return (
     <div className="space-y-6 text-white" style={{ ['--neon' as any]: NEON }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">📞 Agenda</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Agenda</h1>
           <p className="text-sm sm:text-base text-white/70 mt-1">
             {isClient ? 'Gestioná tus proveedores y solicitá presupuestos' : 'Gestioná tus proveedores y clientes'}
           </p>
@@ -187,32 +197,35 @@ const Agenda: React.FC = () => {
         <button
           onClick={() => setShowAddContact(true)}
           className="flex items-center px-3 sm:px-4 py-2 rounded-lg text-black bg-[--neon] hover:opacity-90 transition
-                     ring-1 ring-[--neon]/30 shadow-[0_0_15px_rgba(0,255,163,0.35)]"
+                     ring-1 ring-[--neon]/30"
         >
-          <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2 stroke-black" />
-          <span className="hidden sm:inline">Agregar Contacto</span>
-          <span className="sm:hidden">Agregar</span>
+          <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 stroke-black" />
+          <span>Agregar contacto</span>
         </button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className={card}>
-          <div className="flex items-center">
-            <div className="p-2 sm:p-3 rounded-full bg-zinc-800 border border-white/10">🏗️</div>
-            <div className="ml-3">
-              <p className="text-xs sm:text-sm font-medium text-white/70">Proveedores de Materiales</p>
-              <p className="text-xl sm:text-2xl font-bold text-[--neon]">{materialsContacts.length}</p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-zinc-800 border border-white/10">
+              <BuildingOffice2Icon className="h-5 w-5 text-[--neon]" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-white/70">Proveedores de materiales</p>
+              <p className="text-xl sm:text-2xl font-semibold text-[--neon]">{materialsContacts.length}</p>
             </div>
           </div>
         </div>
 
         <div className={card}>
-          <div className="flex items-center">
-            <div className="p-2 sm:p-3 rounded-full bg-zinc-800 border border-white/10">👷‍♂️</div>
-            <div className="ml-3">
-              <p className="text-xs sm:text-sm font-medium text-white/70">Proveedores de Mano de Obra</p>
-              <p className="text-xl sm:text-2xl font-bold text-[--neon]">{laborContacts.length}</p>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-zinc-800 border border-white/10">
+              <WrenchScrewdriverIcon className="h-5 w-5 text-[--neon]" />
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-white/70">Proveedores de mano de obra</p>
+              <p className="text-xl sm:text-2xl font-semibold text-[--neon]">{laborContacts.length}</p>
             </div>
           </div>
         </div>
@@ -220,9 +233,9 @@ const Agenda: React.FC = () => {
 
       {/* Contact Agenda */}
       <div className={`${card} overflow-hidden`}>
-        <div className="p-3 sm:p-5">
+        <div className="p-4 sm:p-5">
           {/* Category Tabs */}
-          <div className="flex gap-1 bg-zinc-950/60 border border-white/10 p-1 rounded-lg mb-4 sm:mb-6 overflow-x-auto">
+          <div className="flex gap-1 bg-zinc-950/60 border border-white/10 p-1 rounded-lg mb-5 overflow-x-auto">
             <button
               onClick={() => setSelectedCategory('materials')}
               className={`${tabBtn} ${
@@ -231,8 +244,10 @@ const Agenda: React.FC = () => {
                   : 'text-white/70 hover:text-white'
               }`}
             >
-              <span className="hidden sm:inline">🏗️ Proveedores de Materiales ({materialsContacts.length})</span>
-              <span className="sm:hidden">🏗️ Materiales ({materialsContacts.length})</span>
+              <span className="hidden sm:inline-flex items-center gap-2">
+                <BuildingOffice2Icon className="h-4 w-4" /> Materiales ({materialsContacts.length})
+              </span>
+              <span className="sm:hidden">Materiales ({materialsContacts.length})</span>
             </button>
             <button
               onClick={() => setSelectedCategory('labor')}
@@ -242,8 +257,10 @@ const Agenda: React.FC = () => {
                   : 'text-white/70 hover:text-white'
               }`}
             >
-              <span className="hidden sm:inline">👷‍♂️ Proveedores de Mano de Obra ({laborContacts.length})</span>
-              <span className="sm:hidden">👷‍♂️ M. Obra ({laborContacts.length})</span>
+              <span className="hidden sm:inline-flex items-center gap-2">
+                <WrenchScrewdriverIcon className="h-4 w-4" /> Mano de obra ({laborContacts.length})
+              </span>
+              <span className="sm:hidden">Mano de obra ({laborContacts.length})</span>
             </button>
             {isConstructor && (
               <button
@@ -253,44 +270,43 @@ const Agenda: React.FC = () => {
                     ? 'bg-[--neon]/10 text-[--neon] border border-[--neon]/40'
                     : 'text-white/70 hover:text-white'
                 }`}
-            >
-                <span className="hidden sm:inline">👤 Clientes ({clientContacts.length})</span>
-                <span className="sm:hidden">👤 Clientes ({clientContacts.length})</span>
+              >
+                <span className="hidden sm:inline-flex items-center gap-2">
+                  <UserCircleIcon className="h-4 w-4" /> Clientes ({clientContacts.length})
+                </span>
+                <span className="sm:hidden">Clientes ({clientContacts.length})</span>
               </button>
             )}
           </div>
 
           {/* Contacts List */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {list.map(contact => (
-              <div key={contact.id} className={`${card} hover:shadow-md transition-shadow`}>
-                <div className="flex items-start justify-between mb-3">
+              <div key={contact.id} className={`${card} hover:shadow-md transition-shadow flex flex-col h-full`}>
+                {/* Top: Title + rating */}
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm sm:text-base font-semibold">{contact.name}</h3>
+                    <h3 className="text-sm sm:text-base font-semibold leading-tight">{contact.name}</h3>
                     <p className="text-xs sm:text-sm text-white/70 truncate">{contact.company}</p>
                     <span
-                      className={`inline-block mt-1 px-2 py-1 text-xs rounded-full border ${
-                        contact.category === 'materials'
-                          ? 'border-white/15 text-white/80 bg-zinc-800'
-                          : contact.category === 'labor'
-                          ? 'border-white/15 text-white/80 bg-zinc-800'
-                          : 'border-white/15 text-white/80 bg-zinc-800'
-                      }`}
+                      className="inline-flex items-center gap-1 mt-1 px-2 py-1 text-xs rounded-full border border-white/15 text-white/80 bg-zinc-800"
                     >
+                      <TagIcon className="h-3.5 w-3.5" />
                       {getSubcategoryLabel(contact.subcategory, contact.category)}
                     </span>
                   </div>
-                  {contact.rating && contact.rating > 0 && <div className="ml-2">{renderStars(contact.rating)}</div>}
+                  {contact.rating && contact.rating > 0 && <div className="shrink-0">{renderStars(contact.rating)}</div>}
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-xs sm:text-sm text-white/80 break-all">
-                    <PhoneIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                {/* Middle: info */}
+                <div className="space-y-2 mt-3 mb-4 text-white/80">
+                  <div className="flex items-center text-xs sm:text-sm break-all">
+                    <PhoneIcon className="h-4 w-4 mr-2" />
                     {contact.phone}
                   </div>
                   {contact.email && (
-                    <div className="flex items-center text-xs sm:text-sm text-white/80 break-all">
-                      <EnvelopeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                    <div className="flex items-center text-xs sm:text-sm break-all">
+                      <EnvelopeIcon className="h-4 w-4 mr-2" />
                       {contact.email}
                     </div>
                   )}
@@ -307,40 +323,45 @@ const Agenda: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={() => openWhatsApp(contact.phone, contact.name, contact.company)}
-                    className="flex-1 flex items-center justify-center px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md hover:bg-[--neon]/10 transition"
-                  >
-                    <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
-                    WhatsApp
-                  </button>
-
-                  {selectedCategory !== 'clients' ? (
-                    <button className="flex items-center justify-center px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30">
-                      💰 Presupuesto
+                {/* Bottom: actions (stick to bottom) */}
+                <div className="mt-auto">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <button
+                      onClick={() => openWhatsApp(contact.phone, contact.name)}
+                      className="flex items-center justify-center gap-2 px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md hover:bg-[--neon]/10 transition"
+                    >
+                      <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                      <span className="text-sm">WhatsApp</span>
                     </button>
-                  ) : (
-                    <button className="flex items-center justify-center px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30">
-                      📋 Proyecto
+
+                    {selectedCategory !== 'clients' ? (
+                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30">
+                        <CurrencyDollarIcon className="h-4 w-4" />
+                        <span className="text-sm">Presupuesto</span>
+                      </button>
+                    ) : (
+                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30">
+                        <ClipboardDocumentListIcon className="h-4 w-4" />
+                        <span className="text-sm">Proyecto</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleEditContact(contact)}
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 border border-white/10 text-white rounded-md hover:bg-zinc-700 transition"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                      <span className="text-sm">Editar</span>
                     </button>
-                  )}
 
-                  <button
-                    onClick={() => handleEditContact(contact)}
-                    className="flex items-center justify-center px-3 py-2 bg-zinc-800 border border-white/10 text-white rounded-md hover:bg-zinc-700 transition"
-                  >
-                    <PencilIcon className="h-4 w-4 mr-2" />
-                    Editar
-                  </button>
-
-                  <button
-                    onClick={() => handleDeleteContact(contact.id)}
-                    className="flex items-center justify-center px-3 py-2 bg-red-600/80 text-white rounded-md hover:bg-red-600 transition"
-                  >
-                    <TrashIcon className="h-4 w-4 mr-2" />
-                    Eliminar
-                  </button>
+                    <button
+                      onClick={() => handleDeleteContact(contact.id)}
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/80 text-white rounded-md hover:bg-red-600 transition"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                      <span className="text-sm">Eliminar</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -348,12 +369,9 @@ const Agenda: React.FC = () => {
 
           {list.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-white/60 text-base sm:text-lg mb-2">
-                {selectedCategory === 'materials' ? '🏗️' : selectedCategory === 'labor' ? '👷‍♂️' : '👤'} No hay contactos
-              </div>
+              <div className="text-white/70 text-base sm:text-lg mb-2">No hay contactos</div>
               <p className="text-sm sm:text-base text-white/60">
-                Agregá tu primer{' '}
-                {selectedCategory === 'materials'
+                Agregá tu primer {selectedCategory === 'materials'
                   ? 'proveedor de materiales'
                   : selectedCategory === 'labor'
                   ? 'proveedor de mano de obra'
@@ -370,7 +388,7 @@ const Agenda: React.FC = () => {
           <div className="bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10">
               <h3 className="text-base sm:text-lg font-semibold text-white">
-                {showEditContact ? 'Editar Contacto' : 'Agregar Contacto'}
+                {showEditContact ? 'Editar contacto' : 'Agregar contacto'}
               </h3>
               <button
                 onClick={() => {
@@ -410,7 +428,7 @@ const Agenda: React.FC = () => {
                     className={field}
                   >
                     <option value="materials">Materiales</option>
-                    <option value="labor">Mano de Obra</option>
+                    <option value="labor">Mano de obra</option>
                     {isConstructor && <option value="clients">Clientes</option>}
                   </select>
                 </div>
@@ -423,7 +441,7 @@ const Agenda: React.FC = () => {
                     className={field}
                     required
                   >
-                    <option value="">Seleccionar...</option>
+                    <option value="">Seleccionar…</option>
                     {newContact.category === 'materials' ? (
                       <>
                         <option value="corralon">Corralón</option>
@@ -445,7 +463,7 @@ const Agenda: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <option value="particular">Cliente Particular</option>
+                        <option value="particular">Cliente particular</option>
                         <option value="empresa">Empresa</option>
                         <option value="inmobiliaria">Inmobiliaria</option>
                         <option value="gobierno">Gobierno</option>
@@ -484,7 +502,7 @@ const Agenda: React.FC = () => {
                   type="tel"
                   value={newContact.phone || ''}
                   onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                placeholder="+54 9 11 1234-5678"
+                  placeholder="+54 9 11 1234-5678"
                   className={field}
                   required
                 />
@@ -568,9 +586,9 @@ const Agenda: React.FC = () => {
               </button>
               <button
                 onClick={showEditContact ? handleUpdateContact : handleAddContact}
-                className="px-4 py-2 rounded-md text-black bg-[--neon] hover:opacity-90 transition ring-1 ring-[--neon]/30 shadow-[0_0_15px_rgba(0,255,163,0.35)]"
+                className="px-4 py-2 rounded-md text-black bg-[--neon] hover:opacity-90 transition ring-1 ring-[--neon]/30"
               >
-                {showEditContact ? 'Actualizar Contacto' : 'Agregar Contacto'}
+                {showEditContact ? 'Actualizar contacto' : 'Agregar contacto'}
               </button>
             </div>
           </div>
