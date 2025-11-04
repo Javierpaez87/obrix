@@ -15,13 +15,20 @@ import {
 } from '@heroicons/react/24/outline';
 import {
   StarIcon as StarIconSolid,
-  BuildingOffice2Icon,
   WrenchScrewdriverIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/solid';
 
 const NEON = '#00FFA3';
-const card = 'bg-zinc-900/80 border border-white/10 rounded-xl p-4 shadow-sm';
+const NEON_RED = '#FF3B5C'; // rojo neón para "Eliminar"
+
+// 🔧 Toggles rápidos
+const USE_NEON_BORDERS = true; // poné false para bordes blancos
+
+const cardBase = 'bg-zinc-900/80 rounded-xl p-4 shadow-sm border';
+const cardBorder = USE_NEON_BORDERS ? 'border-[--neon]/40' : 'border-white/10';
+const card = `${cardBase} ${cardBorder}`;
+
 const tabBtn =
   'flex-1 py-2 px-3 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap';
 const field =
@@ -170,7 +177,7 @@ const Agenda: React.FC = () => {
       {[1, 2, 3, 4, 5].map(star => (
         <svg
           key={star}
-          className={`h-4 w-4 ${star <= rating ? 'text-yellow-400' : 'text-white/25'}`}
+          className={`h-4 w-4 ${star <= rating ? 'text-[--neon]' : 'text-white/25'}`}
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -185,7 +192,7 @@ const Agenda: React.FC = () => {
     selectedCategory === 'labor' ? laborContacts : clientContacts;
 
   return (
-    <div className="space-y-6 text-white" style={{ ['--neon' as any]: NEON }}>
+    <div className="space-y-6 text-white" style={{ ['--neon' as any]: NEON, ['--neon-red' as any]: NEON_RED }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -197,7 +204,7 @@ const Agenda: React.FC = () => {
         <button
           onClick={() => setShowAddContact(true)}
           className="flex items-center px-3 sm:px-4 py-2 rounded-lg text-black bg-[--neon] hover:opacity-90 transition
-                     ring-1 ring-[--neon]/30"
+                     ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis"
         >
           <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 stroke-black" />
           <span>Agregar contacto</span>
@@ -209,7 +216,8 @@ const Agenda: React.FC = () => {
         <div className={card}>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-zinc-800 border border-white/10">
-              <BuildingOffice2Icon className="h-5 w-5 text-[--neon]" />
+              {/* (1) Emoji grúa */}
+              <span className="text-lg">🏗️</span>
             </div>
             <div>
               <p className="text-xs sm:text-sm font-medium text-white/70">Proveedores de materiales</p>
@@ -235,7 +243,7 @@ const Agenda: React.FC = () => {
       <div className={`${card} overflow-hidden`}>
         <div className="p-4 sm:p-5">
           {/* Category Tabs */}
-          <div className="flex gap-1 bg-zinc-950/60 border border-white/10 p-1 rounded-lg mb-5 overflow-x-auto">
+          <div className={`flex gap-1 bg-zinc-950/60 ${USE_NEON_BORDERS ? 'border-[--neon]/30' : 'border-white/10'} border p-1 rounded-lg mb-5 overflow-x-auto`}>
             <button
               onClick={() => setSelectedCategory('materials')}
               className={`${tabBtn} ${
@@ -245,7 +253,7 @@ const Agenda: React.FC = () => {
               }`}
             >
               <span className="hidden sm:inline-flex items-center gap-2">
-                <BuildingOffice2Icon className="h-4 w-4" /> Materiales ({materialsContacts.length})
+                <span className="text-base">🏗️</span> Materiales ({materialsContacts.length})
               </span>
               <span className="sm:hidden">Materiales ({materialsContacts.length})</span>
             </button>
@@ -323,24 +331,24 @@ const Agenda: React.FC = () => {
                   </div>
                 )}
 
-                {/* Bottom: actions (stick to bottom) */}
+                {/* Bottom: actions */}
                 <div className="mt-auto">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <button
                       onClick={() => openWhatsApp(contact.phone, contact.name)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md hover:bg-[--neon]/10 transition"
+                      className="flex items-center justify-center gap-2 px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md hover:bg-[--neon]/10 transition whitespace-nowrap overflow-hidden text-ellipsis"
                     >
                       <ChatBubbleLeftRightIcon className="h-4 w-4" />
                       <span className="text-sm">WhatsApp</span>
                     </button>
 
                     {selectedCategory !== 'clients' ? (
-                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30">
+                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis">
                         <CurrencyDollarIcon className="h-4 w-4" />
                         <span className="text-sm">Presupuesto</span>
                       </button>
                     ) : (
-                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30">
+                      <button className="flex items-center justify-center gap-2 px-3 py-2 text-black bg-[--neon] rounded-md hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis">
                         <ClipboardDocumentListIcon className="h-4 w-4" />
                         <span className="text-sm">Proyecto</span>
                       </button>
@@ -348,7 +356,7 @@ const Agenda: React.FC = () => {
 
                     <button
                       onClick={() => handleEditContact(contact)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 border border-white/10 text-white rounded-md hover:bg-zinc-700 transition"
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-zinc-800 border border-white/10 text-white rounded-md hover:bg-zinc-700 transition whitespace-nowrap overflow-hidden text-ellipsis"
                     >
                       <PencilIcon className="h-4 w-4" />
                       <span className="text-sm">Editar</span>
@@ -356,7 +364,12 @@ const Agenda: React.FC = () => {
 
                     <button
                       onClick={() => handleDeleteContact(contact.id)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600/80 text-white rounded-md hover:bg-red-600 transition"
+                      className="flex items-center justify-center gap-2 px-3 py-2 text-black rounded-md transition whitespace-nowrap overflow-hidden text-ellipsis"
+                      style={{
+                        backgroundColor: 'var(--neon-red)',
+                        boxShadow: '0 0 0.5rem rgba(255, 59, 92, 0.55)',
+                        border: '1px solid rgba(255, 59, 92, 0.65)'
+                      }}
                     >
                       <TrashIcon className="h-4 w-4" />
                       <span className="text-sm">Eliminar</span>
@@ -384,9 +397,10 @@ const Agenda: React.FC = () => {
 
       {/* Add/Edit Contact Modal */}
       {(showAddContact || showEditContact) && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50" style={{ ['--neon' as any]: NEON }}>
-          <div className="bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+             style={{ ['--neon' as any]: NEON, ['--neon-red' as any]: NEON_RED }}>
+          <div className={`bg-zinc-950 ${USE_NEON_BORDERS ? 'border-[--neon]/30' : 'border-white/10'} border rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto`}>
+            <div className={`flex items-center justify-between p-4 sm:p-6 ${USE_NEON_BORDERS ? 'border-[--neon]/20' : 'border-white/10'} border-b`}>
               <h3 className="text-base sm:text-lg font-semibold text-white">
                 {showEditContact ? 'Editar contacto' : 'Agregar contacto'}
               </h3>
@@ -530,7 +544,7 @@ const Agenda: React.FC = () => {
                         className="focus:outline-none"
                       >
                         {star <= (newContact.rating || 0) ? (
-                          <StarIconSolid className="h-6 w-6 text-yellow-400" />
+                          <StarIconSolid className="h-6 w-6 text-[--neon]" />
                         ) : (
                           <svg className="h-6 w-6 text-white/25" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.802 2.036a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.802-2.036a1 1 0 00-1.175 0l-2.802 2.036c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.88 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -563,7 +577,7 @@ const Agenda: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t border-white/10">
+            <div className={`flex flex-col sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 ${USE_NEON_BORDERS ? 'border-[--neon]/20' : 'border-white/10'} border-t`}>
               <button
                 onClick={() => {
                   setShowAddContact(false);
@@ -580,13 +594,13 @@ const Agenda: React.FC = () => {
                     rating: undefined
                   });
                 }}
-                className="px-4 py-2 rounded-md text-white/80 border border-white/15 hover:bg-white/5 transition"
+                className="px-4 py-2 rounded-md text-white/80 border border-white/15 hover:bg-white/5 transition whitespace-nowrap overflow-hidden text-ellipsis"
               >
                 Cancelar
               </button>
               <button
                 onClick={showEditContact ? handleUpdateContact : handleAddContact}
-                className="px-4 py-2 rounded-md text-black bg-[--neon] hover:opacity-90 transition ring-1 ring-[--neon]/30"
+                className="px-4 py-2 rounded-md text-black bg-[--neon] hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis"
               >
                 {showEditContact ? 'Actualizar contacto' : 'Agregar contacto'}
               </button>
