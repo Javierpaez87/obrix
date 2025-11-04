@@ -9,20 +9,8 @@ import {
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 
-/**
- import React from 'react';
-import {
-  BuildingOfficeIcon,
-  CurrencyDollarIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ArrowUpRightIcon,
-  ChatBubbleLeftRightIcon,
-  ChartBarIcon,
-} from '@heroicons/react/24/outline';
-
-// 🎨 Nueva paleta: tonos restringidos a cian-verde (sin fucsias/violetas)
-// Más coherente y profesional, con leves acentos en cyan, teal y verde esmeralda
+// 🎨 Paleta restringida a cyan–teal–verde (sin violetas/fucsias)
+// Sin dependencias nuevas ni comentarios multilinea para evitar errores de cierre.
 
 export type ObrixUser = { name?: string } | null | undefined;
 export type ObrixProject = {
