@@ -247,7 +247,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </NeonPanel>
 
         <div className="text-center text-xs text-white/50">
-          © 2024 Obrix. Gestión profesional de obras.
+          © 2025 Obrix by BondiApps. Gestión tech de obras. Wild Patagonia building.
         </div>
       </div>
     </div>
