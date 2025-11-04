@@ -21,62 +21,62 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="sticky top-0 z-10 backdrop-blur bg-neutral-950/70 border-b border-white/10">
       <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Mobile menu button */}
           <button
             onClick={onMenuClick}
-            className="p-2 rounded-md text-gray-400 hover:text-gray-600 lg:hidden"
+            className="p-2 rounded-md text-white/70 hover:text-white lg:hidden"
           >
             <Bars3Icon className="h-6 w-6" />
           </button>
-          
-          <h1 className="text-lg sm:text-2xl font-semibold text-gray-900 hidden sm:block">
+
+          <h1 className="text-lg sm:text-2xl font-semibold text-white hidden sm:block">
             Panel de Control
           </h1>
-          <h1 className="text-lg font-semibold text-gray-900 sm:hidden">
+          <h1 className="text-lg font-semibold text-white sm:hidden">
             Panel
           </h1>
         </div>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* User Role Badge */}
-          <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg">
+          <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-white/10 border border-white/20 text-white rounded-lg">
             <span className="text-xs sm:text-sm font-medium">
               {user?.role === 'constructor' ? '👷‍♂️ Constructor' : '👤 Cliente'}
             </span>
           </div>
 
-          <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors hidden sm:block">
+          <button className="p-2 text-white/70 hover:text-white transition-colors hidden sm:block">
             <BellIcon className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
-          
+
           <div className="flex items-center space-x-2 sm:space-x-3">
             <div className="text-right hidden sm:block">
-              <p className="text-xs sm:text-sm font-medium text-gray-900">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.company}</p>
+              <p className="text-xs sm:text-sm font-medium text-white">{user?.name}</p>
+              <p className="text-xs text-white/60">{user?.company}</p>
             </div>
             
             <button
               onClick={openWhatsApp}
-              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors border border-white/10"
               title="Contactar por WhatsApp"
             >
               <PhoneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
-            
+
             <img
-              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full"
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border-2 border-white/20"
               src={user?.avatar}
               alt={user?.name}
             />
           </div>
-          
+
           {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+            className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-white/10 border border-white/20 text-white rounded-full hover:bg-white/20 transition-colors"
             title="Cerrar Sesión"
           >
             <ArrowRightOnRectangleIcon className="h-4 w-4 sm:h-5 sm:w-5" />

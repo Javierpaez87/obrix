@@ -2,7 +2,7 @@ import React from 'react';
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Contact } from '../types';
-import { 
+import {
   PhoneIcon,
   EnvelopeIcon,
   BuildingOfficeIcon,
@@ -14,6 +14,14 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+
+const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
+  <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 to-emerald-500/60 ${className}`}>
+    <div className="rounded-2xl bg-neutral-950/95 backdrop-blur-sm border border-white/10">
+      {children}
+    </div>
+  </div>
+);
 
 const Profile: React.FC = () => {
   const { user, contacts, setContacts } = useApp();
@@ -78,7 +86,7 @@ const Profile: React.FC = () => {
         rating: newContact.rating,
         createdAt: new Date()
       };
-      
+
       setContacts([...contacts, contact]);
       setNewContact({
         name: '',
@@ -101,7 +109,7 @@ const Profile: React.FC = () => {
           <StarIcon
             key={star}
             className={`h-4 w-4 ${
-              star <= rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+              star <= rating ? 'text-yellow-400 fill-current' : 'text-white/20'
             }`}
           />
         ))}
@@ -126,67 +134,68 @@ const Profile: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold text-white">Mi Perfil</h1>
+          <p className="text-sm text-white/60 mt-1">
             Vista como: {user?.role === 'constructor' ? '👷‍♂️ Constructor' : '👤 Cliente'}
           </p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <button className="flex items-center px-4 py-2 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white rounded-xl hover:opacity-90 transition">
           <PencilIcon className="h-5 w-5 mr-2" />
           Editar Perfil
         </button>
       </div>
 
-      {/* Profile Card */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-8">
+      <NeonCard>
+        <div className="bg-gradient-to-r from-cyan-600/20 via-emerald-600/20 to-cyan-600/20 px-6 py-8 border-b border-white/10">
           <div className="flex items-center space-x-4">
-            <img
-              className="h-20 w-20 rounded-full border-4 border-white"
-              src={user?.avatar}
-              alt={user?.name}
-            />
+            <div className="relative">
+              <img
+                className="h-20 w-20 rounded-full border-4 border-white/20"
+                src={user?.avatar}
+                alt={user?.name}
+              />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-400 border-2 border-neutral-950"></div>
+            </div>
             <div className="text-white">
               <h2 className="text-2xl font-bold">{user?.name}</h2>
-              <p className="text-blue-100">{user?.company}</p>
-              <p className="text-blue-100 capitalize">{user?.role}</p>
+              <p className="text-white/70">{user?.company}</p>
+              <p className="text-white/70 capitalize">{user?.role}</p>
             </div>
           </div>
         </div>
 
         <div className="px-6 py-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Contact Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Información de Contacto</h3>
-              
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+              <h3 className="text-lg font-semibold text-white mb-4">Información de Contacto</h3>
+
+              <div className="flex items-center space-x-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                <EnvelopeIcon className="h-5 w-5 text-cyan-300" />
                 <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="text-gray-900">{user?.email}</p>
+                  <p className="text-sm text-white/60">Email</p>
+                  <p className="text-white">{user?.email}</p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
                 <div className="flex items-center space-x-3">
-                  <PhoneIcon className="h-5 w-5 text-gray-400" />
+                  <PhoneIcon className="h-5 w-5 text-cyan-300" />
                   <div>
-                    <p className="text-sm text-gray-500">Teléfono</p>
-                    <p className="text-gray-900">{user?.phone}</p>
+                    <p className="text-sm text-white/60">Teléfono</p>
+                    <p className="text-white">{user?.phone}</p>
                   </div>
                 </div>
                 <div className="flex space-x-2">
                   <button
                     onClick={callPhone}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="p-2 text-cyan-300 hover:bg-white/10 rounded-lg transition-colors"
                     title="Llamar"
                   >
                     <PhoneIcon className="h-5 w-5" />
                   </button>
                   <button
                     onClick={openUserWhatsApp}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                    className="p-2 text-emerald-300 hover:bg-white/10 rounded-lg transition-colors"
                     title="WhatsApp"
                   >
                     <ChatBubbleLeftRightIcon className="h-5 w-5" />
@@ -195,46 +204,45 @@ const Profile: React.FC = () => {
               </div>
 
               {user?.company && (
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
+                <div className="flex items-center space-x-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                  <BuildingOfficeIcon className="h-5 w-5 text-cyan-300" />
                   <div>
-                    <p className="text-sm text-gray-500">Empresa</p>
-                    <p className="text-gray-900">{user.company}</p>
+                    <p className="text-sm text-white/60">Empresa</p>
+                    <p className="text-white">{user.company}</p>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <UserIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center space-x-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                <UserIcon className="h-5 w-5 text-cyan-300" />
                 <div>
-                  <p className="text-sm text-gray-500">Rol</p>
-                  <p className="text-gray-900 capitalize">
-                    {user?.role === 'constructor' ? 'Constructor' : 
+                  <p className="text-sm text-white/60">Rol</p>
+                  <p className="text-white capitalize">
+                    {user?.role === 'constructor' ? 'Constructor' :
                      user?.role === 'client' ? 'Cliente' : 'Administrador'}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Quick Actions */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-              
+              <h3 className="text-lg font-semibold text-white mb-4">Acciones Rápidas</h3>
+
               <div className="space-y-3">
-                <button 
+                <button
                   onClick={openUserWhatsApp}
-                  className="w-full flex items-center justify-center px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+                  className="w-full flex items-center justify-center px-4 py-3 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/30 transition-colors"
                 >
                   <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
                   Contactar por WhatsApp
                 </button>
 
-                <button className="w-full flex items-center justify-center px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                <button className="w-full flex items-center justify-center px-4 py-3 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl hover:bg-cyan-500/30 transition-colors">
                   <EnvelopeIcon className="h-5 w-5 mr-2" />
                   Enviar Email
                 </button>
 
-                <button className="w-full flex items-center justify-center px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+                <button className="w-full flex items-center justify-center px-4 py-3 bg-white/5 text-white/70 border border-white/10 rounded-xl hover:bg-white/10 transition-colors">
                   <PencilIcon className="h-5 w-5 mr-2" />
                   Editar Información
                 </button>
@@ -242,7 +250,7 @@ const Profile: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </NeonCard>
     </div>
   );
 };
