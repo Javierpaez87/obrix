@@ -18,25 +18,57 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/24/solid';
 
-const NEON = '#00FFA3';
+// ============================
+// Identidad visual Obrix (cyan–teal–emerald, glass, bordes sutiles)
+// ============================
 
-// Glow reutilizable (borde + halo)
-const neonBorder =
-  'border border-[--neon]/60 shadow-[0_0_0_1px_rgba(0,255,163,0.45),0_0_22px_rgba(0,255,163,0.22),0_0_45px_rgba(0,255,163,0.18)]';
-const neonBorderHover =
-  'hover:shadow-[0_0_0_1px_rgba(0,255,163,0.55),0_0_30px_rgba(0,255,163,0.30),0_0_70px_rgba(0,255,163,0.22)]';
+// Marco con borde/halo de gradiente (match Dashboard: NeonCard)
+const NeonFrame: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
+  <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 to-emerald-500/60 ${className}`}>
+    <div className="rounded-2xl bg-neutral-950/95 backdrop-blur-sm border border-white/10">
+      {children}
+    </div>
+  </div>
+);
 
-// Card base con glow
-const card = `bg-zinc-900/80 rounded-xl p-4 ${neonBorder} ${neonBorderHover} transition-shadow`;
+// Botón outline uniforme (match WhatsApp/Acciones rápidas del Dashboard)
+const OutlineBtn: React.FC<
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { asLink?: boolean; href?: string; iconLeft?: React.ReactNode }
+> = ({ className = '', children, iconLeft, asLink, href, ...rest }) => {
+  const base =
+    'inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs sm:text-sm text-white hover:bg-white/10 transition whitespace-nowrap';
+  if (asLink && href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={`${base} ${className}`}>
+        {iconLeft} {children}
+      </a>
+    );
+  }
+  return (
+    <button className={`${base} ${className}`} {...rest}>
+      {iconLeft} {children}
+    </button>
+  );
+};
 
-// Inputs y labels
+// Botón sólido de acción principal (gradiente)
+const SolidGradBtn: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({ className = '', children, ...rest }) => (
+  <button
+    className={`inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition ${className}`}
+    {...rest}
+  >
+    {children}
+  </button>
+);
+
+// Input/Select/Area estilizados
 const field =
-  'w-full px-3 sm:px-4 py-2 rounded-md bg-zinc-900/70 border border-[--neon]/30 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[--neon]';
-const label = 'block text-xs sm:text-sm font-medium text-white/80 mb-1';
+  'w-full px-3 sm:px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400';
+const label = 'block text-xs sm:text-sm font-medium text-white/70 mb-1';
 
 // Tabs
 const tabBtn =
-  'flex-1 py-2 px-3 rounded-md text-xs sm:text-sm font-medium transition whitespace-nowrap';
+  'flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium transition whitespace-nowrap border border-white/10 bg-white/5 hover:bg-white/10';
 
 // Ícono grúa blanca (Materiales)
 const CraneIconWhite: React.FC<{ className?: string }> = ({ className = 'h-5 w-5' }) => (
@@ -197,7 +229,7 @@ const Agenda: React.FC = () => {
       {[1, 2, 3, 4, 5].map(star => (
         <svg
           key={star}
-          className={`h-4 w-4 ${star <= rating ? 'text-[--neon]' : 'text-white/25'}`}
+          className={`h-4 w-4 ${star <= rating ? 'text-emerald-300' : 'text-white/25'}`}
           viewBox="0 0 20 20"
           fill="currentColor"
         >
@@ -212,39 +244,32 @@ const Agenda: React.FC = () => {
     selectedCategory === 'labor' ? laborContacts : clientContacts;
 
   return (
-    <div className="space-y-6 text-white" style={{ ['--neon' as any]: NEON }}>
+    <div className="space-y-6 text-white bg-neutral-950/0">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Agenda</h1>
-          <p className="text-sm sm:text-base text-white/70 mt-1">
+          <p className="text-sm sm:text-base text-white/60 mt-1">
             {isClient ? 'Gestioná tus proveedores y solicitá presupuestos' : 'Gestioná tus proveedores y clientes'}
           </p>
         </div>
-        <button
-          onClick={() => setShowAddContact(true)}
-          className="flex items-center px-3 sm:px-4 py-2 rounded-lg text-black bg-[--neon] hover:opacity-90 transition
-                     ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis"
-        >
-          <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 stroke-black" />
-          <span>Agregar contacto</span>
-        </button>
+        <SolidGradBtn onClick={() => setShowAddContact(true)} className="whitespace-nowrap">
+          <PlusIcon className="h-4 w-4" />
+          Agregar contacto
+        </SolidGradBtn>
       </div>
 
-      {/* CONTENEDOR PRINCIPAL con glow */}
-      <div
-        className={`bg-zinc-900/80 rounded-2xl overflow-hidden p-0 ${neonBorder} ${neonBorderHover} transition-shadow`}
-      >
-        <div className="p-4 sm:p-5">
-          {/* TABS con borde y halo */}
-          <div className={`flex gap-1 bg-zinc-950/60 p-1 rounded-lg mb-5 overflow-x-auto
-            border border-[--neon]/40 shadow-[0_0_16px_rgba(0,255,163,0.18)]`}>
+      {/* CONTENEDOR PRINCIPAL con identidad Obrix */}
+      <NeonFrame>
+        <div className="p-4 sm:p-6">
+          {/* TABS */}
+          <div className="flex gap-1 p-1 rounded-xl mb-5 bg-white/5 border border-white/10 overflow-x-auto">
             <button
               onClick={() => setSelectedCategory('materials')}
               className={`${tabBtn} ${
                 selectedCategory === 'materials'
-                  ? 'bg-[--neon]/10 text-[--neon] border border-[--neon]/40'
-                  : 'text-white/70 hover:text-white'
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 border-white/20 text-white'
+                  : ''
               }`}
             >
               <span className="hidden sm:inline-flex items-center gap-2">
@@ -256,8 +281,8 @@ const Agenda: React.FC = () => {
               onClick={() => setSelectedCategory('labor')}
               className={`${tabBtn} ${
                 selectedCategory === 'labor'
-                  ? 'bg-[--neon]/10 text-[--neon] border border-[--neon]/40'
-                  : 'text-white/70 hover:text-white'
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 border-white/20 text-white'
+                  : ''
               }`}
             >
               <span className="hidden sm:inline-flex items-center gap-2">
@@ -270,8 +295,8 @@ const Agenda: React.FC = () => {
                 onClick={() => setSelectedCategory('clients')}
                 className={`${tabBtn} ${
                   selectedCategory === 'clients'
-                    ? 'bg-[--neon]/10 text-[--neon] border border-[--neon]/40'
-                    : 'text-white/70 hover:text-white'
+                    ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 border-white/20 text-white'
+                    : ''
                 }`}
               >
                 <span className="hidden sm:inline-flex items-center gap-2">
@@ -285,102 +310,82 @@ const Agenda: React.FC = () => {
           {/* LISTA DE CONTACTOS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {list.map(contact => (
-              <div key={contact.id} className={`${card} flex flex-col h-full`}>
-                {/* Título + rating */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm sm:text-base font-semibold leading-tight">{contact.name}</h3>
-                    <p className="text-xs sm:text-sm text-white/70 truncate">{contact.company}</p>
-                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-1 text-xs rounded-full
-                      border border-[--neon]/25 bg-zinc-900/60
-                      shadow-[0_0_10px_rgba(0,255,163,0.12)]">
-                      <TagIcon className="h-3.5 w-3.5 text-[--neon]" />
-                      {getSubcategoryLabel(contact.subcategory, contact.category)}
-                    </span>
+              <NeonFrame key={contact.id} className="rounded-2xl">
+                <div className="p-4 sm:p-5 flex flex-col h-full">
+                  {/* Título + rating */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm sm:text-base font-semibold leading-tight">{contact.name}</h3>
+                      <p className="text-xs sm:text-sm text-white/60 truncate">{contact.company}</p>
+                      <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-1 text-[11px] rounded-full border border-white/15 bg-white/5">
+                        <TagIcon className="h-3.5 w-3.5 text-emerald-300" />
+                        {getSubcategoryLabel(contact.subcategory, contact.category)}
+                      </span>
+                    </div>
+                    {contact.rating && contact.rating > 0 && <div className="shrink-0">{renderStars(contact.rating)}</div>}
                   </div>
-                  {contact.rating && contact.rating > 0 && <div className="shrink-0">{renderStars(contact.rating)}</div>}
-                </div>
 
-                {/* Info */}
-                <div className="space-y-2 mt-3 mb-4 text-white/80">
-                  <div className="flex items-center text-xs sm:text-sm break-all">
-                    <PhoneIcon className="h-4 w-4 mr-2" />
-                    {contact.phone}
-                  </div>
-                  {contact.email && (
+                  {/* Info */}
+                  <div className="space-y-2 mt-3 mb-4 text-white/80">
                     <div className="flex items-center text-xs sm:text-sm break-all">
-                      <EnvelopeIcon className="h-4 w-4 mr-2" />
-                      {contact.email}
+                      <PhoneIcon className="h-4 w-4 mr-2 text-cyan-300" />
+                      {contact.phone}
                     </div>
-                  )}
-                  {contact.lastContact && (
-                    <div className="text-xs text-white/60">
-                      Último contacto: {contact.lastContact.toLocaleDateString('es-AR')}
-                    </div>
-                  )}
-                </div>
-
-                {contact.notes && (
-                  <div className="mb-4 p-2 bg-zinc-900/60 border border-[--neon]/15 rounded text-xs sm:text-sm text-white/80">
-                    {contact.notes}
-                  </div>
-                )}
-
-                {/* Acciones */}
-                <div className="mt-auto">
-                  <div className="grid grid-cols-4 gap-2">
-                    {/* WhatsApp (referencia de estilo) */}
-                    <button
-                      onClick={() => openWhatsApp(contact.phone, contact.name)}
-                      aria-label="WhatsApp"
-                      title="WhatsApp"
-                      className="flex items-center justify-center px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md
-                                 bg-zinc-900/70 hover:bg-[--neon]/10 transition whitespace-nowrap"
-                    >
-                      <WhatsAppIcon className="h-4 w-4" />
-                    </button>
-
-                    {/* Presupuesto / Proyecto — MISMO ESTILO QUE WHATSAPP */}
-                    {selectedCategory !== 'clients' ? (
-                      <button
-                        className="flex items-center justify-center gap-2 px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md
-                                   bg-zinc-900/70 hover:bg-[--neon]/10 transition whitespace-nowrap overflow-hidden text-ellipsis"
-                      >
-                        <CurrencyDollarIcon className="h-4 w-4" />
-                        <span className="text-[11px] sm:text-xs md:text-sm leading-none">Presupuesto</span>
-                      </button>
-                    ) : (
-                      <button
-                        className="flex items-center justify-center gap-2 px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md
-                                   bg-zinc-900/70 hover:bg-[--neon]/10 transition whitespace-nowrap overflow-hidden text-ellipsis"
-                      >
-                        <ClipboardDocumentListIcon className="h-4 w-4" />
-                        <span className="text-[11px] sm:text-xs md:text-sm leading-none">Proyecto</span>
-                      </button>
+                    {contact.email && (
+                      <div className="flex items-center text-xs sm:text-sm break-all">
+                        <EnvelopeIcon className="h-4 w-4 mr-2 text-teal-300" />
+                        {contact.email}
+                      </div>
                     )}
+                    {contact.lastContact && (
+                      <div className="text-xs text-white/50">
+                        Último contacto: {contact.lastContact.toLocaleDateString('es-AR')}
+                      </div>
+                    )}
+                  </div>
 
-                    {/* Editar — MISMO ESTILO */}
-                    <button
-                      onClick={() => handleEditContact(contact)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md
-                                 bg-zinc-900/70 hover:bg-[--neon]/10 transition whitespace-nowrap overflow-hidden text-ellipsis"
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                      <span className="text-[11px] sm:text-xs md:text-sm leading-none">Editar</span>
-                    </button>
+                  {contact.notes && (
+                    <div className="mb-4 p-2 bg-white/5 border border-white/10 rounded text-xs sm:text-sm text-white/80">
+                      {contact.notes}
+                    </div>
+                  )}
 
-                    {/* Eliminar — MISMO ESTILO (negro + borde/texto neón) */}
-                    <button
-                      onClick={() => handleDeleteContact(contact.id)}
-                      className="flex items-center justify-center gap-2 px-3 py-2 text-[--neon] border border-[--neon]/60 rounded-md
-                                 bg-zinc-900/70 hover:bg-[--neon]/10 transition whitespace-nowrap overflow-hidden text-ellipsis"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                      <span className="text-[11px] sm:text-xs md:text-sm leading-none">Eliminar</span>
-                    </button>
+                  {/* Acciones (todos los botones con el MISMO estilo outline Obrix) */}
+                  <div className="mt-auto">
+                    <div className="grid grid-cols-4 gap-2">
+                      {/* WhatsApp */}
+                      <OutlineBtn
+                        onClick={() => openWhatsApp(contact.phone, contact.name)}
+                        aria-label="WhatsApp"
+                        title="WhatsApp"
+                        className="px-0"
+                        iconLeft={<WhatsAppIcon className="h-4 w-4" />}
+                      />
+
+                      {/* Presupuesto / Proyecto */}
+                      {selectedCategory !== 'clients' ? (
+                        <OutlineBtn iconLeft={<CurrencyDollarIcon className="h-4 w-4" />}>
+                          <span className="text-[11px] sm:text-xs md:text-sm leading-none">Presupuesto</span>
+                        </OutlineBtn>
+                      ) : (
+                        <OutlineBtn iconLeft={<ClipboardDocumentListIcon className="h-4 w-4" />}>
+                          <span className="text-[11px] sm:text-xs md:text-sm leading-none">Proyecto</span>
+                        </OutlineBtn>
+                      )}
+
+                      {/* Editar */}
+                      <OutlineBtn onClick={() => handleEditContact(contact)} iconLeft={<PencilIcon className="h-4 w-4" />}>
+                        <span className="text-[11px] sm:text-xs md:text-sm leading-none">Editar</span>
+                      </OutlineBtn>
+
+                      {/* Eliminar */}
+                      <OutlineBtn onClick={() => handleDeleteContact(contact.id)} iconLeft={<TrashIcon className="h-4 w-4" />}>
+                        <span className="text-[11px] sm:text-xs md:text-sm leading-none">Eliminar</span>
+                      </OutlineBtn>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </NeonFrame>
             ))}
           </div>
 
@@ -397,13 +402,13 @@ const Agenda: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+      </NeonFrame>
 
       {/* MODAL Add/Edit */}
       {(showAddContact || showEditContact) && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50" style={{ ['--neon' as any]: NEON }}>
-          <div className={`bg-zinc-950 ${neonBorder} ${neonBorderHover} rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto transition-shadow`}>
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[--neon]/20">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <NeonFrame className="max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10">
               <h3 className="text-base sm:text-lg font-semibold text-white">
                 {showEditContact ? 'Editar contacto' : 'Agregar contacto'}
               </h3>
@@ -545,9 +550,10 @@ const Agenda: React.FC = () => {
                         type="button"
                         onClick={() => setNewContact({ ...newContact, rating: star })}
                         className="focus:outline-none"
+                        aria-label={`Calificar ${star}`}
                       >
                         {star <= (newContact.rating || 0) ? (
-                          <StarIconSolid className="h-6 w-6 text-[--neon]" />
+                          <StarIconSolid className="h-6 w-6 text-emerald-300" />
                         ) : (
                           <svg className="h-6 w-6 text-white/25" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.802 2.036a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.802-2.036a1 1 0 00-1.175 0l-2.802 2.036c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.88 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -580,8 +586,8 @@ const Agenda: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t border-[--neon]/20">
-              <button
+            <div className="flex flex-col sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t border-white/10">
+              <OutlineBtn
                 onClick={() => {
                   setShowAddContact(false);
                   setShowEditContact(false);
@@ -597,18 +603,14 @@ const Agenda: React.FC = () => {
                     rating: undefined
                   });
                 }}
-                className="px-4 py-2 rounded-md text-white/90 border border-[--neon]/25 hover:bg-white/5 transition whitespace-nowrap overflow-hidden text-ellipsis"
               >
                 Cancelar
-              </button>
-              <button
-                onClick={showEditContact ? handleUpdateContact : handleAddContact}
-                className="px-4 py-2 rounded-md text-black bg-[--neon] hover:opacity-90 transition ring-1 ring-[--neon]/30 whitespace-nowrap overflow-hidden text-ellipsis"
-              >
+              </OutlineBtn>
+              <SolidGradBtn onClick={showEditContact ? handleUpdateContact : handleAddContact}>
                 {showEditContact ? 'Actualizar contacto' : 'Agregar contacto'}
-              </button>
+              </SolidGradBtn>
             </div>
-          </div>
+          </NeonFrame>
         </div>
       )}
     </div>
