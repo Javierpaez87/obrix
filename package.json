@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "postinstall": "cd packages/config && npm install && cd ../ui && npm install && cd ../../apps/app && npm install && cd ../admin && npm install",
     "dev": "concurrently \"npm run dev:app\" \"npm run dev:admin\"",
     "dev:app": "cd apps/app && npm run dev",
     "dev:admin": "cd apps/admin && npm run dev",
