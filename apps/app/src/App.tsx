@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { useApp } from './context/AppContext';
 import Layout from './components/Layout/Layout';
@@ -11,26 +11,55 @@ import Collections from './pages/Collections';
 import Payments from './pages/Payments';
 import Profile from './pages/Profile';
 import Agenda from './pages/Agenda';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, loading } = useApp();
 
-  if (!isAuthenticated) {
-    return <Login />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+        <div className="text-white text-lg">Cargando...</div>
+      </div>
+    );
   }
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/budget-management" element={<BudgetManagement />} />
-        <Route path="/collections" element={<Collections />} />
-        <Route path="/payments" element={<Payments />} />
-        <Route path="/agenda" element={<Agenda />} />
-        <Route path="/profile" element={<Profile />} />
-      </Routes>
-    </Layout>
+    <Routes>
+      <Route
+        path="/login"
+        element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />}
+      />
+      <Route
+        path="/forgot-password"
+        element={!isAuthenticated ? <ForgotPassword /> : <Navigate to="/" replace />}
+      />
+      <Route
+        path="/reset-password"
+        element={<ResetPassword />}
+      />
+      <Route
+        path="/*"
+        element={
+          isAuthenticated ? (
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/budget-management" element={<BudgetManagement />} />
+                <Route path="/collections" element={<Collections />} />
+                <Route path="/payments" element={<Payments />} />
+                <Route path="/agenda" element={<Agenda />} />
+                <Route path="/profile" element={<Profile />} />
+              </Routes>
+            </Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+    </Routes>
   );
 };
 

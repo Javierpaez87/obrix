@@ -11,9 +11,12 @@ import {
   PlusIcon,
   StarIcon,
   ChatBubbleLeftRightIcon,
-  XMarkIcon
+  XMarkIcon,
+  TrashIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { useNavigate } from 'react-router-dom';
 
 const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
   <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 to-emerald-500/60 ${className}`}>
@@ -24,8 +27,12 @@ const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({
 );
 
 const Profile: React.FC = () => {
-  const { user, contacts, setContacts } = useApp();
+  const { user, contacts, setContacts, deleteAccount } = useApp();
+  const navigate = useNavigate();
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<'materials' | 'labor'>('materials');
   const [newContact, setNewContact] = useState<Partial<Contact>>({
     name: '',
@@ -127,6 +134,23 @@ const Profile: React.FC = () => {
   const callPhone = () => {
     if (user?.phone) {
       window.open(`tel:${user.phone}`, '_self');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const { error } = await deleteAccount();
+
+      if (error) {
+        setDeleteError(error.message || 'Error al eliminar la cuenta');
+        setIsDeleting(false);
+      }
+    } catch (err: any) {
+      setDeleteError(err.message || 'Ha ocurrido un error');
+      setIsDeleting(false);
     }
   };
 
@@ -246,11 +270,65 @@ const Profile: React.FC = () => {
                   <PencilIcon className="h-5 w-5 mr-2" />
                   Editar Información
                 </button>
+
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="w-full flex items-center justify-center px-4 py-3 bg-red-500/20 text-red-300 border border-red-500/30 rounded-xl hover:bg-red-500/30 transition-colors"
+                >
+                  <TrashIcon className="h-5 w-5 mr-2" />
+                  Eliminar Cuenta
+                </button>
               </div>
             </div>
           </div>
         </div>
       </NeonCard>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-neutral-900 rounded-2xl border border-red-500/30 max-w-md w-full p-6 space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                <ExclamationTriangleIcon className="w-6 h-6 text-red-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  Eliminar cuenta permanentemente
+                </h3>
+                <p className="text-white/70 text-sm">
+                  Esta acción es irreversible. Se eliminará tu cuenta y todos tus datos de forma permanente.
+                </p>
+              </div>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="w-full px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                {isDeleting ? 'Eliminando...' : 'Sí, eliminar mi cuenta'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteError(null);
+                }}
+                disabled={isDeleting}
+                className="w-full px-4 py-3 bg-white/5 text-white border border-white/10 rounded-xl hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

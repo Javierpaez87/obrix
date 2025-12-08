@@ -1,11 +1,19 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User, Project, Budget, BudgetRequest, Task, Payment, Collection, Expense, ChangeOrder, Contact, MaterialRequest } from '../types';
+import { useAuth } from '../hooks/useAuth';
 
 interface AppContextType {
   user: User | null;
-  login: (email: string, userType: 'constructor' | 'client') => void;
-  logout: () => void;
+  loading: boolean;
   isAuthenticated: boolean;
+  signUp: (email: string, password: string, role: 'constructor' | 'client', name?: string) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signInWithGoogle: () => Promise<any>;
+  signOut: () => Promise<any>;
+  resetPassword: (email: string) => Promise<any>;
+  updatePassword: (newPassword: string) => Promise<any>;
+  deleteAccount: () => Promise<any>;
+  updateProfile: (updates: Partial<User>) => Promise<any>;
   projects: Project[];
   setProjects: (projects: Project[]) => void;
   budgets: Budget[];
@@ -43,44 +51,7 @@ interface AppProviderProps {
 }
 
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Función para hacer login
-  const login = (email: string, userType: 'constructor' | 'client') => {
-    let userData: User;
-    
-    if (userType === 'constructor') {
-      userData = {
-        id: '1',
-        name: 'Juan Pérez',
-        email: 'juan@construcciones.com',
-        phone: '+54 9 11 1234-5678',
-        role: 'constructor',
-        company: 'Construcciones JP',
-        avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150'
-      };
-    } else {
-      userData = {
-        id: '2',
-        name: 'María Rodríguez',
-        email: 'maria@gmail.com',
-        phone: '+54 9 11 9876-5432',
-        role: 'client',
-        company: 'Cliente Particular',
-        avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150'
-      };
-    }
-    
-    setUser(userData);
-    setIsAuthenticated(true);
-  };
-
-  // Función para hacer logout
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-  };
+  const auth = useAuth();
 
   const [projects, setProjects] = useState<Project[]>([
     {
@@ -345,10 +316,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   return (
     <AppContext.Provider value={{
-      user,
-      login,
-      logout,
-      isAuthenticated,
+      user: auth.user,
+      loading: auth.loading,
+      isAuthenticated: auth.isAuthenticated,
+      signUp: auth.signUp,
+      signIn: auth.signIn,
+      signInWithGoogle: auth.signInWithGoogle,
+      signOut: auth.signOut,
+      resetPassword: auth.resetPassword,
+      updatePassword: auth.updatePassword,
+      deleteAccount: auth.deleteAccount,
+      updateProfile: auth.updateProfile,
       projects, setProjects,
       budgets, setBudgets,
       budgetRequests, setBudgetRequests,
