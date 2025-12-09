@@ -27,7 +27,7 @@ const mapSessionUserToAppUser = (sessionUser: SupabaseUser): User => ({
   role:
     ((sessionUser.user_metadata as any)?.role as
       | 'constructor'
-      | 'client') ?? 'constructor',
+      | 'client') ?? 'client',
   company: (sessionUser.user_metadata as any)?.company || '',
   avatar:
     (sessionUser.user_metadata as any)?.avatar_url ||
@@ -41,7 +41,7 @@ const mapProfileRowToUser = (row: any): User => ({
   name: row.name || '',
   email: row.email,
   phone: row.phone || '',
-  role: (row.role as 'constructor' | 'client') ?? 'constructor',
+  role: (row.role as 'constructor' | 'client') ?? 'client',
   company: row.company || '',
   avatar: row.avatar_url || '',
 });
@@ -89,7 +89,7 @@ export const useAuth = () => {
         role:
           ((sessionUser.user_metadata as any)?.role as
             | 'constructor'
-            | 'client') ?? 'constructor',
+            | 'client') ?? 'client',
         phone: (sessionUser.user_metadata as any)?.phone || null,
         company: null,
         avatar_url:
