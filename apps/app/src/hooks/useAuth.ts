@@ -68,7 +68,10 @@ export const useAuth = () => {
 
       // error típico cuando la tabla no existe en el proyecto nuevo
       if (error) {
-        console.warn('Error fetching profile (se sigue con fallback):', error);
+        console.warn(
+          'Error fetching profile (se sigue con fallback):',
+          error
+        );
         return null;
       }
 
@@ -100,7 +103,10 @@ export const useAuth = () => {
         .maybeSingle();
 
       if (insertError) {
-        console.warn('Error creating profile (se sigue con fallback):', insertError);
+        console.warn(
+          'Error creating profile (se sigue con fallback):',
+          insertError
+        );
         return null;
       }
 
@@ -108,7 +114,10 @@ export const useAuth = () => {
 
       return mapProfileRowToUser(inserted);
     } catch (err) {
-      console.warn('Error in fetchOrCreateProfile (se sigue con fallback):', err);
+      console.warn(
+        'Error in fetchOrCreateProfile (se sigue con fallback):',
+        err
+      );
       return null;
     }
   };
@@ -328,15 +337,31 @@ export const useAuth = () => {
 
   const deleteAccount = async () => {
     try {
+      // 1) borramos el perfil en Supabase (función delete_user)
       const { error } = await supabase.rpc('delete_user');
 
       if (error) {
+        setAuthState((prev) => ({ ...prev, error }));
         return { error };
       }
 
+      // 2) cerramos sesión en Supabase Auth
+      await supabase.auth.signOut();
+
+      // 3) limpiamos el estado local
+      setAuthState({
+        user: null,
+        supabaseUser: null,
+        session: null,
+        loading: false,
+        error: null,
+      });
+
       return { error: null };
     } catch (err) {
-      return { error: err as AuthError };
+      const error = err as AuthError;
+      setAuthState((prev) => ({ ...prev, error }));
+      return { error };
     }
   };
 
