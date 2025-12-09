@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
-import { User as SupabaseUser, AuthError, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import {
+  User as SupabaseUser,
+  AuthError,
+  Session,
+} from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase'; // usa tu cliente actual
 import { User } from '../types';
 
 interface AuthState {
@@ -10,6 +14,26 @@ interface AuthState {
   loading: boolean;
   error: AuthError | null;
 }
+
+// user "fallback" basado solo en la info de Supabase
+const mapSessionUserToAppUser = (sessionUser: SupabaseUser): User => ({
+  id: sessionUser.id,
+  name:
+    (sessionUser.user_metadata as any)?.name ||
+    sessionUser.email ||
+    '',
+  email: sessionUser.email || '',
+  phone: (sessionUser.user_metadata as any)?.phone || '',
+  role:
+    ((sessionUser.user_metadata as any)?.role as
+      | 'constructor'
+      | 'client') ?? 'constructor',
+  company: (sessionUser.user_metadata as any)?.company || '',
+  avatar:
+    (sessionUser.user_metadata as any)?.avatar_url ||
+    (sessionUser.user_metadata as any)?.picture ||
+    '',
+});
 
 // Helper para mapear una fila de "profiles" a tu tipo User
 const mapProfileRowToUser = (row: any): User => ({
@@ -31,8 +55,10 @@ export const useAuth = () => {
     error: null,
   });
 
-  // Busca perfil; si no existe y tengo session.user, lo crea
-  const fetchOrCreateProfile = async (sessionUser: SupabaseUser): Promise<User | null> => {
+  // Busca perfil; si no existe, lo crea. Si la tabla no existe, devuelve null.
+  const fetchOrCreateProfile = async (
+    sessionUser: SupabaseUser
+  ): Promise<User | null> => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -40,9 +66,9 @@ export const useAuth = () => {
         .eq('id', sessionUser.id)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 = no rows, puede variar según versión
-        console.error('Error fetching profile:', error);
+      // error típico cuando la tabla no existe en el proyecto nuevo
+      if (error) {
+        console.warn('Error fetching profile (se sigue con fallback):', error);
         return null;
       }
 
@@ -54,11 +80,17 @@ export const useAuth = () => {
       const insertPayload = {
         id: sessionUser.id,
         email: sessionUser.email,
-        name: (sessionUser.user_metadata as any)?.name || sessionUser.email,
-        role: 'constructor', // 👈 default, ajustá si querés
+        name:
+          (sessionUser.user_metadata as any)?.name ||
+          sessionUser.email,
+        role:
+          ((sessionUser.user_metadata as any)?.role as
+            | 'constructor'
+            | 'client') ?? 'constructor',
         phone: (sessionUser.user_metadata as any)?.phone || null,
         company: null,
-        avatar_url: (sessionUser.user_metadata as any)?.picture || null,
+        avatar_url:
+          (sessionUser.user_metadata as any)?.picture || null,
       };
 
       const { data: inserted, error: insertError } = await supabase
@@ -68,7 +100,7 @@ export const useAuth = () => {
         .maybeSingle();
 
       if (insertError) {
-        console.error('Error creating profile:', insertError);
+        console.warn('Error creating profile (se sigue con fallback):', insertError);
         return null;
       }
 
@@ -76,7 +108,7 @@ export const useAuth = () => {
 
       return mapProfileRowToUser(inserted);
     } catch (err) {
-      console.error('Error in fetchOrCreateProfile:', err);
+      console.warn('Error in fetchOrCreateProfile (se sigue con fallback):', err);
       return null;
     }
   };
@@ -90,9 +122,11 @@ export const useAuth = () => {
 
         if (session?.user) {
           const profile = await fetchOrCreateProfile(session.user);
+          const appUser =
+            profile ?? mapSessionUserToAppUser(session.user);
 
           setAuthState({
-            user: profile, // puede ser null si algo falló, pero supabaseUser igual existe
+            user: appUser,
             supabaseUser: session.user,
             session,
             loading: false,
@@ -125,10 +159,18 @@ export const useAuth = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       (async () => {
-        if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
+        if (
+          (event === 'SIGNED_IN' ||
+            event === 'USER_UPDATED' ||
+            event === 'TOKEN_REFRESHED') &&
+          session?.user
+        ) {
           const profile = await fetchOrCreateProfile(session.user);
+          const appUser =
+            profile ?? mapSessionUserToAppUser(session.user);
+
           setAuthState({
-            user: profile,
+            user: appUser,
             supabaseUser: session.user,
             session,
             loading: false,
@@ -151,7 +193,12 @@ export const useAuth = () => {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, role: 'constructor' | 'client', name?: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    role: 'constructor' | 'client',
+    name?: string
+  ) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -248,9 +295,10 @@ export const useAuth = () => {
 
   const resetPassword = async (email: string) => {
     try {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { data, error } =
+        await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
 
       if (error) {
         return { error };
@@ -313,10 +361,12 @@ export const useAuth = () => {
         return { error };
       }
 
-      const updatedProfile = await fetchOrCreateProfile(authState.supabaseUser!);
+      const updated = await fetchOrCreateProfile(
+        authState.supabaseUser!
+      );
       setAuthState((prev) => ({
         ...prev,
-        user: updatedProfile,
+        user: updated ?? prev.user,
       }));
 
       return { error: null };
@@ -331,7 +381,8 @@ export const useAuth = () => {
     session: authState.session,
     loading: authState.loading,
     error: authState.error,
-    isAuthenticated: !!authState.user,
+    // 👇 ahora se toma como autenticado si hay supabaseUser, aunque el perfil falle
+    isAuthenticated: !!authState.supabaseUser,
     signUp,
     signIn,
     signInWithGoogle,
