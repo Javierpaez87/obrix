@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { BudgetRequest } from '../../types';
 import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
