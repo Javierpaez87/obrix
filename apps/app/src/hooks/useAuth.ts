@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User as SupabaseUser, AuthError, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabaseClient'; // 👈 IMPORT CORREGIDO
+import { supabase } from '../lib/supabase';
 import { User } from '../types';
 
 interface AuthState {
