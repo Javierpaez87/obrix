@@ -1,7 +1,9 @@
 import React, { ReactNode } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import PhoneRequiredModal from '../common/PhoneRequiredModal';
+import { useApp } from '../../context/AppContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -9,9 +11,30 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const { user, updateProfile } = useApp();
+
+  useEffect(() => {
+    if (user && !user.phone) {
+      setShowPhoneModal(true);
+    } else {
+      setShowPhoneModal(false);
+    }
+  }, [user]);
+
+  const handlePhoneComplete = async (phone: string) => {
+    const { error } = await updateProfile({ phone });
+    if (!error) {
+      setShowPhoneModal(false);
+    } else {
+      throw new Error('Error al actualizar el teléfono');
+    }
+  };
 
   return (
     <div className="flex h-screen bg-neutral-950">
+      {showPhoneModal && <PhoneRequiredModal onComplete={handlePhoneComplete} />}
+
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
