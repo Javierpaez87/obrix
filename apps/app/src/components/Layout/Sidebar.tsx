@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <X className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-3">
+          <NavLink to="/" className="flex items-center gap-3 hover:opacity-80 transition">
             <div className="p-2 rounded-xl bg-white/5 border border-white/10">
               <Building2 className="w-6 h-6 text-cyan-300" />
             </div>
@@ -87,7 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <h1 className={brandTitle}>Obrix</h1>
               <p className={brandKicker}>Gestión de Obras</p>
             </div>
-          </div>
+          </NavLink>
         </div>
 
         {/* Navegación */}

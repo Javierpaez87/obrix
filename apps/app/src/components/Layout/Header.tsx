@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { BellIcon, PhoneIcon, ArrowRightOnRectangleIcon, Bars3Icon } from '@heroicons/react/24/outline';
 
@@ -8,6 +9,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user, signOut } = useApp();
+  const navigate = useNavigate();
 
   const openWhatsApp = () => {
     if (user?.phone) {
@@ -18,6 +20,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const goToProfile = () => {
+    navigate('/profile');
   };
 
   return (
@@ -44,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {/* User Role Badge */}
           <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-white/10 border border-white/20 text-white rounded-lg">
             <span className="text-xs sm:text-sm font-medium">
-              {user?.role === 'constructor' ? '👷‍♂️ Constructor' : '👤 Cliente'}
+              {user?.role === 'constructor' ? 'Perfil de Constructor' : 'Perfil de Cliente'}
             </span>
           </div>
 
@@ -66,20 +72,36 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <PhoneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
 
-            <img
-              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border-2 border-white/20"
-              src={user?.avatar}
-              alt={user?.name}
-            />
+            <button
+              onClick={goToProfile}
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border-2 border-white/20 overflow-hidden hover:border-white/40 transition-colors"
+              title="Ver perfil"
+            >
+              <img
+                className="w-full h-full object-cover"
+                src={user?.avatar}
+                alt={user?.name}
+              />
+            </button>
           </div>
 
           {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-white/10 border border-white/20 text-white rounded-full hover:bg-white/20 transition-colors"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/20 transition-colors"
             title="Cerrar Sesión"
           >
-            <ArrowRightOnRectangleIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            <ArrowRightOnRectangleIcon className="h-5 w-5" />
+            <span className="text-sm font-medium">Cerrar Sesión</span>
+          </button>
+
+          {/* Mobile Logout Button (icon only) */}
+          <button
+            onClick={handleLogout}
+            className="flex sm:hidden items-center justify-center w-8 h-8 bg-white/10 border border-white/20 text-white rounded-full hover:bg-white/20 transition-colors"
+            title="Cerrar Sesión"
+          >
+            <ArrowRightOnRectangleIcon className="h-4 w-4" />
           </button>
         </div>
       </div>
