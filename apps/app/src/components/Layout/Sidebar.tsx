@@ -10,7 +10,6 @@ import {
   TrendingDown,
   BookOpen,
   User,
-  Building2,
   X,
 } from 'lucide-react';
 
@@ -25,8 +24,6 @@ const shell =
 const panel =
   'h-full bg-neutral-950/95 backdrop-blur border-r border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset]';
 const headerWrap = 'px-5 py-5 border-b border-white/10 relative';
-const brandTitle = 'text-lg font-semibold tracking-tight text-white';
-const brandKicker = 'text-xs text-white/50';
 
 const itemBase =
   'group flex items-center gap-3 px-4 py-3 rounded-xl border transition select-none';
@@ -79,14 +76,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <X className="w-5 h-5" />
           </button>
 
-          <NavLink to="/" className="flex items-center gap-3 hover:opacity-80 transition">
-            <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-              <Building2 className="w-6 h-6 text-cyan-300" />
-            </div>
-            <div className="min-w-0">
-              <h1 className={brandTitle}>Obrix</h1>
-              <p className={brandKicker}>Gestión de Obras</p>
-            </div>
+          <NavLink to="/" className="flex items-center justify-center py-2 hover:opacity-80 transition">
+            <img
+              src="/obrix-logo.png"
+              alt="Obrix"
+              className="h-12 w-auto drop-shadow-[0_0_10px_rgba(0,255,163,0.4)]"
+            />
           </NavLink>
         </div>
 
