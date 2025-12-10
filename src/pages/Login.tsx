@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Building2, User, Lock, Mail } from 'lucide-react';
 
+// 👇 IMPORT DEL LOGO (ajustá la ruta si tu Login.tsx está en otra carpeta)
+import obrixLogo from '../assets/obrix-logo.png';
+
 export type LoginProps = {
   onLogin?: (email: string, userType: 'constructor' | 'client') => void;
 };
@@ -63,12 +66,20 @@ const InputField: React.FC<{
   name: string;
 }> = ({ type, value, onChange, placeholder, icon, label, name }) => (
   <div>
-    <label htmlFor={name} className="block text-xs text-white/70 mb-1">{label}</label>
+    <label htmlFor={name} className="block text-xs text-white/70 mb-1">
+      {label}
+    </label>
     <div className="relative">
       {icon === 'mail' ? (
-        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'rgba(255,255,255,0.5)' }} />
+        <Mail
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+          style={{ color: 'rgba(255,255,255,0.5)' }}
+        />
       ) : (
-        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'rgba(255,255,255,0.5)' }} />
+        <Lock
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+          style={{ color: 'rgba(255,255,255,0.5)' }}
+        />
       )}
       <input
         id={name}
@@ -128,15 +139,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
-        {/* ---------- Logo superior reemplazado ---------- */}
+        {/* Logo superior */}
         <div className="text-center mb-2">
           <img
-            src="/obrix-logo.png"
+            src={obrixLogo}
             alt="Obrix logo"
             className="mx-auto w-40 h-auto mb-4 drop-shadow-[0_0_15px_rgba(0,255,163,0.6)]"
           />
         </div>
-        {/* --------------------------------------------- */}
 
         <NeonPanel>
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -205,7 +215,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 onClick={() => quickLogin('juan@construcciones.com', 'constructor')}
                 disabled={isLoading}
                 className="w-full text-left p-3 rounded-xl border transition"
-                style={{ borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)' }}
+                style={{
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                }}
               >
                 <div className="flex items-center gap-3">
                   <Building2 className="w-5 h-5" style={{ color: NEON }} />
@@ -220,7 +233,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 onClick={() => quickLogin('maria@gmail.com', 'client')}
                 disabled={isLoading}
                 className="w-full text-left p-3 rounded-xl border transition"
-                style={{ borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)' }}
+                style={{
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                }}
               >
                 <div className="flex items-center gap-3">
                   <User className="w-5 h-5" style={{ color: NEON }} />
