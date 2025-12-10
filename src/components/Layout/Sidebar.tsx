@@ -70,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       />
 
       {/* Panel lateral */}
-      <div className={`${panel} w-72 flex flex-col`}>        
+      <div className={`${panel} w-72 flex flex-col`}>
         {/* Header */}
         <div className={headerWrap}>
           {/* Botón cerrar en mobile */}
@@ -128,6 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
         {/* Mensaje inferior + botón LaburApp */}
         <div className="mt-auto px-5 py-4 space-y-4">
+          {/* Mensaje de rol */}
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60">
             {isClient && (
               <p>
@@ -144,25 +145,37 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             )}
           </div>
 
-          {/* Botón LaburApp redondo abajo del todo */}
-          <button
-            type="button"
-            className="
-              mx-auto flex items-center justify-center
-              w-14 h-14 rounded-full
-              bg-neutral-900/80
-              border border-cyan-300/40
-              shadow-[0_0_16px_3px_rgba(0,255,200,0.55)]
-              hover:scale-105 hover:shadow-[0_0_22px_4px_rgba(0,255,200,0.75)]
-              transition-transform transition-shadow
-            "
-          >
-            <img
-              src={laburAppLogo}
-              alt="LaburApp"
-              className="w-10 h-10 rounded-full object-cover"
-            />
-          </button>
+          {/* Texto + botón LaburApp redondo */}
+          <div className="flex flex-col items-center gap-2 pb-1">
+            <div className="text-center text-[11px] text-white/60 leading-tight">
+              <p className="font-medium text-white">¿Buscás servicios?</p>
+              <p>
+                Miralo en{' '}
+                <span className="text-cyan-300 font-semibold">LaburApp</span>
+              </p>
+            </div>
+
+            <a
+              href="https://laburapp.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                flex items-center justify-center
+                w-14 h-14 rounded-full
+                bg-neutral-900/80
+                border border-cyan-300/40
+                shadow-[0_0_20px_4px_rgba(0,255,200,0.7)]
+                hover:scale-105 hover:shadow-[0_0_26px_5px_rgba(0,255,200,0.9)]
+                transition-transform transition-shadow
+              "
+            >
+              <img
+                src={laburAppLogo}
+                alt="LaburApp"
+                className="w-11 h-11 rounded-full object-cover"
+              />
+            </a>
+          </div>
         </div>
       </div>
     </aside>
