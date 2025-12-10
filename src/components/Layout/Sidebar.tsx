@@ -126,30 +126,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        {/* --- FOOTER --- */}
-        {/* Mensaje de rol */}
-        <div className="mt-auto px-5 pt-4 pb-2">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60">
+        {/* Footer súper simple: solo copy + botón redondo */}
+        <div className="mt-auto pb-6 flex flex-col items-center gap-2">
+          <div className="text-center text-[11px] text-white/60 leading-tight px-3">
             {isClient && (
-              <p>
-                Estás en vista de <span className="text-white">Cliente</span>.
+              <p className="mb-1">
+                Estás en vista de <span className="text-white font-medium">Cliente</span>.
               </p>
             )}
             {isConstructor && (
-              <p>
-                Estás en vista de <span className="text-white">Constructor/a</span>.
+              <p className="mb-1">
+                Estás en vista de{' '}
+                <span className="text-white font-medium">Constructor/a</span>.
               </p>
             )}
             {!isClient && !isConstructor && (
-              <p>Seleccioná un rol para ver menús específicos.</p>
+              <p className="mb-1">Seleccioná un rol para ver menús específicos.</p>
             )}
-          </div>
-        </div>
-
-        {/* Texto + botón LaburApp redondo, SIN tarjeta alrededor */}
-        <div className="pb-5 flex flex-col items-center gap-2">
-          <div className="text-center text-[11px] text-white/60 leading-tight">
-            <p className="font-medium text-white">¿Buscás servicios?</p>
+            <p className="font-medium text-white mt-1">¿Buscás servicios?</p>
             <p>
               Miralo en{' '}
               <span className="text-cyan-300 font-semibold">LaburApp</span>
@@ -169,6 +163,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(0,255,200,1)]
               transition-transform transition-shadow
             "
+            style={{ borderRadius: '9999px', overflow: 'hidden' }}
           >
             <img
               src={laburAppLogo}
