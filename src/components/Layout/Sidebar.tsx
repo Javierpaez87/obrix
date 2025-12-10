@@ -126,9 +126,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        {/* Mensaje inferior + botón LaburApp */}
-        <div className="mt-auto px-5 py-4">
-          {/* Mensaje de rol */}
+        {/* --- FOOTER --- */}
+        {/* Mensaje de rol */}
+        <div className="mt-auto px-5 pt-4 pb-2">
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60">
             {isClient && (
               <p>
@@ -144,39 +144,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <p>Seleccioná un rol para ver menús específicos.</p>
             )}
           </div>
+        </div>
 
-          {/* Texto + botón LaburApp redondo */}
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <div className="text-center text-[11px] text-white/60 leading-tight">
-              <p className="font-medium text-white">¿Buscás servicios?</p>
-              <p>
-                Miralo en{' '}
-                <span className="text-cyan-300 font-semibold">LaburApp</span>
-              </p>
-            </div>
-
-            <a
-              href="https://laburapp.netlify.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="
-                flex items-center justify-center
-                w-14 h-14 rounded-full
-                bg-neutral-900/80
-                border border-cyan-300/40
-                shadow-[0_0_20px_4px_rgba(0,255,200,0.7)]
-                hover:scale-105 hover:shadow-[0_0_26px_5px_rgba(0,255,200,0.9)]
-                transition-transform transition-shadow
-              "
-            >
-              <img
-                src={laburAppLogo}
-                alt="LaburApp"
-                className="w-12 h-12 object-cover"
-                style={{ clipPath: 'circle(50% at 50% 50%)' }}
-              />
-            </a>
+        {/* Texto + botón LaburApp redondo, SIN tarjeta alrededor */}
+        <div className="pb-5 flex flex-col items-center gap-2">
+          <div className="text-center text-[11px] text-white/60 leading-tight">
+            <p className="font-medium text-white">¿Buscás servicios?</p>
+            <p>
+              Miralo en{' '}
+              <span className="text-cyan-300 font-semibold">LaburApp</span>
+            </p>
           </div>
+
+          <a
+            href="https://laburapp.netlify.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="
+              flex items-center justify-center
+              w-16 h-16
+              rounded-full
+              overflow-hidden
+              shadow-[0_0_24px_4px_rgba(0,255,200,0.9)]
+              hover:scale-105 hover:shadow-[0_0_30px_6px_rgba(0,255,200,1)]
+              transition-transform transition-shadow
+            "
+          >
+            <img
+              src={laburAppLogo}
+              alt="LaburApp"
+              className="w-full h-full object-cover"
+            />
+          </a>
         </div>
       </div>
     </aside>
