@@ -127,7 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Mensaje inferior + botón LaburApp */}
-        <div className="mt-auto px-5 py-4 space-y-4">
+        <div className="mt-auto px-5 py-4">
           {/* Mensaje de rol */}
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60">
             {isClient && (
@@ -146,7 +146,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Texto + botón LaburApp redondo */}
-          <div className="flex flex-col items-center gap-2 pb-1">
+          <div className="mt-4 flex flex-col items-center gap-2">
             <div className="text-center text-[11px] text-white/60 leading-tight">
               <p className="font-medium text-white">¿Buscás servicios?</p>
               <p>
@@ -156,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
 
             <a
-              href="https://laburapp.com"
+              href="https://laburapp.netlify.app"
               target="_blank"
               rel="noopener noreferrer"
               className="
@@ -172,7 +172,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <img
                 src={laburAppLogo}
                 alt="LaburApp"
-                className="w-11 h-11 rounded-full object-cover"
+                className="w-12 h-12 object-cover"
+                style={{ clipPath: 'circle(50% at 50% 50%)' }}
               />
             </a>
           </div>
