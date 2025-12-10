@@ -80,7 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <img
               src="/obrix-logo.png"
               alt="Obrix"
-              className="h-12 w-auto drop-shadow-[0_0_10px_rgba(0,255,163,0.4)]"
+              className="h-24 w-auto drop-shadow-[0_0_10px_rgba(0,255,163,0.4)]"
             />
           </NavLink>
         </div>
@@ -129,12 +129,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             href="https://laburapp.netlify.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="block rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 hover:border-white/20 transition-all duration-200"
+            className="flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 hover:border-white/20 transition-all duration-200"
           >
             <img
               src="/laburapp-logo.png"
               alt="Laburapp"
-              className="w-full h-auto drop-shadow-[0_0_8px_rgba(0,255,163,0.3)]"
+              className="w-20 h-auto drop-shadow-[0_0_8px_rgba(0,255,163,0.3)]"
             />
           </a>
         </div>
