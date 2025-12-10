@@ -112,8 +112,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Mensaje inferior (opcional) */}
-        <div className="mt-auto px-5 py-4 hidden lg:block space-y-3">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60">
+        <div className="mt-auto px-5 py-4 space-y-3">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60 hidden lg:block">
             {isClient && (
               <p>Estás en vista de <span className="text-white">Cliente</span>.</p>
             )}
