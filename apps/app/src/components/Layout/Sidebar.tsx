@@ -112,7 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Mensaje inferior (opcional) */}
-        <div className="mt-auto px-5 py-4 space-y-3">
+        <div className="mt-auto px-5 py-4 space-y-4">
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60 hidden lg:block">
             {isClient && (
               <p>Estás en vista de <span className="text-white">Cliente</span>.</p>
@@ -125,18 +125,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             )}
           </div>
 
-          <a
-            href="https://laburapp.netlify.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 hover:border-white/20 transition-all duration-200"
-          >
-            <img
-              src="/laburapp-logo.png"
-              alt="Laburapp"
-              className="w-20 h-auto drop-shadow-[0_0_8px_rgba(0,255,163,0.3)]"
-            />
-          </a>
+          <div className="flex flex-col items-center gap-3">
+            <div className="text-center text-xs leading-relaxed">
+              <p className="font-medium text-white">¿Buscás servicios?</p>
+              <p className="text-white/70">
+                Miralo en <span className="text-cyan-300 font-semibold">LaburApp</span>
+              </p>
+            </div>
+
+            <a
+              href="https://laburapp.netlify.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                flex items-center justify-center
+                w-20 h-20
+                rounded-full
+                overflow-hidden
+                border-2 border-cyan-300/30
+                shadow-[0_0_20px_4px_rgba(0,255,200,0.5)]
+                hover:scale-105 hover:shadow-[0_0_28px_6px_rgba(0,255,200,0.7)]
+                transition-all duration-300
+              "
+            >
+              <img
+                src="/laburapp-logo.png"
+                alt="LaburApp"
+                className="w-full h-full object-cover"
+              />
+            </a>
+          </div>
         </div>
       </div>
     </aside>
