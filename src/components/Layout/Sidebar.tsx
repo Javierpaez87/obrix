@@ -14,6 +14,9 @@ import {
   X,
 } from 'lucide-react';
 
+// 👇 Import del logo LaburApp (ajustá la ruta si hace falta)
+import laburAppLogo from '../../assets/Laburapp-neon-obrix.png';
+
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -67,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       />
 
       {/* Panel lateral */}
-      <div className={`${panel} w-72`}>        
+      <div className={`${panel} w-72 flex flex-col`}>        
         {/* Header */}
         <div className={headerWrap}>
           {/* Botón cerrar en mobile */}
@@ -78,16 +81,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           >
             <X className="w-5 h-5" />
           </button>
-<div
-  className="
-    p-3 rounded-full 
-    bg-neutral-900/80 
-    border border-cyan-300/30 
-    shadow-[0_0_12px_2px_rgba(0,255,200,0.45)]
-  "
->
-  <Building2 className="w-6 h-6 text-cyan-300" />
-</div>
+
+          <div className="flex items-center gap-3">
+            <div
+              className="
+                p-3 rounded-full 
+                bg-neutral-900/80 
+                border border-cyan-300/30 
+                shadow-[0_0_12px_2px_rgba(0,255,200,0.45)]
+              "
+            >
+              <Building2 className="w-6 h-6 text-cyan-300" />
+            </div>
             <div className="min-w-0">
               <h1 className={brandTitle}>Obrix</h1>
               <p className={brandKicker}>Gestión de Obras</p>
@@ -121,19 +126,43 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        {/* Mensaje inferior (opcional) */}
-        <div className="mt-auto px-5 py-4 hidden lg:block">
+        {/* Mensaje inferior + botón LaburApp */}
+        <div className="mt-auto px-5 py-4 space-y-4">
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60">
             {isClient && (
-              <p>Estás en vista de <span className="text-white">Cliente</span>.</p>
+              <p>
+                Estás en vista de <span className="text-white">Cliente</span>.
+              </p>
             )}
             {isConstructor && (
-              <p>Estás en vista de <span className="text-white">Constructor/a</span>.</p>
+              <p>
+                Estás en vista de <span className="text-white">Constructor/a</span>.
+              </p>
             )}
             {!isClient && !isConstructor && (
               <p>Seleccioná un rol para ver menús específicos.</p>
             )}
           </div>
+
+          {/* Botón LaburApp redondo abajo del todo */}
+          <button
+            type="button"
+            className="
+              mx-auto flex items-center justify-center
+              w-14 h-14 rounded-full
+              bg-neutral-900/80
+              border border-cyan-300/40
+              shadow-[0_0_16px_3px_rgba(0,255,200,0.55)]
+              hover:scale-105 hover:shadow-[0_0_22px_4px_rgba(0,255,200,0.75)]
+              transition-transform transition-shadow
+            "
+          >
+            <img
+              src={laburAppLogo}
+              alt="LaburApp"
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          </button>
         </div>
       </div>
     </aside>
