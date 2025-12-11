@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Building2, User, Lock, Mail } from 'lucide-react';
+import { supabase } from '../lib/supabase'; // 👈 TEST SUPABASE
 
 // 👇 IMPORT DEL LOGO (ajustá la ruta si tu Login.tsx está en otra carpeta)
 import obrixLogo from '../assets/obrix-logo.png';
@@ -118,6 +119,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     userType: 'constructor' as 'constructor' | 'client',
   });
   const [isLoading, setIsLoading] = useState(false);
+
+  // 🔍 TEST SUPABASE + VARIABLES DE ENTORNO
+  useEffect(() => {
+    console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+    console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+    supabase
+      .from('profiles')
+      .select('*')
+      .limit(1)
+      .then(({ data, error }) => {
+        console.log('Test Supabase SELECT result:', data);
+        console.log('Test Supabase SELECT error:', error);
+      });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
