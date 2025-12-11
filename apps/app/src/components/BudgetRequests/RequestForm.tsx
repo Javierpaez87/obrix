@@ -1,7 +1,9 @@
+// apps/app/src/components/BudgetRequests/RequestForm.tsx
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { BudgetRequest } from '../../types';
 import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { supabase } from '../../lib/supabase';
 
 interface RequestFormProps {
   isOpen: boolean;
@@ -37,7 +39,8 @@ const RequestForm: React.FC<RequestFormProps> = ({
   requestType = 'constructor',
 }) => {
   // Si useApp expone contacts/users, los usamos; si no, arrays vacíos.
-  const { budgetRequests, setBudgetRequests, projects, user, contacts = [], users = [] } = useApp() as any;
+  const { budgetRequests, setBudgetRequests, projects, user, contacts = [], users = [] } =
+    useApp() as any;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -45,7 +48,10 @@ const RequestForm: React.FC<RequestFormProps> = ({
     projectId: projectId || '',
     priority: 'medium' as const,
     dueDate: '',
-    type: (requestType === 'constructor' ? 'combined' : 'materials') as 'labor' | 'materials' | 'combined',
+    type: (requestType === 'constructor' ? 'combined' : 'materials') as
+      | 'labor'
+      | 'materials'
+      | 'combined',
     useStartDate: false,
     startDate: '',
     useEndDate: false,
@@ -53,62 +59,82 @@ const RequestForm: React.FC<RequestFormProps> = ({
     recipients: '', // múltiples teléfonos o emails
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const set = <K extends keyof typeof formData>(k: K, v: (typeof formData)[K]) =>
     setFormData((s) => ({ ...s, [k]: v }));
 
   // Utils
   const cleanPhone = (raw: string) => raw.replace(/\D/g, '');
   const splitRecipients = (s: string) =>
-    s.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+    s
+      .split(/[\s,;]+/)
+      .map((x) => x.trim())
+      .filter(Boolean);
 
   // Heurística: está en contactos/usuarios? por teléfono o email
   const isUserInObrix = (phoneOrEmail: string) => {
     const key = phoneOrEmail.toLowerCase();
     const normPhone = cleanPhone(key);
 
-    const inContacts = Array.isArray(contacts) && contacts.some((c: any) =>
-      (c.phone && cleanPhone(String(c.phone)) === normPhone) ||
-      (c.email && String(c.email).toLowerCase() === key)
-    );
+    const inContacts =
+      Array.isArray(contacts) &&
+      contacts.some(
+        (c: any) =>
+          (c.phone && cleanPhone(String(c.phone)) === normPhone) ||
+          (c.email && String(c.email).toLowerCase() === key),
+      );
 
-    const inUsers = Array.isArray(users) && users.some((u: any) =>
-      (u.phone && cleanPhone(String(u.phone)) === normPhone) ||
-      (u.email && String(u.email).toLowerCase() === key)
-    );
+    const inUsers =
+      Array.isArray(users) &&
+      users.some(
+        (u: any) =>
+          (u.phone && cleanPhone(String(u.phone)) === normPhone) ||
+          (u.email && String(u.email).toLowerCase() === key),
+      );
 
     return inContacts || inUsers;
   };
 
   // Mensajería
   const composeBaseMessage = () => {
-    const projName = projects.find((p: any) => p.id === formData.projectId)?.name || 'Obra';
+    const projName =
+      projects.find((p: any) => p.id === formData.projectId)?.name || 'Obra';
     const tipo =
       requestType === 'constructor'
-        ? (formData.type === 'labor'
-            ? 'Presupuesto de mano de obra'
-            : formData.type === 'combined'
-              ? 'Presupuesto de mano de obra + materiales'
-              : 'Presupuesto')
+        ? formData.type === 'labor'
+          ? 'Presupuesto de mano de obra'
+          : formData.type === 'combined'
+          ? 'Presupuesto de mano de obra + materiales'
+          : 'Presupuesto'
         : 'Presupuesto de materiales';
 
     const fechas: string[] = [];
     if (formData.useStartDate && formData.startDate)
-      fechas.push(`Inicio: ${new Date(formData.startDate).toLocaleDateString('es-AR')}`);
+      fechas.push(
+        `Inicio: ${new Date(formData.startDate).toLocaleDateString('es-AR')}`,
+      );
     if (formData.useEndDate && formData.endDate)
-      fechas.push(`Fin: ${new Date(formData.endDate).toLocaleDateString('es-AR')}`);
+      fechas.push(
+        `Fin: ${new Date(formData.endDate).toLocaleDateString('es-AR')}`,
+      );
     if (formData.dueDate)
-      fechas.push(`Fecha límite: ${new Date(formData.dueDate).toLocaleDateString('es-AR')}`);
+      fechas.push(
+        `Fecha límite: ${new Date(formData.dueDate).toLocaleDateString('es-AR')}`,
+      );
 
     return (
-`${tipo} · ${projName}
+      `${tipo} · ${projName}
 Título: ${formData.title}
 Detalle: ${formData.description}
 ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     );
   };
 
-  const composeInviteTail = (_: string) => `\n\nNo tenés cuenta en Obrix aún. Unite acá y gestionemos todo desde la app: https://obrix.app/`;
-  const composeActionTail = (_: string) => `\n\nAbrí Obrix para **Aceptar** o **Rechazar** esta solicitud.`;
+  const composeInviteTail = (_: string) =>
+    `\n\nNo tenés cuenta en Obrix aún. Unite acá y gestionemos todo desde la app: https://obrix.app/`;
+  const composeActionTail = (_: string) =>
+    `\n\nAbrí Obrix para **Aceptar** o **Rechazar** esta solicitud.`;
 
   const handleWhatsAppBlast = () => {
     const recips = splitRecipients(formData.recipients);
@@ -120,53 +146,107 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
     recips.forEach((r, idx) => {
       const isObrix = isUserInObrix(r);
-      const msg = `${base}${isObrix ? composeActionTail(r) : composeInviteTail(r)}`;
+      const msg = `${base}${
+        isObrix ? composeActionTail(r) : composeInviteTail(r)
+      }`;
       const phone = cleanPhone(r);
-      const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      const waUrl = phone
+        ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+        : `https://wa.me/?text=${encodeURIComponent(msg)}`;
       setTimeout(() => window.open(waUrl, '_blank'), idx * 200);
     });
   };
 
-  // Submit
-  const handleSubmit = (e: React.FormEvent) => {
+  // Submit -> ahora también guarda en Supabase.tickets
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newRequest: BudgetRequest = {
-      id: Date.now().toString(),
-      projectId: formData.projectId,
-      title: formData.title,
-      description: formData.description,
-      requestedBy: user?.id || '',
-      priority: formData.priority,
-      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-      status: 'pending',
-      createdAt: new Date(),
-      requestType: requestType,
-      // @ts-ignore opcionales persistentes si tu backend/local state los soporta
-      startDate: formData.useStartDate && formData.startDate ? new Date(formData.startDate) : undefined,
-      // @ts-ignore
-      endDate: formData.useEndDate && formData.endDate ? new Date(formData.endDate) : undefined,
-      // @ts-ignore
-      type: formData.type,
-    };
 
-    setBudgetRequests([...(budgetRequests || []), newRequest]);
+    if (!user?.id) {
+      alert('Necesitás iniciar sesión para crear una solicitud.');
+      return;
+    }
 
-    // Reset amable (conserva tipo y proyecto si venís de un flujo)
-    setFormData((s) => ({
-      title: '',
-      description: '',
-      projectId: s.projectId,
-      priority: 'medium',
-      dueDate: '',
-      type: s.type,
-      useStartDate: false,
-      startDate: '',
-      useEndDate: false,
-      endDate: '',
-      recipients: '',
-    }));
+    setIsSaving(true);
+    try {
+      // 1) Crear ticket en Supabase
+      const { data, error } = await supabase
+        .from('tickets')
+        .insert({
+          created_by: user.id,
+          project_id: formData.projectId || null,
+          title: formData.title,
+          description: formData.description,
+          type: formData.type, // 'labor' | 'materials' | 'combined'
+          priority: formData.priority, // 'low' | 'medium' | 'high' | 'urgent'
+          due_date: formData.dueDate || null,
+          start_date:
+            formData.useStartDate && formData.startDate
+              ? formData.startDate
+              : null,
+          end_date:
+            formData.useEndDate && formData.endDate
+              ? formData.endDate
+              : null,
+          creator_role: user.role ?? 'constructor',
+        })
+        .select('*')
+        .maybeSingle();
 
-    onClose();
+      if (error) {
+        console.error('Error creando ticket en Supabase:', error);
+        alert('No se pudo guardar la solicitud en el servidor.');
+      }
+
+      // 2) Mantener estado local como antes (para que la UI siga funcionando)
+      const newRequest: BudgetRequest = {
+        id: (data as any)?.id ?? Date.now().toString(),
+        projectId: formData.projectId,
+        title: formData.title,
+        description: formData.description,
+        requestedBy: user.id,
+        priority: formData.priority,
+        dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+        status: 'pending',
+        createdAt: new Date(),
+        requestType: requestType,
+        // @ts-ignore
+        startDate:
+          formData.useStartDate && formData.startDate
+            ? new Date(formData.startDate)
+            : undefined,
+        // @ts-ignore
+        endDate:
+          formData.useEndDate && formData.endDate
+            ? new Date(formData.endDate)
+            : undefined,
+        // @ts-ignore
+        type: formData.type,
+      };
+
+      setBudgetRequests([...(budgetRequests || []), newRequest]);
+
+      // 3) Reset amable (conserva tipo y proyecto)
+      setFormData((s) => ({
+        title: '',
+        description: '',
+        projectId: s.projectId,
+        priority: 'medium',
+        dueDate: '',
+        type: s.type,
+        useStartDate: false,
+        startDate: '',
+        useEndDate: false,
+        endDate: '',
+        recipients: '',
+      }));
+
+      onClose();
+    } catch (err) {
+      console.error('Error inesperado al crear la solicitud:', err);
+      alert('Ocurrió un error inesperado al crear la solicitud.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -183,7 +263,10 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50" style={vars}>
       {/* Overlay claro y suave */}
-      <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: LIGHT_BG, opacity: 0.85 }} />
+      <div
+        className="absolute inset-0 backdrop-blur-[2px]"
+        style={{ backgroundColor: LIGHT_BG, opacity: 0.85 }}
+      />
 
       {/* Modal */}
       <div
@@ -191,13 +274,20 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
         style={{ backgroundColor: LIGHT_SURFACE, borderColor: NEON }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 sm:p-6 border-b" style={{ borderColor: NEON }}>
+        <div
+          className="flex items-center justify-between p-5 sm:p-6 border-b"
+          style={{ borderColor: NEON }}
+        >
           <div>
             <h2 className="text-xl font-semibold" style={{ color: LIGHT_TEXT }}>
-              {requestType === 'constructor' ? 'Solicitar Presupuesto a Constructor' : 'Solicitar Presupuesto de Materiales'}
+              {requestType === 'constructor'
+                ? 'Solicitar Presupuesto a Constructor'
+                : 'Solicitar Presupuesto de Materiales'}
             </h2>
             <p className="text-sm mt-1" style={{ color: LIGHT_MUTED }}>
-              {requestType === 'constructor' ? 'Mano de obra y/o materiales' : 'Corralones, ferreterías, etc.'}
+              {requestType === 'constructor'
+                ? 'Mano de obra y/o materiales'
+                : 'Corralones, ferreterías, etc.'}
             </p>
           </div>
           <button
@@ -206,6 +296,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             aria-label="Cerrar"
             title="Cerrar"
             style={{ color: LIGHT_MUTED }}
+            disabled={isSaving}
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
@@ -242,22 +333,31 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               required
             >
               <option value="">Seleccionar obra</option>
-              {Array.isArray(projects) && projects.map((project: any) => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
+              {Array.isArray(projects) &&
+                projects.map((project: any) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
             </select>
           </div>
 
           {/* Título */}
           <div className={sectionCard} style={{ borderColor: NEON }}>
             <label className={labelBase}>
-              {requestType === 'constructor' ? 'Título del Trabajo' : 'Lista de Materiales'}
+              {requestType === 'constructor'
+                ? 'Título del Trabajo'
+                : 'Lista de Materiales'}
             </label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => set('title', e.target.value)}
-              placeholder={requestType === 'constructor' ? 'Ej: Colocación de cerámicos' : 'Ej: Materiales para fundación'}
+              placeholder={
+                requestType === 'constructor'
+                  ? 'Ej: Colocación de cerámicos'
+                  : 'Ej: Materiales para fundación'
+              }
               className={fieldBase}
               required
             />
@@ -297,7 +397,10 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               </select>
             </div>
 
-            <div className={`${sectionCard} space-y-3`} style={{ borderColor: NEON }}>
+            <div
+              className={`${sectionCard} space-y-3`}
+              style={{ borderColor: NEON }}
+            >
               <div>
                 <label className={labelBase}>Fecha Límite (Opcional)</label>
                 <input
@@ -316,7 +419,11 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                   onChange={(e) => set('useStartDate', e.target.checked)}
                   className="h-4 w-4 rounded border-[--border] text-[--neon] focus:ring-[--neon]"
                 />
-                <label htmlFor="useStartDate" className="text-sm" style={{ color: LIGHT_MUTED }}>
+                <label
+                  htmlFor="useStartDate"
+                  className="text-sm"
+                  style={{ color: LIGHT_MUTED }}
+                >
                   Incluir Fecha de Inicio
                 </label>
               </div>
@@ -324,7 +431,9 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => set('startDate', e.target.value)}
-                className={`${fieldBase} ${!formData.useStartDate ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`${fieldBase} ${
+                  !formData.useStartDate ? 'opacity-50 pointer-events-none' : ''
+                }`}
               />
 
               <div className="flex items-center gap-3">
@@ -335,7 +444,11 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                   onChange={(e) => set('useEndDate', e.target.checked)}
                   className="h-4 w-4 rounded border-[--border] text-[--neon] focus:ring-[--neon]"
                 />
-                <label htmlFor="useEndDate" className="text-sm" style={{ color: LIGHT_MUTED }}>
+                <label
+                  htmlFor="useEndDate"
+                  className="text-sm"
+                  style={{ color: LIGHT_MUTED }}
+                >
                   Incluir Fecha de Fin
                 </label>
               </div>
@@ -343,7 +456,9 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => set('endDate', e.target.value)}
-                className={`${fieldBase} ${!formData.useEndDate ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`${fieldBase} ${
+                  !formData.useEndDate ? 'opacity-50 pointer-events-none' : ''
+                }`}
               />
             </div>
           </div>
@@ -368,7 +483,12 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                 type="button"
                 onClick={handleWhatsAppBlast}
                 className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 flex items-center gap-2"
-                style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
+                style={{
+                  backgroundColor: NEON,
+                  color: '#0a0a0a',
+                  boxShadow: `0 0 10px ${NEON}40`,
+                  border: `1px solid ${NEON}33`,
+                }}
                 title="Abre una pestaña por destinatario en WhatsApp Web"
               >
                 <PaperAirplaneIcon className="h-5 w-5" />
@@ -378,12 +498,21 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           </div>
 
           {/* Footer acciones */}
-          <div className={`flex flex-col sm:flex-row justify-end gap-3 pt-4 ${divider}`} style={{ borderColor: NEON }}>
+          <div
+            className={`flex flex-col sm:flex-row justify-end gap-3 pt-4 ${divider}`}
+            style={{ borderColor: NEON }}
+          >
             <button
               type="button"
               onClick={onClose}
               className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
-              style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
+              style={{
+                backgroundColor: NEON,
+                color: '#0a0a0a',
+                boxShadow: `0 0 10px ${NEON}40`,
+                border: `1px solid ${NEON}33`,
+              }}
+              disabled={isSaving}
             >
               Cancelar
             </button>
@@ -391,9 +520,15 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             <button
               type="submit"
               className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
-              style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
+              style={{
+                backgroundColor: NEON,
+                color: '#0a0a0a',
+                boxShadow: `0 0 10px ${NEON}40`,
+                border: `1px solid ${NEON}33`,
+              }}
+              disabled={isSaving}
             >
-              Enviar Solicitud
+              {isSaving ? 'Guardando…' : 'Enviar Solicitud'}
             </button>
           </div>
         </form>
@@ -403,3 +538,4 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 };
 
 export default RequestForm;
+
