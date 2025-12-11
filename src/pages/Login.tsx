@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Building2, User, Lock, Mail } from 'lucide-react';
-import { supabase } from '../lib/supabase'; // 👈 TEST SUPABASE
+import { supabase } from '../lib/supabase'; // 👈 usamos el cliente real
 
-// 👇 IMPORT DEL LOGO (ajustá la ruta si tu Login.tsx está en otra carpeta)
 import obrixLogo from '../assets/obrix-logo.png';
 
 export type LoginProps = {
@@ -120,19 +119,42 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🔍 TEST SUPABASE + VARIABLES DE ENTORNO
-  useEffect(() => {
-    console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
-    console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
+  // 🔍 ESTADO DE TEST DE SUPABASE
+  const [supabaseStatus, setSupabaseStatus] = useState<
+    'idle' | 'ok' | 'error'
+  >('idle');
+  const [supabaseMessage, setSupabaseMessage] = useState<string>('');
 
-    supabase
-      .from('profiles')
-      .select('*')
-      .limit(1)
-      .then(({ data, error }) => {
-        console.log('Test Supabase SELECT result:', data);
-        console.log('Test Supabase SELECT error:', error);
-      });
+  useEffect(() => {
+    const testSupabase = async () => {
+      try {
+        // comprobamos que las env existan (sin mostrarlas)
+        if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+          setSupabaseStatus('error');
+          setSupabaseMessage('Faltan variables VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY');
+          return;
+        }
+
+        const { data, error } = await supabase.from('profiles').select('*').limit(1);
+
+        if (error) {
+          setSupabaseStatus('error');
+          setSupabaseMessage(`Error Supabase: ${error.message}`);
+        } else {
+          setSupabaseStatus('ok');
+          setSupabaseMessage(
+            data && data.length > 0
+              ? 'Conectado · tabla profiles accesible'
+              : 'Conectado · profiles vacía (también está bien)'
+          );
+        }
+      } catch (err: any) {
+        setSupabaseStatus('error');
+        setSupabaseMessage(`Excepción: ${err?.message ?? 'desconocida'}`);
+      }
+    };
+
+    testSupabase();
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -217,7 +239,34 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               {isLoading ? 'Iniciando sesión…' : 'Iniciar sesión'}
             </button>
 
-            <div className="text-center text-xs text-white/50">
+            {/* 🔍 Resultado del test de Supabase */}
+            <div className="mt-3 text-xs">
+              <span
+                className="inline-flex items-center px-2 py-1 rounded-full mr-2"
+                style={{
+                  backgroundColor:
+                    supabaseStatus === 'ok'
+                      ? 'rgba(34,197,94,0.15)'
+                      : supabaseStatus === 'error'
+                      ? 'rgba(248,113,113,0.15)'
+                      : 'rgba(148,163,184,0.15)',
+                  color:
+                    supabaseStatus === 'ok'
+                      ? '#4ade80'
+                      : supabaseStatus === 'error'
+                      ? '#fca5a5'
+                      : '#e5e7eb',
+                  border: '1px solid rgba(148,163,184,0.4)',
+                }}
+              >
+                Supabase: {supabaseStatus === 'idle' ? 'probando…' : supabaseStatus}
+              </span>
+              {supabaseMessage && (
+                <span className="text-white/60">{supabaseMessage}</span>
+              )}
+            </div>
+
+            <div className="text-center text-xs text-white/50 mt-2">
               Al continuar aceptás los Términos y la Política de Privacidad.
             </div>
           </form>
