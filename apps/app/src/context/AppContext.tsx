@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Project, Budget, BudgetRequest, Task, Payment, Collection, Expense, ChangeOrder, Contact, MaterialRequest } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 
 interface AppContextType {
   user: User | null;
@@ -20,6 +21,10 @@ interface AppContextType {
   setBudgets: (budgets: Budget[]) => void;
   budgetRequests: BudgetRequest[];
   setBudgetRequests: (budgetRequests: BudgetRequest[]) => void;
+  refreshBudgetRequests: () => Promise<void>;
+  deletedRequests: BudgetRequest[];
+  loadDeletedRequests: () => Promise<void>;
+  restoreRequest: (requestId: string) => Promise<void>;
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
   payments: Payment[];
@@ -58,6 +63,96 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
 
   const [budgetRequests, setBudgetRequests] = useState<BudgetRequest[]>([]);
+  const [deletedRequests, setDeletedRequests] = useState<BudgetRequest[]>([]);
+
+  // Load tickets from Supabase when user is authenticated
+  useEffect(() => {
+    if (auth.user?.id) {
+      loadTicketsFromSupabase();
+      loadDeletedTickets();
+    }
+  }, [auth.user?.id]);
+
+  const mapTicketToRequest = (ticket: any): BudgetRequest => ({
+    id: ticket.id,
+    projectId: ticket.project_id || '',
+    title: ticket.title,
+    description: ticket.description,
+    requestedBy: ticket.created_by,
+    priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent',
+    dueDate: ticket.due_date ? new Date(ticket.due_date) : undefined,
+    status: ticket.status === 'pending' ? 'pending' :
+            ticket.status === 'quoted' ? 'quoted' :
+            ticket.status === 'approved' ? 'approved' :
+            ticket.status === 'rejected' ? 'rejected' : 'pending',
+    createdAt: new Date(ticket.created_at),
+    requestType: ticket.creator_role === 'constructor' ? 'supplier' : 'constructor',
+    type: ticket.type as 'labor' | 'materials' | 'combined',
+  });
+
+  const loadTicketsFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading tickets:', error);
+        return;
+      }
+
+      if (data) {
+        const mappedRequests = data.map(mapTicketToRequest);
+        setBudgetRequests(mappedRequests);
+      }
+    } catch (err) {
+      console.error('Unexpected error loading tickets:', err);
+    }
+  };
+
+  const loadDeletedTickets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading deleted tickets:', error);
+        return;
+      }
+
+      if (data) {
+        const mappedRequests = data.map(mapTicketToRequest);
+        setDeletedRequests(mappedRequests);
+      }
+    } catch (err) {
+      console.error('Unexpected error loading deleted tickets:', err);
+    }
+  };
+
+  const restoreTicket = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .update({ deleted_at: null })
+        .eq('id', requestId);
+
+      if (error) {
+        console.error('Error restoring ticket:', error);
+        throw error;
+      }
+
+      await loadTicketsFromSupabase();
+      await loadDeletedTickets();
+    } catch (err) {
+      console.error('Unexpected error restoring ticket:', err);
+      throw err;
+    }
+  };
 
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -216,6 +311,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       projects, setProjects,
       budgets, setBudgets,
       budgetRequests, setBudgetRequests,
+      refreshBudgetRequests: loadTicketsFromSupabase,
+      deletedRequests,
+      loadDeletedRequests: loadDeletedTickets,
+      restoreRequest: restoreTicket,
       tasks, setTasks,
       payments, setPayments,
       collections, setCollections,

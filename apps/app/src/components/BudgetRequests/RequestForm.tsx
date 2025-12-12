@@ -10,7 +10,7 @@ interface RequestFormProps {
   onClose: () => void;
   projectId?: string;
   requestType?: 'constructor' | 'supplier';
-  /** Tema visual: esta versión es LIGHT (blanco/crema con acentos #00FFA3). */
+  editingRequest?: BudgetRequest;
   theme?: 'light';
 }
 
@@ -37,9 +37,9 @@ const RequestForm: React.FC<RequestFormProps> = ({
   onClose,
   projectId,
   requestType = 'constructor',
+  editingRequest,
 }) => {
-  // Si useApp expone contacts/users, los usamos; si no, arrays vacíos.
-  const { budgetRequests, setBudgetRequests, projects, user, contacts = [], users = [] } = useApp() as any;
+  const { budgetRequests, setBudgetRequests, refreshBudgetRequests, projects, user, contacts = [], users = [] } = useApp() as any;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -52,8 +52,41 @@ const RequestForm: React.FC<RequestFormProps> = ({
     startDate: '',
     useEndDate: false,
     endDate: '',
-    recipients: '', // múltiples teléfonos o emails
+    recipients: '',
   });
+
+  // Pre-fill form when editing
+  React.useEffect(() => {
+    if (editingRequest) {
+      setFormData({
+        title: editingRequest.title,
+        description: editingRequest.description,
+        projectId: editingRequest.projectId || '',
+        priority: editingRequest.priority,
+        dueDate: editingRequest.dueDate ? new Date(editingRequest.dueDate).toISOString().split('T')[0] : '',
+        type: editingRequest.type || 'combined',
+        useStartDate: !!(editingRequest as any).startDate,
+        startDate: (editingRequest as any).startDate ? new Date((editingRequest as any).startDate).toISOString().split('T')[0] : '',
+        useEndDate: !!(editingRequest as any).endDate,
+        endDate: (editingRequest as any).endDate ? new Date((editingRequest as any).endDate).toISOString().split('T')[0] : '',
+        recipients: '',
+      });
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        projectId: projectId || '',
+        priority: 'medium',
+        dueDate: '',
+        type: (requestType === 'constructor' ? 'combined' : 'materials') as 'labor' | 'materials' | 'combined',
+        useStartDate: false,
+        startDate: '',
+        useEndDate: false,
+        endDate: '',
+        recipients: '',
+      });
+    }
+  }, [editingRequest, projectId, requestType]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showContactsModal, setShowContactsModal] = useState(false);
@@ -139,7 +172,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     setShowContactsModal(false);
   };
 
-  // Submit → ahora también guarda en Supabase (tabla tickets)
+  // Submit → guarda o actualiza en Supabase (tabla tickets)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -151,66 +184,65 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
     setIsSubmitting(true);
 
-    // 1) Actualizamos el estado local como antes (para que el UI siga igual)
-    const newRequest: BudgetRequest = {
-      id: Date.now().toString(),
-      projectId: formData.projectId,
-      title: formData.title,
-      description: formData.description,
-      requestedBy: user?.id || '',
-      priority: formData.priority,
-      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-      status: 'pending',
-      createdAt: new Date(),
-      requestType: requestType,
-      // @ts-ignore
-      startDate: formData.useStartDate && formData.startDate ? new Date(formData.startDate) : undefined,
-      // @ts-ignore
-      endDate: formData.useEndDate && formData.endDate ? new Date(formData.endDate) : undefined,
-      // @ts-ignore
-      type: formData.type,
-    };
-
-    setBudgetRequests([...(budgetRequests || []), newRequest]);
-
-    // 2) Enviamos los datos a Supabase → tabla public.tickets
     try {
-      const { error } = await supabase.from('tickets').insert({
-        created_by: user.id,
-        project_id: formData.projectId || null,
-        title: formData.title,
-        description: formData.description,
-        type: formData.type,               // 'labor' | 'materials' | 'combined'
-        priority: formData.priority,       // enum ticket_priority
-        due_date: formData.dueDate || null,
-        start_date: formData.useStartDate ? formData.startDate || null : null,
-        end_date: formData.useEndDate ? formData.endDate || null : null,
-        creator_role: user.role ?? 'client', // 'client' | 'constructor'
-      });
+      if (editingRequest) {
+        // UPDATE existing ticket
+        const { error } = await supabase
+          .from('tickets')
+          .update({
+            project_id: formData.projectId || null,
+            title: formData.title,
+            description: formData.description,
+            type: formData.type,
+            priority: formData.priority,
+            due_date: formData.dueDate || null,
+            start_date: formData.useStartDate ? formData.startDate || null : null,
+            end_date: formData.useEndDate ? formData.endDate || null : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingRequest.id);
 
-      if (error) {
-        console.error('Error al crear ticket en Supabase:', error);
-        alert('La solicitud se creó en la app, pero hubo un error al guardarla en el servidor.');
+        if (error) {
+          console.error('Error al actualizar ticket en Supabase:', error);
+          alert('Hubo un error al actualizar la solicitud.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Refresh from Supabase
+        await refreshBudgetRequests();
+        alert('Solicitud actualizada correctamente.');
+      } else {
+        // INSERT new ticket
+        const { error } = await supabase.from('tickets').insert({
+          created_by: user.id,
+          project_id: formData.projectId || null,
+          title: formData.title,
+          description: formData.description,
+          type: formData.type,
+          priority: formData.priority,
+          due_date: formData.dueDate || null,
+          start_date: formData.useStartDate ? formData.startDate || null : null,
+          end_date: formData.useEndDate ? formData.endDate || null : null,
+          creator_role: user.role ?? 'client',
+        });
+
+        if (error) {
+          console.error('Error al crear ticket en Supabase:', error);
+          alert('Hubo un error al guardar la solicitud.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Refresh from Supabase
+        await refreshBudgetRequests();
       }
     } catch (err) {
-      console.error('Error inesperado al crear ticket en Supabase:', err);
-      alert('Ocurrió un error inesperado al guardar la solicitud.');
+      console.error('Error inesperado:', err);
+      alert('Ocurrió un error inesperado.');
+      setIsSubmitting(false);
+      return;
     }
-
-    // Reset amable (conserva tipo y proyecto si venís de un flujo)
-    setFormData((s) => ({
-      title: '',
-      description: '',
-      projectId: s.projectId,
-      priority: 'medium',
-      dueDate: '',
-      type: s.type,
-      useStartDate: false,
-      startDate: '',
-      useEndDate: false,
-      endDate: '',
-      recipients: '',
-    }));
 
     setIsSubmitting(false);
     onClose();
@@ -251,10 +283,10 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
         <div className="flex items-center justify-between p-5 sm:p-6 border-b" style={{ borderColor: NEON }}>
           <div>
             <h2 className="text-xl font-semibold" style={{ color: LIGHT_TEXT }}>
-              {requestType === 'constructor' ? 'Solicitar Presupuesto a Constructor' : 'Solicitar Presupuesto de Materiales'}
+              {editingRequest ? 'Editar Solicitud' : (requestType === 'constructor' ? 'Solicitar Presupuesto a Constructor' : 'Solicitar Presupuesto de Materiales')}
             </h2>
             <p className="text-sm mt-1" style={{ color: LIGHT_MUTED }}>
-              {requestType === 'constructor' ? 'Mano de obra y/o materiales' : 'Corralones, ferreterías, etc.'}
+              {editingRequest ? 'Modificá los datos de tu solicitud' : (requestType === 'constructor' ? 'Mano de obra y/o materiales' : 'Corralones, ferreterías, etc.')}
             </p>
           </div>
           <button
@@ -450,7 +482,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
             >
-              {isSubmitting ? 'Creando…' : 'Crear Solicitud'}
+              {isSubmitting ? (editingRequest ? 'Guardando…' : 'Creando…') : (editingRequest ? 'Guardar Cambios' : 'Crear Solicitud')}
             </button>
           </div>
         </form>
