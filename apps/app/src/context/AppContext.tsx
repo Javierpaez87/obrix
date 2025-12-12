@@ -68,8 +68,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Load tickets from Supabase when user is authenticated
   useEffect(() => {
     if (auth.user?.id) {
+      console.log('[AppContext] User authenticated, loading tickets for user:', auth.user.id);
       loadTicketsFromSupabase();
       loadDeletedTickets();
+    } else {
+      console.log('[AppContext] No user authenticated, clearing tickets');
+      setBudgetRequests([]);
+      setDeletedRequests([]);
     }
   }, [auth.user?.id]);
 
@@ -92,6 +97,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const loadTicketsFromSupabase = async () => {
     try {
+      console.log('[AppContext] Loading tickets from Supabase...');
       const { data, error } = await supabase
         .from('tickets')
         .select('*')
@@ -99,21 +105,25 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading tickets:', error);
+        console.error('[AppContext] Error loading tickets:', error);
         return;
       }
 
+      console.log('[AppContext] Loaded tickets:', data?.length || 0, 'tickets');
       if (data) {
         const mappedRequests = data.map(mapTicketToRequest);
         setBudgetRequests(mappedRequests);
+      } else {
+        setBudgetRequests([]);
       }
     } catch (err) {
-      console.error('Unexpected error loading tickets:', err);
+      console.error('[AppContext] Unexpected error loading tickets:', err);
     }
   };
 
   const loadDeletedTickets = async () => {
     try {
+      console.log('[AppContext] Loading deleted tickets from Supabase...');
       const { data, error } = await supabase
         .from('tickets')
         .select('*')
@@ -121,16 +131,19 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         .order('deleted_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading deleted tickets:', error);
+        console.error('[AppContext] Error loading deleted tickets:', error);
         return;
       }
 
+      console.log('[AppContext] Loaded deleted tickets:', data?.length || 0, 'tickets');
       if (data) {
         const mappedRequests = data.map(mapTicketToRequest);
         setDeletedRequests(mappedRequests);
+      } else {
+        setDeletedRequests([]);
       }
     } catch (err) {
-      console.error('Unexpected error loading deleted tickets:', err);
+      console.error('[AppContext] Unexpected error loading deleted tickets:', err);
     }
   };
 

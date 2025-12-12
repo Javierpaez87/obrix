@@ -182,11 +182,13 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
       return;
     }
 
+    console.log('[RequestForm] Submitting form, user:', user.id, 'editing:', !!editingRequest);
     setIsSubmitting(true);
 
     try {
       if (editingRequest) {
         // UPDATE existing ticket
+        console.log('[RequestForm] Updating ticket:', editingRequest.id);
         const { error } = await supabase
           .from('tickets')
           .update({
@@ -203,18 +205,25 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           .eq('id', editingRequest.id);
 
         if (error) {
-          console.error('Error al actualizar ticket en Supabase:', error);
+          console.error('[RequestForm] Error updating ticket:', error);
           alert('Hubo un error al actualizar la solicitud.');
           setIsSubmitting(false);
           return;
         }
 
-        // Refresh from Supabase
+        console.log('[RequestForm] Ticket updated successfully, refreshing list');
         await refreshBudgetRequests();
         alert('Solicitud actualizada correctamente.');
       } else {
         // INSERT new ticket
-        const { error } = await supabase.from('tickets').insert({
+        console.log('[RequestForm] Creating new ticket with data:', {
+          created_by: user.id,
+          title: formData.title,
+          type: formData.type,
+          priority: formData.priority,
+        });
+
+        const { data, error } = await supabase.from('tickets').insert({
           created_by: user.id,
           project_id: formData.projectId || null,
           title: formData.title,
@@ -225,21 +234,22 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           start_date: formData.useStartDate ? formData.startDate || null : null,
           end_date: formData.useEndDate ? formData.endDate || null : null,
           creator_role: user.role ?? 'client',
-        });
+        }).select();
 
         if (error) {
-          console.error('Error al crear ticket en Supabase:', error);
-          alert('Hubo un error al guardar la solicitud.');
+          console.error('[RequestForm] Error creating ticket:', error);
+          alert('Hubo un error al guardar la solicitud: ' + error.message);
           setIsSubmitting(false);
           return;
         }
 
-        // Refresh from Supabase
+        console.log('[RequestForm] Ticket created successfully:', data);
         await refreshBudgetRequests();
+        alert('Solicitud creada correctamente.');
       }
     } catch (err) {
-      console.error('Error inesperado:', err);
-      alert('Ocurrió un error inesperado.');
+      console.error('[RequestForm] Unexpected error:', err);
+      alert('Ocurrió un error inesperado: ' + (err as Error).message);
       setIsSubmitting(false);
       return;
     }
