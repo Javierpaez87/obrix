@@ -129,7 +129,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className="text-center text-xs leading-relaxed">
               <p className="font-medium text-white">¿Buscás servicios?</p>
               <p className="text-white/70">
-                Miralo en <span className="text-cyan-300 font-semibold">LaburApp</span>
               </p>
             </div>
 
