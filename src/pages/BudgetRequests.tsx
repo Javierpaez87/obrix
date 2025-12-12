@@ -11,6 +11,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ChatBubbleLeftRightIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
 
@@ -24,9 +25,10 @@ const BudgetRequests: React.FC = () => {
   const [selectedBudget, setSelectedBudget] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'requests' | 'quotes'>('requests');
 
-  // Estados que vienen DIRECTO de Supabase
+  // datos directos desde Supabase
   const [dbBudgetRequests, setDbBudgetRequests] = useState<any[]>([]);
   const [dbBudgets, setDbBudgets] = useState<any[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,14 +119,14 @@ const BudgetRequests: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // ✅ Solicitudes desde tabla public.tickets
       const { data: ticketsData, error: ticketsError } = await supabase
         .from('tickets')
-        .select('*');
+        .select('*')
+        .is('deleted_at', null) // solo tickets activos
+        .order('created_at', { ascending: false });
 
       if (ticketsError) throw ticketsError;
 
-      // ✅ Presupuestos desde tabla public.quotes
       const { data: quotesData, error: quotesError } = await supabase
         .from('quotes')
         .select('*');
@@ -138,7 +140,7 @@ const BudgetRequests: React.FC = () => {
         createdAt: r.createdAt ?? r.created_at,
         dueDate: r.dueDate ?? r.due_date,
         priority: r.priority ?? 'medium',
-        status: r.status ?? 'pending',
+        status: r.status ?? 'open',
       }));
 
       const normalizedBudgets = (quotesData || []).map((b: any) => ({
@@ -151,7 +153,6 @@ const BudgetRequests: React.FC = () => {
 
       setDbBudgetRequests(normalizedRequests);
       setDbBudgets(normalizedBudgets);
-
       console.log('✅ Tickets (requests) desde Supabase:', normalizedRequests);
       console.log('✅ Quotes (budgets) desde Supabase:', normalizedBudgets);
     } catch (err: any) {
@@ -164,8 +165,6 @@ const BudgetRequests: React.FC = () => {
 
   useEffect(() => {
     fetchBudgetData();
-    // Si más adelante querés filtrar por usuario logueado:
-    // }, [user?.id]);
   }, []);
 
   const handleCreateQuote = (requestId: string) => {
@@ -178,12 +177,50 @@ const BudgetRequests: React.FC = () => {
     setShowBudgetReview(true);
   };
 
+  // Ver / editar: abrimos el mismo formulario con el ticket seleccionado
+  const handleViewRequest = (request: any) => {
+    setSelectedRequest(request);
+    setShowRequestForm(true);
+  };
+
+  // Soft delete: marcar deleted_at y refrescar
+  const handleDeleteRequest = async (request: any) => {
+    if (!user) return;
+
+    // solo el creador puede borrar
+    if (request.created_by && request.created_by !== user.id) {
+      alert('Solo quien creó la solicitud puede eliminarla.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      '¿Seguro que querés eliminar esta solicitud? Podrás recuperarla desde el basurero más adelante.',
+    );
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', request.id);
+
+      if (error) throw error;
+
+      await fetchBudgetData();
+    } catch (err) {
+      console.error('Error al eliminar (soft delete) la solicitud:', err);
+      alert('No se pudo eliminar la solicitud. Intentalo nuevamente.');
+    }
+  };
+
+  // Por ahora sigue abriendo WhatsApp. Después podés reemplazar esta función
+  // para abrir la agenda interna y seleccionar contactos de la app.
   const openWhatsApp = (phone: string, message: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // Preferimos datos reales de Supabase, y usamos el contexto como fallback
+  // preferimos datos reales de Supabase, contexto como fallback
   const requestsToShow = dbBudgetRequests.length ? dbBudgetRequests : budgetRequests;
   const budgetsToShow = dbBudgets.length ? dbBudgets : budgets;
 
@@ -195,7 +232,10 @@ const BudgetRequests: React.FC = () => {
         </h1>
         {isClient && (
           <button
-            onClick={() => setShowRequestForm(true)}
+            onClick={() => {
+              setSelectedRequest(null); // modo "nueva solicitud"
+              setShowRequestForm(true);
+            }}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <PlusIcon className="h-5 w-5 mr-2" />
@@ -240,6 +280,7 @@ const BudgetRequests: React.FC = () => {
             const project = getProject(request.projectId);
             const createdAt = formatDate(request.createdAt);
             const dueDate = formatDate(request.dueDate);
+            const isCreator = user && request.created_by === user.id;
 
             return (
               <div
@@ -285,10 +326,14 @@ const BudgetRequests: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                   <div className="flex space-x-2">
-                    <button className="flex items-center px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors">
+                    <button
+                      onClick={() => handleViewRequest(request)}
+                      className="flex items-center px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
+                    >
                       <EyeIcon className="h-4 w-4 mr-1" />
-                      Ver
+                      Ver / editar
                     </button>
+
                     {isConstructor && request.status === 'pending' && (
                       <button
                         onClick={() => handleCreateQuote(request.id)}
@@ -298,7 +343,18 @@ const BudgetRequests: React.FC = () => {
                         Cotizar
                       </button>
                     )}
+
+                    {isCreator && (
+                      <button
+                        onClick={() => handleDeleteRequest(request)}
+                        className="flex items-center px-3 py-1 text-sm bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
+                      >
+                        <TrashIcon className="h-4 w-4 mr-1" />
+                        Eliminar
+                      </button>
+                    )}
                   </div>
+
                   <button
                     onClick={() =>
                       openWhatsApp(
@@ -309,7 +365,7 @@ const BudgetRequests: React.FC = () => {
                     className="flex items-center px-3 py-1 text-sm bg-green-50 text-green-600 rounded-md hover:bg-green-100 transition-colors"
                   >
                     <ChatBubbleLeftRightIcon className="h-4 w-4 mr-1" />
-                    WhatsApp
+                    Enviar
                   </button>
                 </div>
               </div>
@@ -448,19 +504,22 @@ const BudgetRequests: React.FC = () => {
       )}
 
       {/* Modals */}
+      {/* @ts-ignore pasando ticket para modo editar */}
       <RequestForm
         isOpen={showRequestForm}
         onClose={() => {
           setShowRequestForm(false);
-          fetchBudgetData(); // refrescar después de crear ticket
+          setSelectedRequest(null);
+          fetchBudgetData(); // refrescar lista después de crear/editar
         }}
+        ticket={selectedRequest}
       />
 
       <QuoteForm
         isOpen={showQuoteForm}
         onClose={() => {
           setShowQuoteForm(false);
-          fetchBudgetData(); // refrescar después de crear quote
+          fetchBudgetData(); // refrescar después de crear presupuesto
         }}
         requestId={selectedRequestId}
       />
