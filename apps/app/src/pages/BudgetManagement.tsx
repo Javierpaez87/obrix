@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Budget, Task } from '../types';
 import {
@@ -19,6 +19,9 @@ import RequestForm from '../components/BudgetRequests/RequestForm';
 import QuoteForm from '../components/BudgetRequests/QuoteForm';
 import BudgetReview from '../components/BudgetRequests/BudgetReview';
 import { useNavigate } from 'react-router-dom';
+
+// ✅ Import del cliente Supabase (ajustá si tu ruta es distinta)
+import { supabase } from '../lib/supabase';
 
 const NEON = '#00FFA3';
 
@@ -108,10 +111,89 @@ const BudgetManagement: React.FC = () => {
   const [requestType, setRequestType] =
     useState<'constructor' | 'supplier'>('constructor');
 
+  // ✅ Mapa id -> name traído desde profiles
+  const [profileNameById, setProfileNameById] = useState<Record<string, string>>(
+    {},
+  );
+
   const isClient = user?.role === 'client';
   const isConstructor = user?.role === 'constructor';
 
-  const myRequests = budgetRequests.filter((req) =>
+  const getProject = (projectId: string) =>
+    projects.find((p) => p.id === projectId);
+
+  // ✅ Helper tolerante para obtener el creator id desde el request
+  const getCreatorIdFromRequest = (req: any): string | null => {
+    return (
+      req?.created_by ??
+      req?.createdBy ??
+      req?.creator_id ??
+      req?.creatorId ??
+      null
+    );
+  };
+
+  // ✅ IDs únicos de creadores presentes en budgetRequests
+  const creatorIds = useMemo(() => {
+    const ids = new Set<string>();
+    (budgetRequests as any[]).forEach((r) => {
+      const id = getCreatorIdFromRequest(r);
+      if (id) ids.add(id);
+    });
+    return Array.from(ids);
+  }, [budgetRequests]);
+
+  // ✅ Traer profiles(name) para esos IDs
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProfiles = async () => {
+      try {
+        if (!creatorIds.length) return;
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', creatorIds);
+
+        if (error) {
+          console.error('Error trayendo profiles:', error.message);
+          return;
+        }
+
+        const nextMap: Record<string, string> = {};
+        (data || []).forEach((p: any) => {
+          if (p?.id) nextMap[p.id] = p?.name ?? '';
+        });
+
+        if (isMounted) {
+          setProfileNameById((prev) => ({ ...prev, ...nextMap }));
+        }
+      } catch (e) {
+        console.error('Error inesperado trayendo profiles:', e);
+      }
+    };
+
+    fetchProfiles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [creatorIds]);
+
+  // ✅ Enriquecer requests con creatorName (sin tocar el contexto)
+  const budgetRequestsEnriched = useMemo(() => {
+    return (budgetRequests as any[]).map((r) => {
+      const creatorId = getCreatorIdFromRequest(r);
+      const nameFromProfiles = creatorId ? profileNameById[creatorId] : '';
+      return {
+        ...r,
+        creatorName: r?.creatorName ?? nameFromProfiles ?? r?.creator_name ?? '',
+      };
+    });
+  }, [budgetRequests, profileNameById]);
+
+  const myRequests = budgetRequestsEnriched.filter((req: any) =>
     isClient ? req.requestedBy === user?.id : true,
   );
 
@@ -148,9 +230,6 @@ const BudgetManagement: React.FC = () => {
     navigate('/projects');
   };
 
-  const getProject = (projectId: string) =>
-    projects.find((p) => p.id === projectId);
-
   const openWhatsApp = (phone: string, message: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
     window.open(
@@ -183,14 +262,12 @@ const BudgetManagement: React.FC = () => {
   };
 
   // 👉 Ver / editar: por ahora abre el modal de solicitud.
-  // Más adelante lo conectamos a "editar" con datos pre-cargados.
   const handleViewRequest = (requestId: string) => {
     console.log('Ver / editar solicitud con id:', requestId);
     setShowRequestForm(true);
   };
 
   // 👉 Eliminar: de momento solo deja trazas.
-  // Luego lo conectamos a Supabase (deleted_at / basurero).
   const handleDeleteRequest = (requestId: string) => {
     console.log('Eliminar (futuro: basurero) solicitud con id:', requestId);
   };
@@ -253,7 +330,7 @@ const BudgetManagement: React.FC = () => {
                 Pendientes
               </p>
               <p className="text-lg sm:text-2xl font-bold text-white">
-                {myRequests.filter((r) => r.status === 'pending').length}
+                {myRequests.filter((r: any) => r.status === 'pending').length}
               </p>
             </div>
           </div>
@@ -285,10 +362,7 @@ const BudgetManagement: React.FC = () => {
                 Aprobados
               </p>
               <p className="text-lg sm:text-2xl font-bold text-white">
-                {
-                  receivedBudgets.filter((b) => b.status === 'approved')
-                    .length
-                }
+                {receivedBudgets.filter((b) => b.status === 'approved').length}
               </p>
             </div>
           </div>
@@ -356,8 +430,16 @@ const BudgetManagement: React.FC = () => {
         <div className="space-y-4">
           {myRequests.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {myRequests.map((request) => {
+              {myRequests.map((request: any) => {
                 const project = getProject(request.projectId);
+
+                // ✅ Fallback final: si no vino creatorName, lo buscamos por created_by en profileNameById
+                const creatorId = getCreatorIdFromRequest(request);
+                const creatorName =
+                  request.creatorName ||
+                  (creatorId ? profileNameById[creatorId] : '') ||
+                  '—';
+
                 return (
                   <div key={request.id} className={cardBase}>
                     <div className="flex items-start justify-between mb-3">
@@ -368,12 +450,14 @@ const BudgetManagement: React.FC = () => {
                         <p className="text-xs sm:text-sm text-white/70 mb-2">
                           {project?.name}
                         </p>
+
                         <p className="text-xs sm:text-sm text-white/50 mb-2">
-  Creado por{' '}
-  <span className="text-white/80 font-medium">
-    {request.creatorName}
-  </span>
-</p>
+                          Creado por{' '}
+                          <span className="text-white/80 font-medium">
+                            {creatorName}
+                          </span>
+                        </p>
+
                         <p className="text-xs sm:text-sm text-white/60 line-clamp-2">
                           {request.description}
                         </p>
@@ -387,14 +471,18 @@ const BudgetManagement: React.FC = () => {
                       <div className="flex justify-between text-xs sm:text-sm">
                         <span className="text-white/70">Solicitado:</span>
                         <span className="text-white">
-                          {request.createdAt.toLocaleDateString('es-AR')}
+                          {request.createdAt?.toLocaleDateString
+                            ? request.createdAt.toLocaleDateString('es-AR')
+                            : new Date(request.createdAt).toLocaleDateString('es-AR')}
                         </span>
                       </div>
                       {request.dueDate && (
                         <div className="flex justify-between text-xs sm:text-sm">
                           <span className="text-white/70">Fecha límite:</span>
                           <span className="text-white">
-                            {request.dueDate.toLocaleDateString('es-AR')}
+                            {request.dueDate?.toLocaleDateString
+                              ? request.dueDate.toLocaleDateString('es-AR')
+                              : new Date(request.dueDate).toLocaleDateString('es-AR')}
                           </span>
                         </div>
                       )}
@@ -410,9 +498,7 @@ const BudgetManagement: React.FC = () => {
                                            hover:bg-zinc-700 transition-colors flex-1 sm:flex-none"
                         >
                           <EyeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          <span className="hidden sm:inline">
-                            Ver / editar
-                          </span>
+                          <span className="hidden sm:inline">Ver / editar</span>
                           <span className="sm:hidden">Ver</span>
                         </button>
 
@@ -447,9 +533,7 @@ const BudgetManagement: React.FC = () => {
                       <button
                         onClick={() =>
                           openWhatsApp(
-                            getContactPhone(
-                              isClient ? 'constructor' : 'client',
-                            ),
+                            getContactPhone(isClient ? 'constructor' : 'client'),
                             `Hola! Quería conversar sobre la solicitud: ${request.title}`,
                           )
                         }
@@ -469,9 +553,7 @@ const BudgetManagement: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <ClockIcon className="h-12 w-12 text-white/30 mx-auto mb-4" />
-              <div className="text-white/60 text-lg mb-2">
-                No hay solicitudes
-              </div>
+              <div className="text-white/60 text-lg mb-2">No hay solicitudes</div>
               <p className="text-white/50">
                 {isClient
                   ? 'Crea tu primera solicitud de presupuesto'
@@ -505,9 +587,7 @@ const BudgetManagement: React.FC = () => {
                               {budget.title}
                             </h3>
                             <div className="flex gap-2">
-                              <span
-                                className={`${chipBase} text-white/80 border-white/20 bg-zinc-800`}
-                              >
+                              <span className={`${chipBase} text-white/80 border-white/20 bg-zinc-800`}>
                                 {getTypeText(budget.type)}
                               </span>
                               <span className={getStatusClasses(budget.status)}>
@@ -519,23 +599,18 @@ const BudgetManagement: React.FC = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm mb-3">
                             <div>
                               <p className="text-white/70">Obra:</p>
-                              <p className="font-medium text-white">
-                                {project?.name}
-                              </p>
+                              <p className="font-medium text-white">{project?.name}</p>
                             </div>
                             <div>
                               <p className="text-white/70">Monto:</p>
                               <p className="font-medium text-white text-base sm:text-lg">
-                                $
-                                {budget.amount.toLocaleString('es-AR')}
+                                ${budget.amount.toLocaleString('es-AR')}
                               </p>
                             </div>
                             <div>
                               <p className="text-white/70">Duración:</p>
                               <p className="font-medium text-white">
-                                {budget.estimatedDays
-                                  ? `${budget.estimatedDays} días`
-                                  : 'N/A'}
+                                {budget.estimatedDays ? `${budget.estimatedDays} días` : 'N/A'}
                               </p>
                             </div>
                           </div>
@@ -545,8 +620,7 @@ const BudgetManagement: React.FC = () => {
                           </p>
 
                           <div className="text-xs text-white/60">
-                            Enviado el{' '}
-                            {budget.requestedAt.toLocaleDateString('es-AR')}
+                            Enviado el {budget.requestedAt.toLocaleDateString('es-AR')}
                           </div>
                         </div>
                       </div>
@@ -581,9 +655,7 @@ const BudgetManagement: React.FC = () => {
                         <button
                           onClick={() =>
                             openWhatsApp(
-                              getContactPhone(
-                                isClient ? 'constructor' : 'client',
-                              ),
+                              getContactPhone(isClient ? 'constructor' : 'client'),
                               `Hola! Quería conversar sobre el presupuesto: ${
                                 budget.title
                               } por $${budget.amount.toLocaleString('es-AR')}`,
@@ -607,9 +679,7 @@ const BudgetManagement: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <DocumentTextIcon className="h-12 w-12 text-white/30 mx-auto mb-4" />
-              <div className="text-white/60 text-lg mb-2">
-                No hay presupuestos
-              </div>
+              <div className="text-white/60 text-lg mb-2">No hay presupuestos</div>
               <p className="text-white/50">
                 {isClient
                   ? 'Los presupuestos que recibas aparecerán aquí'
