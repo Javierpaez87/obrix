@@ -368,6 +368,12 @@ const BudgetManagement: React.FC = () => {
                         <p className="text-xs sm:text-sm text-white/70 mb-2">
                           {project?.name}
                         </p>
+                        <p className="text-xs sm:text-sm text-white/50 mb-2">
+  Creado por{' '}
+  <span className="text-white/80 font-medium">
+    {request.creatorName}
+  </span>
+</p>
                         <p className="text-xs sm:text-sm text-white/60 line-clamp-2">
                           {request.description}
                         </p>
