@@ -53,133 +53,19 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const auth = useAuth();
 
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: '1',
-      name: 'Casa Familia Rodríguez',
-      description: 'Construcción de vivienda unifamiliar de 120m²',
-      clientId: '2',
-      constructorId: '1',
-      status: 'in_progress',
-      startDate: new Date('2024-01-15'),
-      budget: 85000,
-      spent: 45000,
-      address: 'Av. Libertador 1234, CABA',
-      createdAt: new Date('2024-01-10')
-    },
-    {
-      id: '2',
-      name: 'Reforma Oficina Central',
-      description: 'Renovación completa de oficinas corporativas',
-      clientId: '3',
-      constructorId: '1',
-      status: 'planning',
-      startDate: new Date('2024-03-01'),
-      budget: 120000,
-      spent: 15000,
-      address: 'Av. Corrientes 890, CABA',
-      createdAt: new Date('2024-02-01')
-    }
-  ]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  const [budgets, setBudgets] = useState<Budget[]>([
-    {
-      id: '1',
-      projectId: '1',
-      title: 'Presupuesto Fundaciones',
-      description: 'Excavación y fundaciones para la casa',
-      type: 'combined',
-      amount: 25000,
-      status: 'approved',
-      items: [
-        { id: '1', description: 'Excavación', quantity: 120, unitPrice: 50, total: 6000, category: 'Movimiento de suelos' },
-        { id: '2', description: 'Hormigón para fundaciones', quantity: 15, unitPrice: 800, total: 12000, category: 'Materiales' },
-        { id: '3', description: 'Mano de obra fundaciones', quantity: 40, unitPrice: 175, total: 7000, category: 'Mano de obra' }
-      ],
-      estimatedDays: 15,
-      showTimelineToClient: true,
-      requestedAt: new Date('2024-01-12'),
-      requestedBy: '2',
-      respondedAt: new Date('2024-01-14'),
-      approvedAt: new Date('2024-01-15'),
-      clientApproved: true,
-      constructorApproved: true
-    }
-  ]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
 
-  const [budgetRequests, setBudgetRequests] = useState<BudgetRequest[]>([
-    {
-      id: '1',
-      projectId: '1',
-      title: 'Colocación de cerámicos',
-      description: 'Necesito presupuesto para colocación de cerámicos en baños y cocina. Superficie aproximada: 45m²',
-      requestedBy: '2',
-      priority: 'medium',
-      dueDate: new Date('2024-02-20'),
-      status: 'pending',
-      createdAt: new Date('2024-02-10')
-    }
-  ]);
+  const [budgetRequests, setBudgetRequests] = useState<BudgetRequest[]>([]);
 
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      projectId: '1',
-      title: 'Solicitar permiso municipal',
-      description: 'Tramitar permisos de construcción en la municipalidad',
-      status: 'completed',
-      priority: 'high',
-      requestedBy: '2',
-      dueDate: new Date('2024-01-20'),
-      completedAt: new Date('2024-01-18'),
-      createdAt: new Date('2024-01-10')
-    }
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
-  const [payments, setPayments] = useState<Payment[]>([
-    {
-      id: '1',
-      projectId: '1',
-      budgetId: '1',
-      amount: 12500,
-      method: 'transfer',
-      status: 'completed',
-      dueDate: new Date('2024-01-20'),
-      paidDate: new Date('2024-01-18'),
-      notes: 'Anticipo 50% fundaciones',
-      type: 'collection'
-    }
-  ]);
+  const [payments, setPayments] = useState<Payment[]>([]);
 
-  const [collections, setCollections] = useState<Collection[]>([
-    {
-      id: '1',
-      projectId: '1',
-      budgetId: '1',
-      amount: 12500,
-      method: 'transfer',
-      receivedDate: new Date('2024-01-18'),
-      notes: 'Anticipo 50% fundaciones',
-      paidBy: '2',
-      receivedBy: '1',
-      receipt: 'comprobante-001.pdf'
-    }
-  ]);
+  const [collections, setCollections] = useState<Collection[]>([]);
 
-  const [expenses, setExpenses] = useState<Expense[]>([
-    {
-      id: '1',
-      projectId: '1',
-      category: 'materials',
-      description: 'Cemento y arena para fundaciones',
-      amount: 8500,
-      method: 'transfer',
-      paymentDate: new Date('2024-01-20'),
-      supplier: 'Corralón Central',
-      status: 'paid',
-      receipt: 'factura-001.pdf'
-    }
-  ]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
 
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>([]);
 

@@ -56,6 +56,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
 
   const set = <K extends keyof typeof formData>(k: K, v: (typeof formData)[K]) =>
     setFormData((s) => ({ ...s, [k]: v }));
@@ -115,20 +116,24 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
   const composeActionTail = (_: string) => `\n\nAbrí Obrix para **Aceptar** o **Rechazar** esta solicitud.`;
 
   const handleWhatsAppBlast = () => {
-    const recips = splitRecipients(formData.recipients);
-    if (!recips.length) {
-      alert('Agregá al menos un teléfono en destinatarios.');
+    setShowContactsModal(true);
+  };
+
+  const sendWhatsAppToContacts = (selectedContacts: string[]) => {
+    if (!selectedContacts.length) {
+      alert('Seleccioná al menos un contacto para enviar.');
       return;
     }
     const base = composeBaseMessage();
 
-    recips.forEach((r, idx) => {
-      const isObrix = isUserInObrix(r);
-      const msg = `${base}${isObrix ? composeActionTail(r) : composeInviteTail(r)}`;
-      const phone = cleanPhone(r);
+    selectedContacts.forEach((phoneOrEmail, idx) => {
+      const isObrix = isUserInObrix(phoneOrEmail);
+      const msg = `${base}${isObrix ? composeActionTail(phoneOrEmail) : composeInviteTail(phoneOrEmail)}`;
+      const phone = cleanPhone(phoneOrEmail);
       const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
       setTimeout(() => window.open(waUrl, '_blank'), idx * 200);
     });
+    setShowContactsModal(false);
   };
 
   // Submit → ahora también guarda en Supabase (tabla tickets)
@@ -219,7 +224,17 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     ['--border' as any]: LIGHT_BORDER,
   };
 
+  // Filtrar contactos relevantes según el tipo de solicitud
+  const relevantContacts = Array.isArray(contacts) ? contacts.filter((c: any) => {
+    if (requestType === 'constructor') {
+      return c.category === 'labor';
+    } else {
+      return c.category === 'materials';
+    }
+  }) : [];
+
   return (
+    <>
     <div className="fixed inset-0 flex items-center justify-center z-50" style={vars}>
       {/* Overlay claro y suave */}
       <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: LIGHT_BG, opacity: 0.85 }} />
@@ -408,10 +423,10 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                 onClick={handleWhatsAppBlast}
                 className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 flex items-center gap-2"
                 style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
-                title="Abre una pestaña por destinatario en WhatsApp Web"
+                title="Seleccionar contactos y enviar por WhatsApp"
               >
                 <PaperAirplaneIcon className="h-5 w-5" />
-                Enviar por WhatsApp
+                Seleccionar Contactos
               </button>
             </div>
           </div>
@@ -433,10 +448,162 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
             >
-              {isSubmitting ? 'Enviando…' : 'Enviar Solicitud'}
+              {isSubmitting ? 'Creando…' : 'Crear Solicitud'}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    {/* Modal de Selección de Contactos */}
+    {showContactsModal && (
+      <div className="fixed inset-0 flex items-center justify-center z-[60]" style={vars}>
+        <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: LIGHT_BG, opacity: 0.9 }} onClick={() => setShowContactsModal(false)} />
+
+        <div
+          className="relative rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto border"
+          style={{ backgroundColor: LIGHT_SURFACE, borderColor: NEON }}
+        >
+          <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: NEON }}>
+            <h3 className="text-lg font-semibold" style={{ color: LIGHT_TEXT }}>
+              Seleccionar Contactos para WhatsApp
+            </h3>
+            <button
+              onClick={() => setShowContactsModal(false)}
+              className="p-2 rounded-lg transition-colors hover:bg-[--neon]/10"
+              aria-label="Cerrar"
+              style={{ color: LIGHT_MUTED }}
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="p-5">
+            {relevantContacts.length === 0 ? (
+              <p className="text-center py-8" style={{ color: LIGHT_MUTED }}>
+                No hay contactos disponibles para este tipo de solicitud.
+                <br />
+                <span className="text-sm">Agregá contactos en la sección Agenda primero.</span>
+              </p>
+            ) : (
+              <ContactsList
+                contacts={relevantContacts}
+                onSend={sendWhatsAppToContacts}
+                onCancel={() => setShowContactsModal(false)}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
+  );
+};
+
+// Componente interno para la lista de contactos
+const ContactsList: React.FC<{
+  contacts: any[];
+  onSend: (selected: string[]) => void;
+  onCancel: () => void;
+}> = ({ contacts, onSend, onCancel }) => {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggleContact = (phoneOrEmail: string) => {
+    const newSelected = new Set(selected);
+    if (newSelected.has(phoneOrEmail)) {
+      newSelected.delete(phoneOrEmail);
+    } else {
+      newSelected.add(phoneOrEmail);
+    }
+    setSelected(newSelected);
+  };
+
+  const handleSend = () => {
+    onSend(Array.from(selected));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+        {contacts.map((contact: any) => {
+          const identifier = contact.phone || contact.email || '';
+          const isSelected = selected.has(identifier);
+
+          return (
+            <div
+              key={contact.id}
+              onClick={() => identifier && toggleContact(identifier)}
+              className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                isSelected ? 'border-[--neon] bg-[--neon]/5' : 'border-[--border] hover:border-[--neon]/50'
+              }`}
+              style={{
+                borderColor: isSelected ? NEON : LIGHT_BORDER,
+                backgroundColor: isSelected ? `${NEON}08` : 'transparent'
+              }}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h4 className="font-medium" style={{ color: LIGHT_TEXT }}>
+                    {contact.name}
+                  </h4>
+                  {contact.company && (
+                    <p className="text-sm" style={{ color: LIGHT_MUTED }}>{contact.company}</p>
+                  )}
+                  <p className="text-sm mt-1" style={{ color: LIGHT_MUTED }}>
+                    {contact.phone || contact.email}
+                  </p>
+                  {contact.subcategory && (
+                    <span className="inline-block mt-2 px-2 py-1 rounded text-xs font-medium" style={{
+                      backgroundColor: `${NEON}20`,
+                      color: LIGHT_TEXT
+                    }}>
+                      {contact.subcategory}
+                    </span>
+                  )}
+                </div>
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                  isSelected ? 'border-[--neon] bg-[--neon]' : 'border-[--border]'
+                }`} style={{
+                  borderColor: isSelected ? NEON : LIGHT_BORDER,
+                  backgroundColor: isSelected ? NEON : 'transparent'
+                }}>
+                  {isSelected && (
+                    <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="#0a0a0a" strokeWidth="2">
+                      <polyline points="2,6 5,9 10,3" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-3 pt-4 border-t" style={{ borderColor: NEON }}>
+        <button
+          onClick={onCancel}
+          className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
+          style={{
+            backgroundColor: 'transparent',
+            color: LIGHT_TEXT,
+            border: `1px solid ${LIGHT_BORDER}`
+          }}
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={handleSend}
+          disabled={selected.size === 0}
+          className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: NEON,
+            color: '#0a0a0a',
+            boxShadow: `0 0 10px ${NEON}40`,
+            border: `1px solid ${NEON}33`
+          }}
+        >
+          Enviar a {selected.size} contacto{selected.size !== 1 ? 's' : ''}
+        </button>
       </div>
     </div>
   );
