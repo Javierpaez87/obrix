@@ -86,7 +86,8 @@ const RequestForm: React.FC<RequestFormProps> = ({
 
   // Mensajería
   const composeBaseMessage = () => {
-    const projName = projects.find((p: any) => p.id === formData.projectId)?.name || 'Obra';
+    const projName = formData.projectId ?
+      (projects.find((p: any) => p.id === formData.projectId)?.name || '') : '';
     const tipo =
       requestType === 'constructor'
         ? (formData.type === 'labor'
@@ -104,8 +105,10 @@ const RequestForm: React.FC<RequestFormProps> = ({
     if (formData.dueDate)
       fechas.push(`Fecha límite: ${new Date(formData.dueDate).toLocaleDateString('es-AR')}`);
 
+    const projectLine = projName ? `\nObra: ${projName}` : '';
+
     return (
-`${tipo} · ${projName}
+`${tipo}${projectLine}
 Título: ${formData.title}
 Detalle: ${formData.description}
 ${fechas.length ? fechas.join(' · ') : ''}`.trim()
@@ -288,14 +291,13 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
           {/* Obra */}
           <div className={sectionCard} style={{ borderColor: NEON }}>
-            <label className={labelBase}>Obra</label>
+            <label className={labelBase}>Obra (Opcional)</label>
             <select
               value={formData.projectId}
               onChange={(e) => set('projectId', e.target.value)}
               className={fieldBase}
-              required
             >
-              <option value="">Seleccionar obra</option>
+              <option value="">Sin obra asignada</option>
               {Array.isArray(projects) && projects.map((project: any) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
               ))}
