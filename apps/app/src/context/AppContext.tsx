@@ -221,8 +221,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     // Proveedores de Mano de Obra
     {
       id: '4',
-      name: 'Charo Berta',
-      company: 'Torres Construcciones',
+      name: 'Paz Ramis',
+      company: 'Ramis Construcciones',
       phone: '+54 9 11 6133-9102',
       email: 'berta@bertaconstrucciones.com',
       category: 'labor',
@@ -234,9 +234,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     },
     {
       id: '5',
-      name: 'Fabian Guayquillan',
+      name: 'Javi Glbt',
       company: 'Albañilería Guayquillan',
-      phone: '+54 9 11 6789-0123',
+      phone: '+54 9 11 2651-2219',
       category: 'labor',
       subcategory: 'albanil',
       notes: 'Especialista en mampostería y revoques.',
