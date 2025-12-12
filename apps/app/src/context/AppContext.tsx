@@ -115,7 +115,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       id: '4',
       name: 'Charo Berta',
       company: 'Torres Construcciones',
-      phone: '+54 9 11 5678-9012',
+      phone: '+54 9 11 6133-9102',
       email: 'berta@bertaconstrucciones.com',
       category: 'labor',
       subcategory: 'constructor',
