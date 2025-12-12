@@ -12,7 +12,8 @@ import {
   BuildingStorefrontIcon,
   UserIcon,
   WrenchScrewdriverIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import RequestForm from '../components/BudgetRequests/RequestForm';
 import QuoteForm from '../components/BudgetRequests/QuoteForm';
@@ -22,11 +23,12 @@ import { useNavigate } from 'react-router-dom';
 const NEON = '#00FFA3';
 
 const chipBase = 'inline-flex px-2 py-1 text-xs font-medium rounded-full border';
-const cardBase = 'bg-zinc-900/80 border border-white/10 rounded-xl p-4 sm:p-6 shadow-sm';
-const iconPill = 'p-2 sm:p-3 rounded-full bg-zinc-800 border border-white/10';
+const cardBase =
+  'bg-zinc-900/80 border border-white/10 rounded-xl p-4 sm:p-6 shadow-sm';
+const iconPill =
+  'p-2 sm:p-3 rounded-full bg-zinc-800 border border-white/10';
 
 const getStatusClasses = (status: string) => {
-  // Un solo esquema cromático; usamos grises y acento neón SOLO para "approved".
   switch (status) {
     case 'approved':
       return `${chipBase} text-[${NEON}] border-[${NEON}] bg-zinc-900/60`;
@@ -47,59 +49,80 @@ const getStatusClasses = (status: string) => {
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'pending': return 'Pendiente';
-    case 'quoted': return 'Cotizado';
-    case 'sent': return 'Enviado';
-    case 'approved': return 'Aprobado';
-    case 'rejected': return 'Rechazado';
-    case 'counter_offer': return 'Contraoferta';
-    case 'negotiating': return 'Negociando';
-    default: return status;
+    case 'pending':
+      return 'Pendiente';
+    case 'quoted':
+      return 'Cotizado';
+    case 'sent':
+      return 'Enviado';
+    case 'approved':
+      return 'Aprobado';
+    case 'rejected':
+      return 'Rechazado';
+    case 'counter_offer':
+      return 'Contraoferta';
+    case 'negotiating':
+      return 'Negociando';
+    default:
+      return status;
   }
 };
 
 const getTypeIcon = (type: string) => {
   switch (type) {
-    case 'labor': return UserIcon;
-    case 'materials': return BuildingStorefrontIcon;
-    case 'combined': return WrenchScrewdriverIcon;
-    default: return DocumentTextIcon;
+    case 'labor':
+      return UserIcon;
+    case 'materials':
+      return BuildingStorefrontIcon;
+    case 'combined':
+      return WrenchScrewdriverIcon;
+    default:
+      return DocumentTextIcon;
   }
 };
 
 const getTypeText = (type: string) => {
   switch (type) {
-    case 'labor': return 'Mano de Obra';
-    case 'materials': return 'Materiales';
-    case 'combined': return 'M.O. + Materiales';
-    default: return type;
+    case 'labor':
+      return 'Mano de Obra';
+    case 'materials':
+      return 'Materiales';
+    case 'combined':
+      return 'M.O. + Materiales';
+    default:
+      return type;
   }
 };
 
 const BudgetManagement: React.FC = () => {
   const { budgetRequests, budgets, projects, user, tasks, setTasks } = useApp();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'requests' | 'quotes' | 'sent'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'quotes' | 'sent'>(
+    'requests',
+  );
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
   const [showBudgetReview, setShowBudgetReview] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string>('');
   const [selectedBudget, setSelectedBudget] = useState<any>(null);
-  const [requestType, setRequestType] = useState<'constructor' | 'supplier'>('constructor');
+  const [requestType, setRequestType] =
+    useState<'constructor' | 'supplier'>('constructor');
 
   const isClient = user?.role === 'client';
   const isConstructor = user?.role === 'constructor';
 
-  const myRequests = budgetRequests.filter(req =>
-    isClient ? req.requestedBy === user?.id : true
+  const myRequests = budgetRequests.filter((req) =>
+    isClient ? req.requestedBy === user?.id : true,
   );
 
-  const receivedBudgets = budgets.filter(budget =>
-    isClient ? budget.requestedBy === user?.id : budget.requestedBy !== user?.id
+  const receivedBudgets = budgets.filter((budget) =>
+    isClient ? budget.requestedBy === user?.id : budget.requestedBy !== user?.id,
   );
 
-  const sentBudgets = budgets.filter(budget =>
-    isConstructor ? budget.requestedBy !== user?.id : budget.requestedBy === user?.id
+  const sentBudgets = budgets.filter((budget) =>
+    isConstructor
+      ? budget.requestedBy !== user?.id
+      : budget.requestedBy === user?.id,
   );
 
   const createTaskFromBudget = (budget: Budget) => {
@@ -118,26 +141,34 @@ const BudgetManagement: React.FC = () => {
       assignedTo: isClient ? '1' : budget.requestedBy,
       createdAt: new Date(),
       paymentPlan: budget.paymentPlan,
-      materialRequests: []
+      materialRequests: [],
     };
 
     setTasks([...tasks, newTask]);
     navigate('/projects');
   };
 
-  const getProject = (projectId: string) => projects.find(p => p.id === projectId);
+  const getProject = (projectId: string) =>
+    projects.find((p) => p.id === projectId);
 
   const openWhatsApp = (phone: string, message: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    window.open(
+      `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`,
+      '_blank',
+    );
   };
 
   const getContactPhone = (contactType: 'constructor' | 'client' | 'supplier') => {
     switch (contactType) {
-      case 'constructor': return '+54 9 11 1234-5678';
-      case 'client': return '+54 9 11 9876-5432';
-      case 'supplier': return '+54 9 11 2345-6789';
-      default: return '+54 9 11 1234-5678';
+      case 'constructor':
+        return '+54 9 11 1234-5678';
+      case 'client':
+        return '+54 9 11 9876-5432';
+      case 'supplier':
+        return '+54 9 11 2345-6789';
+      default:
+        return '+54 9 11 1234-5678';
     }
   };
 
@@ -151,6 +182,19 @@ const BudgetManagement: React.FC = () => {
     setShowBudgetReview(true);
   };
 
+  // 👉 Ver / editar: por ahora abre el modal de solicitud.
+  // Más adelante lo conectamos a "editar" con datos pre-cargados.
+  const handleViewRequest = (requestId: string) => {
+    console.log('Ver / editar solicitud con id:', requestId);
+    setShowRequestForm(true);
+  };
+
+  // 👉 Eliminar: de momento solo deja trazas.
+  // Luego lo conectamos a Supabase (deleted_at / basurero).
+  const handleDeleteRequest = (requestId: string) => {
+    console.log('Eliminar (futuro: basurero) solicitud con id:', requestId);
+  };
+
   const handleNewRequest = (type: 'constructor' | 'supplier') => {
     setRequestType(type);
     setShowRequestForm(true);
@@ -161,9 +205,13 @@ const BudgetManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Gestión de Presupuestos</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">
+            Gestión de Presupuestos
+          </h1>
           <p className="text-sm text-white/70 mt-1">
-            {isClient ? 'Solicita y gestiona tus presupuestos' : 'Gestiona solicitudes y envía presupuestos'}
+            {isClient
+              ? 'Solicita y gestiona tus presupuestos'
+              : 'Gestiona solicitudes y envía presupuestos'}
           </p>
         </div>
 
@@ -201,9 +249,11 @@ const BudgetManagement: React.FC = () => {
               <ClockIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
             </div>
             <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-white/70">Pendientes</p>
+              <p className="text-xs sm:text-sm font-medium text-white/70">
+                Pendientes
+              </p>
               <p className="text-lg sm:text-2xl font-bold text-white">
-                {myRequests.filter(r => r.status === 'pending').length}
+                {myRequests.filter((r) => r.status === 'pending').length}
               </p>
             </div>
           </div>
@@ -215,9 +265,11 @@ const BudgetManagement: React.FC = () => {
               <DocumentTextIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
             </div>
             <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-white/70">Cotizados</p>
+              <p className="text-xs sm:text-sm font-medium text-white/70">
+                Cotizados
+              </p>
               <p className="text-lg sm:text-2xl font-bold text-white">
-                {receivedBudgets.filter(b => b.status === 'sent').length}
+                {receivedBudgets.filter((b) => b.status === 'sent').length}
               </p>
             </div>
           </div>
@@ -229,9 +281,14 @@ const BudgetManagement: React.FC = () => {
               <CheckCircleIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
             </div>
             <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-white/70">Aprobados</p>
+              <p className="text-xs sm:text-sm font-medium text-white/70">
+                Aprobados
+              </p>
               <p className="text-lg sm:text-2xl font-bold text-white">
-                {receivedBudgets.filter(b => b.status === 'approved').length}
+                {
+                  receivedBudgets.filter((b) => b.status === 'approved')
+                    .length
+                }
               </p>
             </div>
           </div>
@@ -243,9 +300,18 @@ const BudgetManagement: React.FC = () => {
               <CurrencyDollarIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
             </div>
             <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-white/70">Total</p>
-              <p className="text-lg sm:text-2xl font-bold text-[--neon]" style={{ ['--neon' as any]: NEON }}>
-                ${receivedBudgets.filter(b => b.status === 'approved').reduce((sum, b) => sum + b.amount, 0).toLocaleString('es-AR')}
+              <p className="text-xs sm:text-sm font-medium text-white/70">
+                Total
+              </p>
+              <p
+                className="text-lg sm:text-2xl font-bold text-[--neon]"
+                style={{ ['--neon' as any]: NEON }}
+              >
+                $
+                {receivedBudgets
+                  .filter((b) => b.status === 'approved')
+                  .reduce((sum, b) => sum + b.amount, 0)
+                  .toLocaleString('es-AR')}
               </p>
             </div>
           </div>
@@ -258,25 +324,29 @@ const BudgetManagement: React.FC = () => {
           <button
             onClick={() => setActiveTab('requests')}
             className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition
-              ${activeTab === 'requests'
-                ? 'border-[--neon] text-[--neon]'
-                : 'border-transparent text-white/60 hover:text-white/90 hover:border-white/20'
+              ${
+                activeTab === 'requests'
+                  ? 'border-[--neon] text-[--neon]'
+                  : 'border-transparent text-white/60 hover:text-white/90 hover:border-white/20'
               }`}
             style={{ ['--neon' as any]: NEON }}
           >
-            {isClient ? 'Mis Solicitudes' : 'Solicitudes Recibidas'} ({myRequests.length})
+            {isClient ? 'Mis Solicitudes' : 'Solicitudes Recibidas'} (
+            {myRequests.length})
           </button>
 
           <button
             onClick={() => setActiveTab('quotes')}
             className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition
-              ${activeTab === 'quotes'
-                ? 'border-[--neon] text-[--neon]'
-                : 'border-transparent text-white/60 hover:text-white/90 hover:border-white/20'
+              ${
+                activeTab === 'quotes'
+                  ? 'border-[--neon] text-[--neon]'
+                  : 'border-transparent text-white/60 hover:text-white/90 hover:border-white/20'
               }`}
             style={{ ['--neon' as any]: NEON }}
           >
-            {isClient ? 'Presupuestos Recibidos' : 'Presupuestos Enviados'} ({receivedBudgets.length})
+            {isClient ? 'Presupuestos Recibidos' : 'Presupuestos Enviados'} (
+            {receivedBudgets.length})
           </button>
         </nav>
       </div>
@@ -292,9 +362,15 @@ const BudgetManagement: React.FC = () => {
                   <div key={request.id} className={cardBase}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="text-base sm:text-lg font-semibold text-white mb-1">{request.title}</h3>
-                        <p className="text-xs sm:text-sm text-white/70 mb-2">{project?.name}</p>
-                        <p className="text-xs sm:text-sm text-white/60 line-clamp-2">{request.description}</p>
+                        <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
+                          {request.title}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-white/70 mb-2">
+                          {project?.name}
+                        </p>
+                        <p className="text-xs sm:text-sm text-white/60 line-clamp-2">
+                          {request.description}
+                        </p>
                       </div>
                       <span className={getStatusClasses(request.status)}>
                         {getStatusText(request.status)}
@@ -304,25 +380,37 @@ const BudgetManagement: React.FC = () => {
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between text-xs sm:text-sm">
                         <span className="text-white/70">Solicitado:</span>
-                        <span className="text-white">{request.createdAt.toLocaleDateString('es-AR')}</span>
+                        <span className="text-white">
+                          {request.createdAt.toLocaleDateString('es-AR')}
+                        </span>
                       </div>
                       {request.dueDate && (
                         <div className="flex justify-between text-xs sm:text-sm">
                           <span className="text-white/70">Fecha límite:</span>
-                          <span className="text-white">{request.dueDate.toLocaleDateString('es-AR')}</span>
+                          <span className="text-white">
+                            {request.dueDate.toLocaleDateString('es-AR')}
+                          </span>
                         </div>
                       )}
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 border-t border-white/10">
                       <div className="flex gap-2">
-                        <button className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
+                        {/* Ver / editar */}
+                        <button
+                          onClick={() => handleViewRequest(request.id)}
+                          className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
                                            bg-zinc-800 border border-white/10 text-white/90 rounded-md
-                                           hover:bg-zinc-700 transition-colors flex-1 sm:flex-none">
+                                           hover:bg-zinc-700 transition-colors flex-1 sm:flex-none"
+                        >
                           <EyeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          <span className="hidden sm:inline">Ver</span>
+                          <span className="hidden sm:inline">
+                            Ver / editar
+                          </span>
+                          <span className="sm:hidden">Ver</span>
                         </button>
 
+                        {/* Cotizar (solo constructor, estado pendiente) */}
                         {isConstructor && request.status === 'pending' && (
                           <button
                             onClick={() => handleCreateQuote(request.id)}
@@ -335,13 +423,28 @@ const BudgetManagement: React.FC = () => {
                             <span className="hidden sm:inline">Cotizar</span>
                           </button>
                         )}
+
+                        {/* Eliminar (de momento solo UI + console.log) */}
+                        <button
+                          onClick={() => handleDeleteRequest(request.id)}
+                          className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
+                                     bg-zinc-800 border border-red-500/50 text-red-400 rounded-md
+                                     hover:bg-zinc-800/80 transition-colors flex-1 sm:flex-none"
+                        >
+                          <TrashIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="hidden sm:inline">Eliminar</span>
+                          <span className="sm:hidden">🗑</span>
+                        </button>
                       </div>
 
+                      {/* Enviar (antes WhatsApp) */}
                       <button
                         onClick={() =>
                           openWhatsApp(
-                            getContactPhone(isClient ? 'constructor' : 'client'),
-                            `Hola! Quería conversar sobre la solicitud: ${request.title}`
+                            getContactPhone(
+                              isClient ? 'constructor' : 'client',
+                            ),
+                            `Hola! Quería conversar sobre la solicitud: ${request.title}`,
                           )
                         }
                         className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
@@ -349,7 +452,7 @@ const BudgetManagement: React.FC = () => {
                                    hover:bg-zinc-700 transition-colors"
                       >
                         <ChatBubbleLeftRightIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="hidden sm:inline">WhatsApp</span>
+                        <span className="hidden sm:inline">Enviar</span>
                         <span className="sm:hidden">💬</span>
                       </button>
                     </div>
@@ -360,9 +463,13 @@ const BudgetManagement: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <ClockIcon className="h-12 w-12 text-white/30 mx-auto mb-4" />
-              <div className="text-white/60 text-lg mb-2">No hay solicitudes</div>
+              <div className="text-white/60 text-lg mb-2">
+                No hay solicitudes
+              </div>
               <p className="text-white/50">
-                {isClient ? 'Crea tu primera solicitud de presupuesto' : 'No hay solicitudes pendientes'}
+                {isClient
+                  ? 'Crea tu primera solicitud de presupuesto'
+                  : 'No hay solicitudes pendientes'}
               </p>
             </div>
           )}
@@ -392,7 +499,9 @@ const BudgetManagement: React.FC = () => {
                               {budget.title}
                             </h3>
                             <div className="flex gap-2">
-                              <span className={`${chipBase} text-white/80 border-white/20 bg-zinc-800`}>
+                              <span
+                                className={`${chipBase} text-white/80 border-white/20 bg-zinc-800`}
+                              >
                                 {getTypeText(budget.type)}
                               </span>
                               <span className={getStatusClasses(budget.status)}>
@@ -404,26 +513,34 @@ const BudgetManagement: React.FC = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm mb-3">
                             <div>
                               <p className="text-white/70">Obra:</p>
-                              <p className="font-medium text-white">{project?.name}</p>
+                              <p className="font-medium text-white">
+                                {project?.name}
+                              </p>
                             </div>
                             <div>
                               <p className="text-white/70">Monto:</p>
                               <p className="font-medium text-white text-base sm:text-lg">
-                                ${budget.amount.toLocaleString('es-AR')}
+                                $
+                                {budget.amount.toLocaleString('es-AR')}
                               </p>
                             </div>
                             <div>
                               <p className="text-white/70">Duración:</p>
                               <p className="font-medium text-white">
-                                {budget.estimatedDays ? `${budget.estimatedDays} días` : 'N/A'}
+                                {budget.estimatedDays
+                                  ? `${budget.estimatedDays} días`
+                                  : 'N/A'}
                               </p>
                             </div>
                           </div>
 
-                          <p className="text-xs sm:text-sm text-white/60 mb-3">{budget.description}</p>
+                          <p className="text-xs sm:text-sm text-white/60 mb-3">
+                            {budget.description}
+                          </p>
 
                           <div className="text-xs text-white/60">
-                            Enviado el {budget.requestedAt.toLocaleDateString('es-AR')}
+                            Enviado el{' '}
+                            {budget.requestedAt.toLocaleDateString('es-AR')}
                           </div>
                         </div>
                       </div>
@@ -458,8 +575,12 @@ const BudgetManagement: React.FC = () => {
                         <button
                           onClick={() =>
                             openWhatsApp(
-                              getContactPhone(isClient ? 'constructor' : 'client'),
-                              `Hola! Quería conversar sobre el presupuesto: ${budget.title} por $${budget.amount.toLocaleString('es-AR')}`
+                              getContactPhone(
+                                isClient ? 'constructor' : 'client',
+                              ),
+                              `Hola! Quería conversar sobre el presupuesto: ${
+                                budget.title
+                              } por $${budget.amount.toLocaleString('es-AR')}`,
                             )
                           }
                           className="flex items-center justify-center px-3 py-2 text-xs sm:text-sm
@@ -480,9 +601,13 @@ const BudgetManagement: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <DocumentTextIcon className="h-12 w-12 text-white/30 mx-auto mb-4" />
-              <div className="text-white/60 text-lg mb-2">No hay presupuestos</div>
+              <div className="text-white/60 text-lg mb-2">
+                No hay presupuestos
+              </div>
               <p className="text-white/50">
-                {isClient ? 'Los presupuestos que recibas aparecerán aquí' : 'Los presupuestos que envíes aparecerán aquí'}
+                {isClient
+                  ? 'Los presupuestos que recibas aparecerán aquí'
+                  : 'Los presupuestos que envíes aparecerán aquí'}
               </p>
             </div>
           )}
