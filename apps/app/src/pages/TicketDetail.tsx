@@ -62,6 +62,9 @@ const TicketDetail: React.FC = () => {
       }
 
       try {
+        console.log('[TicketDetail] Fetching ticket:', ticketId, 'for user:', user?.id);
+        console.log('[TicketDetail] User profile:', user);
+
         const { data: ticketData, error: ticketError } = await supabase
           .from('tickets')
           .select('*')
@@ -69,17 +72,20 @@ const TicketDetail: React.FC = () => {
           .maybeSingle();
 
         if (ticketError) {
-          console.error('Error fetching ticket:', ticketError);
-          setError('Error al cargar el ticket.');
+          console.error('[TicketDetail] Error fetching ticket:', ticketError);
+          setError('Error al cargar el ticket. Detalles: ' + ticketError.message);
           setLoading(false);
           return;
         }
 
         if (!ticketData) {
-          setError('Ticket no encontrado.');
+          console.error('[TicketDetail] Ticket not found');
+          setError('Ticket no encontrado. Puede ser un problema de permisos o el ticket no existe.');
           setLoading(false);
           return;
         }
+
+        console.log('[TicketDetail] Ticket found:', ticketData);
 
         const { data: recipientData, error: recipientError } = await supabase
           .from('ticket_recipients')
@@ -88,19 +94,23 @@ const TicketDetail: React.FC = () => {
           .maybeSingle();
 
         if (recipientError) {
-          console.error('Error fetching recipient:', recipientError);
-          setError('Error al cargar la información del destinatario.');
+          console.error('[TicketDetail] Error fetching recipient:', recipientError);
+          setError('Error al cargar la información del destinatario: ' + recipientError.message);
           setLoading(false);
           return;
         }
 
         if (!recipientData) {
+          console.error('[TicketDetail] Recipient not found');
           setError('Link inválido: destinatario no encontrado.');
           setLoading(false);
           return;
         }
 
+        console.log('[TicketDetail] Recipient found:', recipientData);
+
         if (recipientData.ticket_id !== ticketId) {
+          console.error('[TicketDetail] Recipient ticket mismatch');
           setError('Link inválido: el destinatario no corresponde a este ticket.');
           setLoading(false);
           return;

@@ -80,6 +80,7 @@ export const useAuth = () => {
       }
 
       // No había fila: la creamos
+      const rawPhone = (sessionUser.user_metadata as any)?.phone;
       const insertPayload = {
         id: sessionUser.id,
         email: sessionUser.email,
@@ -90,7 +91,7 @@ export const useAuth = () => {
           ((sessionUser.user_metadata as any)?.role as
             | 'constructor'
             | 'client') ?? 'client',
-        phone: (sessionUser.user_metadata as any)?.phone || null,
+        phone: rawPhone ? rawPhone.replace(/\D/g, '') : null,
         company: null,
         avatar_url:
           (sessionUser.user_metadata as any)?.picture || null,
@@ -226,6 +227,7 @@ export const useAuth = () => {
       }
 
       if (data.user) {
+        const userPhone = (data.user.user_metadata as any)?.phone;
         await supabase
           .from('profiles')
           .upsert({
@@ -233,6 +235,7 @@ export const useAuth = () => {
             email,
             name: name || email,
             role,
+            phone: userPhone ? userPhone.replace(/\D/g, '') : null,
           })
           .eq('id', data.user.id);
       }
@@ -371,15 +374,17 @@ export const useAuth = () => {
     }
 
     try {
+      const cleanedUpdates = {
+        name: updates.name,
+        phone: updates.phone ? updates.phone.replace(/\D/g, '') : updates.phone,
+        company: updates.company,
+        avatar_url: updates.avatar,
+        role: updates.role,
+      };
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          name: updates.name,
-          phone: updates.phone,
-          company: updates.company,
-          avatar_url: updates.avatar,
-          role: updates.role,
-        })
+        .update(cleanedUpdates)
         .eq('id', authState.user.id);
 
       if (error) {
