@@ -116,6 +116,22 @@ const TicketDetail: React.FC = () => {
           return;
         }
 
+        if (!recipientData.recipient_profile_id && user?.id) {
+          console.log('[TicketDetail] Claiming recipient record for user:', user.id);
+          const { error: claimError } = await supabase
+            .from('ticket_recipients')
+            .update({ recipient_profile_id: user.id })
+            .eq('id', recipientId)
+            .is('recipient_profile_id', null);
+
+          if (claimError) {
+            console.error('[TicketDetail] Error claiming recipient:', claimError);
+          } else {
+            console.log('[TicketDetail] Recipient claimed successfully');
+            recipientData.recipient_profile_id = user.id;
+          }
+        }
+
         setTicket(ticketData);
         setRecipient(recipientData);
         setLoading(false);
