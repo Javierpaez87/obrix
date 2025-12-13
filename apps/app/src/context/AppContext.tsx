@@ -59,9 +59,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const auth = useAuth();
 
   const [projects, setProjects] = useState<Project[]>([]);
-
   const [budgets, setBudgets] = useState<Budget[]>([]);
-
   const [budgetRequests, setBudgetRequests] = useState<BudgetRequest[]>([]);
   const [deletedRequests, setDeletedRequests] = useState<BudgetRequest[]>([]);
 
@@ -78,18 +76,25 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   }, [auth.user?.id]);
 
+  // ✅ Ahora el ticket puede traer el join como ticket.profiles?.name
   const mapTicketToRequest = (ticket: any): BudgetRequest => ({
     id: ticket.id,
     projectId: ticket.project_id || '',
     title: ticket.title,
     description: ticket.description,
     requestedBy: ticket.created_by,
+
+    // ✅ NUEVO: nombre del creador (si viene del join)
+    // (si tu tipo BudgetRequest no tiene creatorName, lo agregamos en types.ts)
+    creatorName: ticket?.profiles?.name ?? null,
+
     priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent',
     dueDate: ticket.due_date ? new Date(ticket.due_date) : undefined,
-    status: ticket.status === 'pending' ? 'pending' :
-            ticket.status === 'quoted' ? 'quoted' :
-            ticket.status === 'approved' ? 'approved' :
-            ticket.status === 'rejected' ? 'rejected' : 'pending',
+    status:
+      ticket.status === 'pending' ? 'pending' :
+      ticket.status === 'quoted' ? 'quoted' :
+      ticket.status === 'approved' ? 'approved' :
+      ticket.status === 'rejected' ? 'rejected' : 'pending',
     createdAt: new Date(ticket.created_at),
     requestType: ticket.creator_role === 'constructor' ? 'supplier' : 'constructor',
     type: ticket.type as 'labor' | 'materials' | 'combined',
@@ -98,9 +103,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const loadTicketsFromSupabase = async () => {
     try {
       console.log('[AppContext] Loading tickets from Supabase...');
+
+      // ✅ CAMBIO CLAVE: traer join con profiles(name)
       const { data, error } = await supabase
         .from('tickets')
-        .select('*')
+        .select(`
+          *,
+          profiles:created_by (
+            name
+          )
+        `)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
@@ -124,9 +136,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const loadDeletedTickets = async () => {
     try {
       console.log('[AppContext] Loading deleted tickets from Supabase...');
+
+      // ✅ CAMBIO CLAVE: traer join también en eliminados
       const { data, error } = await supabase
         .from('tickets')
-        .select('*')
+        .select(`
+          *,
+          profiles:created_by (
+            name
+          )
+        `)
         .not('deleted_at', 'is', null)
         .order('deleted_at', { ascending: false });
 
@@ -168,15 +187,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const [tasks, setTasks] = useState<Task[]>([]);
-
   const [payments, setPayments] = useState<Payment[]>([]);
-
   const [collections, setCollections] = useState<Collection[]>([]);
-
   const [expenses, setExpenses] = useState<Expense[]>([]);
-
   const [changeOrders, setChangeOrders] = useState<ChangeOrder[]>([]);
-
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
 
   const [contacts, setContacts] = useState<Contact[]>([
