@@ -227,77 +227,77 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
       const base = composeBaseMessage();
       const origin = window.location.origin;
-      const whatsappUrls: string[] = [];
+      const firstContact = selectedContacts[0];
+      const phone = cleanPhone(firstContact);
+      const isPhone = phone.length > 0;
 
-      for (let idx = 0; idx < selectedContacts.length; idx++) {
-        const phoneOrEmail = selectedContacts[idx];
-        const phone = cleanPhone(phoneOrEmail);
-        const isPhone = phone.length > 0;
+      console.log('[RequestForm] Processing first contact:', { firstContact, phone, isPhone });
 
-        console.log('[RequestForm] Processing contact:', { phoneOrEmail, phone, isPhone });
+      const { data: recipientData, error: recipientError } = await supabase
+        .from('ticket_recipients')
+        .insert({
+          ticket_id: ticketId,
+          ticket_creator_id: user.id,
+          recipient_phone: isPhone ? phone : null,
+          recipient_email: !isPhone ? firstContact : null,
+          status: 'sent',
+        })
+        .select('id')
+        .single();
 
-        const { data: recipientData, error: recipientError } = await supabase
-          .from('ticket_recipients')
-          .insert({
-            ticket_id: ticketId,
-            ticket_creator_id: user.id,
-            recipient_phone: isPhone ? phone : null,
-            recipient_email: !isPhone ? phoneOrEmail : null,
-            status: 'sent',
-          })
-          .select('id')
-          .single();
-
-        if (recipientError || !recipientData) {
-          console.error('[RequestForm] Error creating recipient:', recipientError);
-          console.error('[RequestForm] Recipient error details:', {
-            message: recipientError?.message,
-            details: recipientError?.details,
-            hint: recipientError?.hint,
-            code: recipientError?.code,
-          });
-          alert(`Error al crear destinatario: ${recipientError?.message || 'Error desconocido'}`);
-          continue;
-        }
-
-        console.log('[RequestForm] Recipient created successfully:', recipientData);
-
-        const ticketLink = `${origin}/ticket/${ticketId}?r=${recipientData.id}`;
-        const isObrix = isUserInObrix(phoneOrEmail);
-        const linkLine = `\n\n👉 Ver y responder acá: ${ticketLink}`;
-        const msg = `${base}${isObrix ? composeActionTail(phoneOrEmail) : composeInviteTail(phoneOrEmail)}${linkLine}`;
-        const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-
-        console.log('[RequestForm] WhatsApp URL generated:', waUrl);
-        whatsappUrls.push(waUrl);
+      if (recipientError || !recipientData) {
+        console.error('[RequestForm] Error creating recipient:', recipientError);
+        alert(`Error al crear destinatario: ${recipientError?.message || 'Error desconocido'}`);
+        setIsSubmitting(false);
+        return;
       }
 
-      console.log('[RequestForm] Opening WhatsApp for', whatsappUrls.length, 'contacts');
+      const ticketLink = `${origin}/ticket/${ticketId}?r=${recipientData.id}`;
+      const isObrix = isUserInObrix(firstContact);
+      const linkLine = `\n\n👉 Ver y responder acá: ${ticketLink}`;
+      const msg = `${base}${isObrix ? composeActionTail(firstContact) : composeInviteTail(firstContact)}${linkLine}`;
+      const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
-      for (let i = 0; i < whatsappUrls.length; i++) {
-        if (i === 0) {
-          window.open(whatsappUrls[i], '_blank');
-        } else {
-          setTimeout(() => {
-            console.log('[RequestForm] Opening WhatsApp window', i + 1, 'of', whatsappUrls.length);
-            window.open(whatsappUrls[i], '_blank');
-          }, i * 300);
-        }
-      }
+      console.log('[RequestForm] Redirecting to WhatsApp:', waUrl);
 
       await refreshBudgetRequests();
+      setShowContactsModal(false);
+      onClose();
 
-      const totalDelay = whatsappUrls.length > 1 ? (whatsappUrls.length - 1) * 300 + 500 : 500;
+      if (selectedContacts.length > 1) {
+        const remainingPromises = selectedContacts.slice(1).map(async (phoneOrEmail, idx) => {
+          const phone = cleanPhone(phoneOrEmail);
+          const isPhone = phone.length > 0;
 
-      setTimeout(() => {
-        setShowContactsModal(false);
-        onClose();
-        alert(`✅ Solicitud ${editingRequest ? 'actualizada' : 'creada'} y enviada a ${whatsappUrls.length} contacto${whatsappUrls.length !== 1 ? 's' : ''}.`);
-      }, totalDelay);
+          const { data: recipientData, error: recipientError } = await supabase
+            .from('ticket_recipients')
+            .insert({
+              ticket_id: ticketId,
+              ticket_creator_id: user.id,
+              recipient_phone: isPhone ? phone : null,
+              recipient_email: !isPhone ? phoneOrEmail : null,
+              status: 'sent',
+            })
+            .select('id')
+            .single();
+
+          if (recipientError || !recipientData) {
+            console.error('[RequestForm] Error creating recipient:', recipientError);
+            return null;
+          }
+
+          return { phoneOrEmail, phone, isPhone, recipientId: recipientData.id };
+        });
+
+        Promise.all(remainingPromises).then((results) => {
+          console.log('[RequestForm] Remaining contacts processed:', results);
+        });
+      }
+
+      window.location.href = waUrl;
     } catch (err) {
       console.error('[RequestForm] Error sending WhatsApp:', err);
       alert('Ocurrió un error al enviar: ' + (err as Error).message);
-    } finally {
       setIsSubmitting(false);
     }
   };
