@@ -52,7 +52,6 @@ const RequestForm: React.FC<RequestFormProps> = ({
     startDate: '',
     useEndDate: false,
     endDate: '',
-    recipients: '',
   });
 
   // Pre-fill form when editing
@@ -69,7 +68,6 @@ const RequestForm: React.FC<RequestFormProps> = ({
         startDate: (editingRequest as any).startDate ? new Date((editingRequest as any).startDate).toISOString().split('T')[0] : '',
         useEndDate: !!(editingRequest as any).endDate,
         endDate: (editingRequest as any).endDate ? new Date((editingRequest as any).endDate).toISOString().split('T')[0] : '',
-        recipients: '',
       });
     } else {
       setFormData({
@@ -83,7 +81,6 @@ const RequestForm: React.FC<RequestFormProps> = ({
         startDate: '',
         useEndDate: false,
         endDate: '',
-        recipients: '',
       });
     }
   }, [editingRequest, projectId, requestType]);
@@ -240,17 +237,27 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           .from('ticket_recipients')
           .insert({
             ticket_id: ticketId,
+            ticket_creator_id: user.id,
             recipient_phone: isPhone ? phone : null,
             recipient_email: !isPhone ? phoneOrEmail : null,
             status: 'sent',
           })
-          .select()
+          .select('id')
           .single();
 
         if (recipientError || !recipientData) {
           console.error('[RequestForm] Error creating recipient:', recipientError);
+          console.error('[RequestForm] Recipient error details:', {
+            message: recipientError?.message,
+            details: recipientError?.details,
+            hint: recipientError?.hint,
+            code: recipientError?.code,
+          });
+          alert(`Error al crear destinatario: ${recipientError?.message || 'Error desconocido'}`);
           continue;
         }
+
+        console.log('[RequestForm] Recipient created successfully:', recipientData);
 
         const ticketLink = `${origin}/ticket/${ticketId}?r=${recipientData.id}`;
         const isObrix = isUserInObrix(phoneOrEmail);
@@ -262,9 +269,12 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
       }
 
       await refreshBudgetRequests();
-      alert('Solicitud enviada correctamente.');
       setShowContactsModal(false);
       onClose();
+
+      setTimeout(() => {
+        alert(`✅ Solicitud ${editingRequest ? 'actualizada' : 'creada'} y enviada correctamente a ${selectedContacts.length} contacto${selectedContacts.length !== 1 ? 's' : ''}.`);
+      }, 300);
     } catch (err) {
       console.error('[RequestForm] Error sending WhatsApp:', err);
       alert('Ocurrió un error al enviar: ' + (err as Error).message);
@@ -547,33 +557,28 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             </div>
           </div>
 
-          {/* Destinatarios WhatsApp */}
+          {/* Envío por WhatsApp */}
           <div className={sectionCard} style={{ borderColor: NEON }}>
-            <label className={labelBase}>Destinatarios (WhatsApp)</label>
-            <textarea
-              value={formData.recipients}
-              onChange={(e) => set('recipients', e.target.value)}
-              placeholder={`Pegá uno o varios teléfonos con prefijo (ej: 5491122334455) o emails, separados por coma/espacio/línea.`}
-              rows={3}
-              className={fieldBase}
-            />
+            <label className={labelBase}>Envío por WhatsApp</label>
+            <p className="text-sm mb-3" style={{ color: LIGHT_MUTED }}>
+              Seleccioná contactos de tu agenda para enviar esta solicitud por WhatsApp.
+              {requestType === 'constructor' ? ' Constructores y maestros de obra.' : ' Corralones y proveedores de materiales.'}
+            </p>
+
+            <button
+              type="button"
+              onClick={handleWhatsAppBlast}
+              className="w-full px-4 py-3 rounded-lg font-medium transition-colors hover:opacity-90 flex items-center justify-center gap-2"
+              style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
+              title="Crear solicitud y enviar por WhatsApp"
+            >
+              <PaperAirplaneIcon className="h-5 w-5" />
+              {editingRequest ? 'Actualizar y Enviar por WhatsApp' : 'Crear y Enviar por WhatsApp'}
+            </button>
+
             <p className="text-xs mt-2" style={{ color: LIGHT_MUTED }}>
               Tip: Si el contacto usa Obrix, el mensaje pedirá Aceptar/Rechazar desde la app. Si no, incluirá una invitación automática.
             </p>
-
-            {/* Acciones WhatsApp */}
-            <div className="mt-3 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={handleWhatsAppBlast}
-                className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 flex items-center gap-2"
-                style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
-                title="Seleccionar contactos y enviar por WhatsApp"
-              >
-                <PaperAirplaneIcon className="h-5 w-5" />
-                Seleccionar Contactos
-              </button>
-            </div>
           </div>
 
           {/* Footer acciones */}
@@ -582,7 +587,11 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               type="button"
               onClick={onClose}
               className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
-              style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
+              style={{
+                backgroundColor: 'transparent',
+                color: LIGHT_TEXT,
+                border: `1px solid ${LIGHT_BORDER}`
+              }}
             >
               Cancelar
             </button>
@@ -591,9 +600,14 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               type="submit"
               disabled={isSubmitting}
               className="px-6 py-2 rounded-lg font-medium transition-colors hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
+              style={{
+                backgroundColor: 'transparent',
+                color: LIGHT_TEXT,
+                border: `1px solid ${NEON}`,
+                boxShadow: `0 0 5px ${NEON}20`
+              }}
             >
-              {isSubmitting ? (editingRequest ? 'Guardando…' : 'Creando…') : (editingRequest ? 'Guardar Cambios' : 'Crear Solicitud')}
+              {isSubmitting ? (editingRequest ? 'Guardando…' : 'Guardando…') : (editingRequest ? 'Guardar sin Enviar' : 'Guardar Borrador')}
             </button>
           </div>
         </form>
