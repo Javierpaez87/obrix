@@ -227,11 +227,14 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
       const base = composeBaseMessage();
       const origin = window.location.origin;
+      const whatsappUrls: string[] = [];
 
       for (let idx = 0; idx < selectedContacts.length; idx++) {
         const phoneOrEmail = selectedContacts[idx];
         const phone = cleanPhone(phoneOrEmail);
         const isPhone = phone.length > 0;
+
+        console.log('[RequestForm] Processing contact:', { phoneOrEmail, phone, isPhone });
 
         const { data: recipientData, error: recipientError } = await supabase
           .from('ticket_recipients')
@@ -265,16 +268,32 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
         const msg = `${base}${isObrix ? composeActionTail(phoneOrEmail) : composeInviteTail(phoneOrEmail)}${linkLine}`;
         const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
-        setTimeout(() => window.open(waUrl, '_blank'), idx * 200);
+        console.log('[RequestForm] WhatsApp URL generated:', waUrl);
+        whatsappUrls.push(waUrl);
+      }
+
+      console.log('[RequestForm] Opening WhatsApp for', whatsappUrls.length, 'contacts');
+
+      for (let i = 0; i < whatsappUrls.length; i++) {
+        if (i === 0) {
+          window.open(whatsappUrls[i], '_blank');
+        } else {
+          setTimeout(() => {
+            console.log('[RequestForm] Opening WhatsApp window', i + 1, 'of', whatsappUrls.length);
+            window.open(whatsappUrls[i], '_blank');
+          }, i * 300);
+        }
       }
 
       await refreshBudgetRequests();
-      setShowContactsModal(false);
-      onClose();
+
+      const totalDelay = whatsappUrls.length > 1 ? (whatsappUrls.length - 1) * 300 + 500 : 500;
 
       setTimeout(() => {
-        alert(`✅ Solicitud ${editingRequest ? 'actualizada' : 'creada'} y enviada correctamente a ${selectedContacts.length} contacto${selectedContacts.length !== 1 ? 's' : ''}.`);
-      }, 300);
+        setShowContactsModal(false);
+        onClose();
+        alert(`✅ Solicitud ${editingRequest ? 'actualizada' : 'creada'} y enviada a ${whatsappUrls.length} contacto${whatsappUrls.length !== 1 ? 's' : ''}.`);
+      }, totalDelay);
     } catch (err) {
       console.error('[RequestForm] Error sending WhatsApp:', err);
       alert('Ocurrió un error al enviar: ' + (err as Error).message);
