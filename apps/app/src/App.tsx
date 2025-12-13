@@ -13,6 +13,7 @@ import Profile from './pages/Profile';
 import Agenda from './pages/Agenda';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import TicketDetail from './pages/TicketDetail';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading } = useApp();
@@ -38,6 +39,10 @@ const AppContent: React.FC = () => {
       <Route
         path="/reset-password"
         element={<ResetPassword />}
+      />
+      <Route
+        path="/ticket/:ticketId"
+        element={<TicketDetail />}
       />
       <Route
         path="/*"

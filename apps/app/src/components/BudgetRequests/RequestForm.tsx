@@ -151,25 +151,126 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
   const composeInviteTail = (_: string) => `\n\nNo tenés cuenta en Obrix aún. Unite acá y gestionemos todo desde la app: https://obrix.app/`;
   const composeActionTail = (_: string) => `\n\nAbrí Obrix para **Aceptar** o **Rechazar** esta solicitud.`;
 
-  const handleWhatsAppBlast = () => {
+  const handleWhatsAppBlast = async () => {
+    if (!user?.id) {
+      alert('Tenés que iniciar sesión para enviar solicitudes.');
+      return;
+    }
+
+    if (!formData.title || !formData.description) {
+      alert('Completá el título y la descripción antes de enviar.');
+      return;
+    }
+
     setShowContactsModal(true);
   };
 
-  const sendWhatsAppToContacts = (selectedContacts: string[]) => {
+  const sendWhatsAppToContacts = async (selectedContacts: string[]) => {
     if (!selectedContacts.length) {
       alert('Seleccioná al menos un contacto para enviar.');
       return;
     }
-    const base = composeBaseMessage();
 
-    selectedContacts.forEach((phoneOrEmail, idx) => {
-      const isObrix = isUserInObrix(phoneOrEmail);
-      const msg = `${base}${isObrix ? composeActionTail(phoneOrEmail) : composeInviteTail(phoneOrEmail)}`;
-      const phone = cleanPhone(phoneOrEmail);
-      const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-      setTimeout(() => window.open(waUrl, '_blank'), idx * 200);
-    });
-    setShowContactsModal(false);
+    if (!user?.id) {
+      alert('Tenés que iniciar sesión para enviar solicitudes.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      let ticketId: string;
+
+      if (editingRequest) {
+        ticketId = editingRequest.id;
+        const { error } = await supabase
+          .from('tickets')
+          .update({
+            project_id: formData.projectId || null,
+            title: formData.title,
+            description: formData.description,
+            type: formData.type,
+            priority: formData.priority,
+            due_date: formData.dueDate || null,
+            start_date: formData.useStartDate ? formData.startDate || null : null,
+            end_date: formData.useEndDate ? formData.endDate || null : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingRequest.id);
+
+        if (error) {
+          console.error('[RequestForm] Error updating ticket:', error);
+          alert('Hubo un error al actualizar la solicitud.');
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        const { data, error } = await supabase.from('tickets').insert({
+          created_by: user.id,
+          project_id: formData.projectId || null,
+          title: formData.title,
+          description: formData.description,
+          type: formData.type,
+          priority: formData.priority,
+          due_date: formData.dueDate || null,
+          start_date: formData.useStartDate ? formData.startDate || null : null,
+          end_date: formData.useEndDate ? formData.endDate || null : null,
+          creator_role: user.role ?? 'client',
+        }).select();
+
+        if (error || !data || data.length === 0) {
+          console.error('[RequestForm] Error creating ticket:', error);
+          alert('Hubo un error al guardar la solicitud: ' + (error?.message || 'No data returned'));
+          setIsSubmitting(false);
+          return;
+        }
+
+        ticketId = data[0].id;
+      }
+
+      const base = composeBaseMessage();
+      const origin = window.location.origin;
+
+      for (let idx = 0; idx < selectedContacts.length; idx++) {
+        const phoneOrEmail = selectedContacts[idx];
+        const phone = cleanPhone(phoneOrEmail);
+        const isPhone = phone.length > 0;
+
+        const { data: recipientData, error: recipientError } = await supabase
+          .from('ticket_recipients')
+          .insert({
+            ticket_id: ticketId,
+            recipient_phone: isPhone ? phone : null,
+            recipient_email: !isPhone ? phoneOrEmail : null,
+            status: 'sent',
+          })
+          .select()
+          .single();
+
+        if (recipientError || !recipientData) {
+          console.error('[RequestForm] Error creating recipient:', recipientError);
+          continue;
+        }
+
+        const ticketLink = `${origin}/ticket/${ticketId}?r=${recipientData.id}`;
+        const isObrix = isUserInObrix(phoneOrEmail);
+        const linkLine = `\n\n👉 Ver y responder acá: ${ticketLink}`;
+        const msg = `${base}${isObrix ? composeActionTail(phoneOrEmail) : composeInviteTail(phoneOrEmail)}${linkLine}`;
+        const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+        setTimeout(() => window.open(waUrl, '_blank'), idx * 200);
+      }
+
+      await refreshBudgetRequests();
+      alert('Solicitud enviada correctamente.');
+      setShowContactsModal(false);
+      onClose();
+    } catch (err) {
+      console.error('[RequestForm] Error sending WhatsApp:', err);
+      alert('Ocurrió un error al enviar: ' + (err as Error).message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Submit → guarda o actualiza en Supabase (tabla tickets)

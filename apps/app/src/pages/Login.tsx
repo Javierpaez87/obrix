@@ -138,7 +138,13 @@ const Login: React.FC = () => {
         if (error) {
           setError(error.message || 'Error al crear la cuenta');
         } else {
-          navigate('/');
+          const pendingLink = localStorage.getItem('pending_ticket_link');
+          if (pendingLink) {
+            localStorage.removeItem('pending_ticket_link');
+            window.location.href = pendingLink;
+          } else {
+            navigate('/');
+          }
         }
       } else {
         const { error } = await signIn(formData.email, formData.password);
@@ -146,7 +152,13 @@ const Login: React.FC = () => {
         if (error) {
           setError('Email o contraseña incorrectos');
         } else {
-          navigate('/');
+          const pendingLink = localStorage.getItem('pending_ticket_link');
+          if (pendingLink) {
+            localStorage.removeItem('pending_ticket_link');
+            window.location.href = pendingLink;
+          } else {
+            navigate('/');
+          }
         }
       }
     } catch (err: any) {
