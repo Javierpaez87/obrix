@@ -163,46 +163,50 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
   };
 
   const sendWhatsAppToContacts = async (selectedContacts: string[]) => {
-    if (!selectedContacts.length) {
-      alert('Seleccioná al menos un contacto para enviar.');
-      return;
-    }
+  if (!selectedContacts.length) {
+    alert('Seleccioná al menos un contacto para enviar.');
+    return;
+  }
 
-    if (!user?.id) {
-      alert('Tenés que iniciar sesión para enviar solicitudes.');
-      return;
-    }
+  if (!user?.id) {
+    alert('Tenés que iniciar sesión para enviar solicitudes.');
+    return;
+  }
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
-    try {
-      let ticketId: string;
+  try {
+    let ticketId: string;
 
-      if (editingRequest) {
-        ticketId = editingRequest.id;
-        const { error } = await supabase
-          .from('tickets')
-          .update({
-            project_id: formData.projectId || null,
-            title: formData.title,
-            description: formData.description,
-            type: formData.type,
-            priority: formData.priority,
-            due_date: formData.dueDate || null,
-            start_date: formData.useStartDate ? formData.startDate || null : null,
-            end_date: formData.useEndDate ? formData.endDate || null : null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingRequest.id);
+    // 1) Crear / actualizar ticket
+    if (editingRequest) {
+      ticketId = editingRequest.id;
 
-        if (error) {
-          console.error('[RequestForm] Error updating ticket:', error);
-          alert('Hubo un error al actualizar la solicitud.');
-          setIsSubmitting(false);
-          return;
-        }
-      } else {
-        const { data, error } = await supabase.from('tickets').insert({
+      const { error } = await supabase
+        .from('tickets')
+        .update({
+          project_id: formData.projectId || null,
+          title: formData.title,
+          description: formData.description,
+          type: formData.type,
+          priority: formData.priority,
+          due_date: formData.dueDate || null,
+          start_date: formData.useStartDate ? formData.startDate || null : null,
+          end_date: formData.useEndDate ? formData.endDate || null : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingRequest.id);
+
+      if (error) {
+        console.error('[RequestForm] Error updating ticket:', error);
+        alert('Hubo un error al actualizar la solicitud.');
+        setIsSubmitting(false);
+        return;
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('tickets')
+        .insert({
           created_by: user.id,
           project_id: formData.projectId || null,
           title: formData.title,
@@ -213,106 +217,125 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           start_date: formData.useStartDate ? formData.startDate || null : null,
           end_date: formData.useEndDate ? formData.endDate || null : null,
           creator_role: user.role ?? 'client',
-        }).select();
+        })
+        .select();
 
-        if (error || !data || data.length === 0) {
-          console.error('[RequestForm] Error creating ticket:', error);
-          alert('Hubo un error al guardar la solicitud: ' + (error?.message || 'No data returned'));
-          setIsSubmitting(false);
-          return;
-        }
-
-        ticketId = data[0].id;
-      }
-
-      const base = composeBaseMessage();
-      const origin = window.location.origin;
-      const firstContact = selectedContacts[0];
-      const phone = cleanPhone(firstContact);
-      const isPhone = phone.length > 0;
-
-      console.log('[RequestForm] Processing first contact:', { firstContact, phone, isPhone });
-
-      const { data: recipientData, error: recipientError } = await supabase
-// 1️⃣ Buscar si el contacto ya es usuario
-const matchedUser = Array.isArray(users)
-  ? users.find((u: any) =>
-      (isPhone && u.phone && cleanPhone(u.phone) === phone) ||
-      (!isPhone && u.email?.toLowerCase() === firstContact.toLowerCase())
-    )
-  : null;
-
-const { data: recipientData, error: recipientError } = await supabase
-  .from('ticket_recipients')
-  .insert({
-    ticket_id: ticketId,
-    recipient_profile_id: matchedUser ? matchedUser.id : null,
-    recipient_phone: matchedUser ? null : (isPhone ? phone : null),
-    recipient_email: matchedUser ? null : (!isPhone ? firstContact : null),
-    status: 'sent',
-  })
-  .select('id')
-  .single();
-
-        .select('id')
-        .single();
-
-      if (recipientError || !recipientData) {
-        console.error('[RequestForm] Error creating recipient:', recipientError);
-        alert(`Error al crear destinatario: ${recipientError?.message || 'Error desconocido'}`);
+      if (error || !data || data.length === 0) {
+        console.error('[RequestForm] Error creating ticket:', error);
+        alert('Hubo un error al guardar la solicitud: ' + (error?.message || 'No data returned'));
         setIsSubmitting(false);
         return;
       }
 
-      const ticketLink = `${origin}/ticket/${ticketId}?r=${recipientData.id}`;
-      const isObrix = isUserInObrix(firstContact);
-      const linkLine = `\n\n👉 Ver y responder acá: ${ticketLink}`;
-      const msg = `${base}${isObrix ? composeActionTail(firstContact) : composeInviteTail(firstContact)}${linkLine}`;
-      const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-
-      console.log('[RequestForm] Redirecting to WhatsApp:', waUrl);
-
-      await refreshBudgetRequests();
-      setShowContactsModal(false);
-      onClose();
-
-      if (selectedContacts.length > 1) {
-        const remainingPromises = selectedContacts.slice(1).map(async (phoneOrEmail, idx) => {
-          const phone = cleanPhone(phoneOrEmail);
-          const isPhone = phone.length > 0;
-
-          const { data: recipientData, error: recipientError } = await supabase
-            .from('ticket_recipients')
-            .insert({
-              ticket_id: ticketId,
-              ticket_creator_id: user.id,
-              recipient_phone: isPhone ? phone : null,
-              recipient_email: !isPhone ? phoneOrEmail : null,
-              status: 'sent',
-            })
-            .select('id')
-            .single();
-
-          if (recipientError || !recipientData) {
-            console.error('[RequestForm] Error creating recipient:', recipientError);
-            return null;
-          }
-
-          return { phoneOrEmail, phone, isPhone, recipientId: recipientData.id };
-        });
-
-        Promise.all(remainingPromises).then((results) => {
-          console.log('[RequestForm] Remaining contacts processed:', results);
-        });
-      }
-
-      window.location.href = waUrl;
-    } catch (err) {
-      console.error('[RequestForm] Error sending WhatsApp:', err);
-      alert('Ocurrió un error al enviar: ' + (err as Error).message);
-      setIsSubmitting(false);
+      ticketId = data[0].id;
     }
-  };
+
+    // 2) Preparar mensaje y primer contacto
+    const base = composeBaseMessage();
+    const origin = window.location.origin;
+
+    const firstContact = selectedContacts[0];
+    const phone = cleanPhone(firstContact);
+    const isPhone = phone.length > 0;
+
+    console.log('[RequestForm] Processing first contact:', { firstContact, phone, isPhone });
+
+    // 3) Match opcional contra usuarios existentes (si tenés `users` poblado)
+    const matchedUser =
+      Array.isArray(users)
+        ? users.find((u: any) =>
+            (isPhone && u.phone && cleanPhone(String(u.phone)) === phone) ||
+            (!isPhone && u.email?.toLowerCase() === firstContact.toLowerCase())
+          )
+        : null;
+
+    // 4) Crear recipient (UNA sola vez, bien)
+    const { data: recipientData, error: recipientError } = await supabase
+      .from('ticket_recipients')
+      .insert({
+        ticket_id: ticketId,
+        ticket_creator_id: user.id, // 👈 importante para tu RLS
+        recipient_profile_id: matchedUser ? matchedUser.id : null,
+        recipient_phone: matchedUser ? null : (isPhone ? phone : null),
+        recipient_email: matchedUser ? null : (!isPhone ? firstContact : null),
+        status: 'sent',
+      })
+      .select('id')
+      .single();
+
+    if (recipientError || !recipientData) {
+      console.error('[RequestForm] Error creating recipient:', recipientError);
+      alert(`Error al crear destinatario: ${recipientError?.message || 'Error desconocido'}`);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 5) Link y WA URL
+    const ticketLink = `${origin}/ticket/${ticketId}?r=${recipientData.id}`;
+    const isObrix = isUserInObrix(firstContact);
+    const linkLine = `\n\n👉 Ver y responder acá: ${ticketLink}`;
+    const msg = `${base}${isObrix ? composeActionTail(firstContact) : composeInviteTail(firstContact)}${linkLine}`;
+
+    const waUrl = phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+    console.log('[RequestForm] Redirecting to WhatsApp:', waUrl);
+
+    // 6) Refrescar UI y cerrar modales
+    await refreshBudgetRequests();
+    setShowContactsModal(false);
+    onClose();
+
+    // 7) Crear recipients restantes en background (no abre WA para cada uno)
+    if (selectedContacts.length > 1) {
+      const remainingPromises = selectedContacts.slice(1).map(async (phoneOrEmail) => {
+        const p = cleanPhone(phoneOrEmail);
+        const pIsPhone = p.length > 0;
+
+        const uMatched =
+          Array.isArray(users)
+            ? users.find((u: any) =>
+                (pIsPhone && u.phone && cleanPhone(String(u.phone)) === p) ||
+                (!pIsPhone && u.email?.toLowerCase() === phoneOrEmail.toLowerCase())
+              )
+            : null;
+
+        const { data: rd, error: re } = await supabase
+          .from('ticket_recipients')
+          .insert({
+            ticket_id: ticketId,
+            ticket_creator_id: user.id,
+            recipient_profile_id: uMatched ? uMatched.id : null,
+            recipient_phone: uMatched ? null : (pIsPhone ? p : null),
+            recipient_email: uMatched ? null : (!pIsPhone ? phoneOrEmail : null),
+            status: 'sent',
+          })
+          .select('id')
+          .single();
+
+        if (re || !rd) {
+          console.error('[RequestForm] Error creating recipient (remaining):', re);
+          return null;
+        }
+
+        return { phoneOrEmail, recipientId: rd.id };
+      });
+
+      Promise.all(remainingPromises).then((results) => {
+        console.log('[RequestForm] Remaining contacts processed:', results);
+      });
+    }
+
+    // 8) Redirigir a WhatsApp (sin modal)
+    window.location.href = waUrl;
+  } catch (err) {
+    console.error('[RequestForm] Error sending WhatsApp:', err);
+    alert('Ocurrió un error al enviar: ' + (err as Error).message);
+    setIsSubmitting(false);
+  }
+};
+
 
   // Submit → guarda o actualiza en Supabase (tabla tickets)
   const handleSubmit = async (e: React.FormEvent) => {
