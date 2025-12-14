@@ -72,10 +72,17 @@ const TicketDetail: React.FC = () => {
           .from('tickets')
           .select('*')
           .eq('id', ticketId)
-          .single();
+          .maybeSingle();
 
-        if (ticketError || !ticketData) {
-          console.error('[TicketDetail] Ticket load error:', ticketError);
+        if (ticketError) {
+          console.error('[TicketDetail] Ticket load error:', ticketError?.message || ticketError);
+          setError(`Error al cargar el ticket: ${ticketError.message || 'Error desconocido'}`);
+          setLoading(false);
+          return;
+        }
+
+        if (!ticketData) {
+          console.error('[TicketDetail] Ticket not found or no permission');
           setError('No tenés permiso para ver este ticket o no existe.');
           setLoading(false);
           return;
@@ -90,8 +97,8 @@ const TicketDetail: React.FC = () => {
           .maybeSingle();
 
         if (myRecipientError) {
-          console.error('[TicketDetail] Error loading my recipient:', myRecipientError);
-          setError('Error al cargar tu respuesta para este ticket.');
+          console.error('[TicketDetail] myRecipientError:', myRecipientError?.message || myRecipientError);
+          setError(`Error al cargar tu respuesta: ${myRecipientError.message || 'Error desconocido'}`);
           setLoading(false);
           return;
         }
@@ -113,13 +120,20 @@ const TicketDetail: React.FC = () => {
               recipient_email: null,
             })
             .select('*')
-            .single();
+            .maybeSingle();
 
-          if (createRecipientError || !createdRecipient) {
-            console.error('[TicketDetail] Error creating recipient row:', createRecipientError);
+          if (createRecipientError) {
+            console.error('[TicketDetail] createRecipientError:', createRecipientError?.message || createRecipientError);
             setError(
-              'No se pudo crear tu respuesta para este ticket. Revisá policies de ticket_recipients (INSERT/SELECT).'
+              `No se pudo crear tu respuesta: ${createRecipientError.message || 'Error desconocido'}. Revisá policies de ticket_recipients.`
             );
+            setLoading(false);
+            return;
+          }
+
+          if (!createdRecipient) {
+            console.error('[TicketDetail] No data returned after insert');
+            setError('No se pudo crear tu respuesta para este ticket (no data). Revisá policies de ticket_recipients.');
             setLoading(false);
             return;
           }
@@ -153,13 +167,12 @@ const TicketDetail: React.FC = () => {
           status: 'accepted',
           accepted_at: now,
           rejected_at: null,
-          recipient_profile_id: user.id,
         })
         .eq('id', recipient.id);
 
       if (error) {
-        console.error('[TicketDetail] Error accepting ticket:', error);
-        alert('Hubo un error al aceptar la solicitud.');
+        console.error('[TicketDetail] Error accepting ticket:', error?.message || error);
+        alert(`Hubo un error al aceptar la solicitud: ${error.message || 'Error desconocido'}`);
         setSubmitting(false);
         return;
       }
@@ -187,13 +200,12 @@ const TicketDetail: React.FC = () => {
           status: 'rejected',
           rejected_at: now,
           accepted_at: null,
-          recipient_profile_id: user.id,
         })
         .eq('id', recipient.id);
 
       if (error) {
-        console.error('[TicketDetail] Error rejecting ticket:', error);
-        alert('Hubo un error al rechazar la solicitud.');
+        console.error('[TicketDetail] Error rejecting ticket:', error?.message || error);
+        alert(`Hubo un error al rechazar la solicitud: ${error.message || 'Error desconocido'}`);
         setSubmitting(false);
         return;
       }

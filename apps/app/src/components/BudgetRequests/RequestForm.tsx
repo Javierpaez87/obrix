@@ -270,8 +270,8 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
       return;
     }
 
-    // 5) Link y WA URL
-    const ticketLink = `${origin}/ticket/${ticketId}?r=${recipientData.id}`;
+    // 5) Link y WA URL (sin ?r= param, link compartido)
+    const ticketLink = `${origin}/ticket/${ticketId}`;
     const isObrix = isUserInObrix(firstContact);
     const linkLine = `\n\n👉 Ver y responder acá: ${ticketLink}`;
     const msg = `${base}${isObrix ? composeActionTail(firstContact) : composeInviteTail(firstContact)}${linkLine}`;
