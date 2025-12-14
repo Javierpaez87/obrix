@@ -234,14 +234,26 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
       console.log('[RequestForm] Processing first contact:', { firstContact, phone, isPhone });
 
       const { data: recipientData, error: recipientError } = await supabase
-        .from('ticket_recipients')
-        .insert({
-          ticket_id: ticketId,
-          ticket_creator_id: user.id,
-          recipient_phone: isPhone ? phone : null,
-          recipient_email: !isPhone ? firstContact : null,
-          status: 'sent',
-        })
+// 1️⃣ Buscar si el contacto ya es usuario
+const matchedUser = Array.isArray(users)
+  ? users.find((u: any) =>
+      (isPhone && u.phone && cleanPhone(u.phone) === phone) ||
+      (!isPhone && u.email?.toLowerCase() === firstContact.toLowerCase())
+    )
+  : null;
+
+const { data: recipientData, error: recipientError } = await supabase
+  .from('ticket_recipients')
+  .insert({
+    ticket_id: ticketId,
+    recipient_profile_id: matchedUser ? matchedUser.id : null,
+    recipient_phone: matchedUser ? null : (isPhone ? phone : null),
+    recipient_email: matchedUser ? null : (!isPhone ? firstContact : null),
+    status: 'sent',
+  })
+  .select('id')
+  .single();
+
         .select('id')
         .single();
 
