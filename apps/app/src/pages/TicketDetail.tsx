@@ -55,94 +55,73 @@ const TicketDetail: React.FC = () => {
     }
 
     const fetchData = async () => {
-      if (!ticketId || !recipientId) {
-        setError('Link inválido: falta información.');
-        setLoading(false);
-        return;
-      }
+  if (!ticketId || !recipientId || !user?.id) {
+    setError('Link inválido: falta información.');
+    setLoading(false);
+    return;
+  }
 
-      try {
-        console.log('[TicketDetail] Fetching ticket:', ticketId, 'for user:', user?.id);
-        console.log('[TicketDetail] User profile:', user);
+  try {
+    console.log('[TicketDetail] START claim-first flow');
 
-        const { data: ticketData, error: ticketError } = await supabase
-          .from('tickets')
-          .select('*')
-          .eq('id', ticketId)
-          .maybeSingle();
+    // 1️⃣ CLAIM PRIMERO (CRÍTICO)
+    const { error: claimError } = await supabase
+      .from('ticket_recipients')
+      .update({ recipient_profile_id: user.id })
+      .eq('id', recipientId)
+      .is('recipient_profile_id', null);
 
-        if (ticketError) {
-          console.error('[TicketDetail] Error fetching ticket:', ticketError);
-          setError('Error al cargar el ticket. Detalles: ' + ticketError.message);
-          setLoading(false);
-          return;
-        }
+    if (claimError) {
+      console.error('[TicketDetail] Claim failed:', claimError);
+      setError('No tenés permiso para acceder a esta solicitud.');
+      setLoading(false);
+      return;
+    }
 
-        if (!ticketData) {
-          console.error('[TicketDetail] Ticket not found');
-          setError('Ticket no encontrado. Puede ser un problema de permisos o el ticket no existe.');
-          setLoading(false);
-          return;
-        }
+    // 2️⃣ LEER RECIPIENT (ya claimado)
+    const { data: recipientData, error: recipientError } = await supabase
+      .from('ticket_recipients')
+      .select('*')
+      .eq('id', recipientId)
+      .single();
 
-        console.log('[TicketDetail] Ticket found:', ticketData);
+    if (recipientError || !recipientData) {
+      setError('Link inválido: destinatario no encontrado.');
+      setLoading(false);
+      return;
+    }
 
-        const { data: recipientData, error: recipientError } = await supabase
-          .from('ticket_recipients')
-          .select('*')
-          .eq('id', recipientId)
-          .maybeSingle();
+    if (recipientData.ticket_id !== ticketId) {
+      setError('Link inválido: el destinatario no corresponde a este ticket.');
+      setLoading(false);
+      return;
+    }
 
-        if (recipientError) {
-          console.error('[TicketDetail] Error fetching recipient:', recipientError);
-          setError('Error al cargar la información del destinatario: ' + recipientError.message);
-          setLoading(false);
-          return;
-        }
+    // 3️⃣ AHORA SÍ LEER TICKET
+    const { data: ticketData, error: ticketError } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('id', ticketId)
+      .single();
 
-        if (!recipientData) {
-          console.error('[TicketDetail] Recipient not found');
-          setError('Link inválido: destinatario no encontrado.');
-          setLoading(false);
-          return;
-        }
+    if (ticketError || !ticketData) {
+      setError('No tenés permiso para ver este ticket.');
+      setLoading(false);
+      return;
+    }
 
-        console.log('[TicketDetail] Recipient found:', recipientData);
+    // 4️⃣ SETEAR ESTADO
+    setRecipient(recipientData);
+    setTicket(ticketData);
+    setLoading(false);
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    setError('Ocurrió un error inesperado.');
+    setLoading(false);
+  }
+};
 
-        if (recipientData.ticket_id !== ticketId) {
-          console.error('[TicketDetail] Recipient ticket mismatch');
-          setError('Link inválido: el destinatario no corresponde a este ticket.');
-          setLoading(false);
-          return;
-        }
-
-        if (!recipientData.recipient_profile_id && user?.id) {
-          console.log('[TicketDetail] Claiming recipient record for user:', user.id);
-          const { error: claimError } = await supabase
-            .from('ticket_recipients')
-            .update({ recipient_profile_id: user.id })
-            .eq('id', recipientId)
-            .is('recipient_profile_id', null);
-
-          if (claimError) {
-            console.error('[TicketDetail] Error claiming recipient:', claimError);
-          } else {
-            console.log('[TicketDetail] Recipient claimed successfully');
-            recipientData.recipient_profile_id = user.id;
-          }
-        }
-
-        setTicket(ticketData);
-        setRecipient(recipientData);
-        setLoading(false);
-      } catch (err) {
-        console.error('Unexpected error:', err);
-        setError('Ocurrió un error inesperado.');
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+fetchData();
   }, [ticketId, recipientId, isAuthenticated, authLoading, navigate]);
 
   const handleAccept = async () => {
