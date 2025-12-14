@@ -63,21 +63,6 @@ const TicketDetail: React.FC = () => {
 
   try {
     console.log('[TicketDetail] START claim-first flow');
-
-    // 1️⃣ CLAIM PRIMERO (CRÍTICO)
-    const { error: claimError } = await supabase
-      .from('ticket_recipients')
-      .update({ recipient_profile_id: user.id })
-      .eq('id', recipientId)
-      .is('recipient_profile_id', null);
-
-    if (claimError) {
-      console.error('[TicketDetail] Claim failed:', claimError);
-      setError('No tenés permiso para acceder a esta solicitud.');
-      setLoading(false);
-      return;
-    }
-
     // 2️⃣ LEER RECIPIENT (ya claimado)
     const { data: recipientData, error: recipientError } = await supabase
       .from('ticket_recipients')
