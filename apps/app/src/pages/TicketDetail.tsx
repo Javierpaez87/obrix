@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { CheckCircle, XCircle, Calendar, AlertTriangle, Clock } from 'lucide-react';
@@ -18,6 +18,7 @@ interface Ticket {
   end_date: string | null;
   created_at: string;
   project_id: string | null;
+  created_by?: string | null;
 }
 
 interface Recipient {
@@ -28,15 +29,14 @@ interface Recipient {
   recipient_email: string | null;
   accepted_at: string | null;
   rejected_at: string | null;
+  recipient_profile_id?: string | null;
+  ticket_creator_id?: string | null;
 }
 
 const TicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useApp();
-
-  const recipientId = searchParams.get('r');
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [recipient, setRecipient] = useState<Recipient | null>(null);
@@ -55,85 +55,119 @@ const TicketDetail: React.FC = () => {
     }
 
     const fetchData = async () => {
-  if (!ticketId || !recipientId || !user?.id) {
-    setError('Link inválido: falta información.');
-    setLoading(false);
-    return;
-  }
+      if (!ticketId || !user?.id) {
+        setError('Link inválido: falta información.');
+        setLoading(false);
+        return;
+      }
 
-  try {
-    console.log('[TicketDetail] START claim-first flow');
-    // 2️⃣ LEER RECIPIENT (ya claimado)
-    const { data: recipientData, error: recipientError } = await supabase
-      .from('ticket_recipients')
-      .select('*')
-      .eq('id', recipientId)
-      .single();
+      try {
+        setLoading(true);
+        setError(null);
 
-    if (recipientError || !recipientData) {
-      setError('Link inválido: destinatario no encontrado.');
-      setLoading(false);
-      return;
-    }
+        console.log('[TicketDetail] Loading ticket for user:', user.id, 'ticket:', ticketId);
 
-    if (recipientData.ticket_id !== ticketId) {
-      setError('Link inválido: el destinatario no corresponde a este ticket.');
-      setLoading(false);
-      return;
-    }
+        // 1) Leer ticket (ahora es "readable by authenticated" según la policy nueva)
+        const { data: ticketData, error: ticketError } = await supabase
+          .from('tickets')
+          .select('*')
+          .eq('id', ticketId)
+          .single();
 
-    // 3️⃣ AHORA SÍ LEER TICKET
-    const { data: ticketData, error: ticketError } = await supabase
-      .from('tickets')
-      .select('*')
-      .eq('id', ticketId)
-      .single();
+        if (ticketError || !ticketData) {
+          console.error('[TicketDetail] Ticket load error:', ticketError);
+          setError('No tenés permiso para ver este ticket o no existe.');
+          setLoading(false);
+          return;
+        }
 
-    if (ticketError || !ticketData) {
-      setError('No tenés permiso para ver este ticket.');
-      setLoading(false);
-      return;
-    }
+        // 2) Buscar si ya existe "mi recipient row" (mi oferta) para este ticket
+        const { data: myRecipient, error: myRecipientError } = await supabase
+          .from('ticket_recipients')
+          .select('*')
+          .eq('ticket_id', ticketId)
+          .eq('recipient_profile_id', user.id)
+          .maybeSingle();
 
-    // 4️⃣ SETEAR ESTADO
-    setRecipient(recipientData);
-    setTicket(ticketData);
-    setLoading(false);
-  } catch (err) {
-    console.error('Unexpected error:', err);
-    setError('Ocurrió un error inesperado.');
-    setLoading(false);
-  }
-};
+        if (myRecipientError) {
+          console.error('[TicketDetail] Error loading my recipient:', myRecipientError);
+          setError('Error al cargar tu respuesta para este ticket.');
+          setLoading(false);
+          return;
+        }
 
-fetchData();
-  }, [ticketId, recipientId, isAuthenticated, authLoading, navigate]);
+        // 3) Si no existe, crearla (esto habilita el flujo multi-constructores con un solo link)
+        let recipientRow = myRecipient;
+
+        if (!recipientRow) {
+          console.log('[TicketDetail] No recipient row found for user. Creating one...');
+
+          const { data: createdRecipient, error: createRecipientError } = await supabase
+            .from('ticket_recipients')
+            .insert({
+              ticket_id: ticketId,
+              ticket_creator_id: (ticketData as any).created_by ?? null,
+              recipient_profile_id: user.id,
+              status: 'sent',
+              recipient_phone: null,
+              recipient_email: null,
+            })
+            .select('*')
+            .single();
+
+          if (createRecipientError || !createdRecipient) {
+            console.error('[TicketDetail] Error creating recipient row:', createRecipientError);
+            setError(
+              'No se pudo crear tu respuesta para este ticket. Revisá policies de ticket_recipients (INSERT/SELECT).'
+            );
+            setLoading(false);
+            return;
+          }
+
+          recipientRow = createdRecipient;
+        }
+
+        setTicket(ticketData);
+        setRecipient(recipientRow);
+        setLoading(false);
+      } catch (err) {
+        console.error('[TicketDetail] Unexpected error:', err);
+        setError('Ocurrió un error inesperado.');
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [ticketId, isAuthenticated, authLoading, navigate, user?.id]);
 
   const handleAccept = async () => {
     if (!recipient || !user) return;
 
     setSubmitting(true);
     try {
+      const now = new Date().toISOString();
+
       const { error } = await supabase
         .from('ticket_recipients')
         .update({
           status: 'accepted',
-          accepted_at: new Date().toISOString(),
+          accepted_at: now,
+          rejected_at: null,
           recipient_profile_id: user.id,
         })
         .eq('id', recipient.id);
 
       if (error) {
-        console.error('Error accepting ticket:', error);
+        console.error('[TicketDetail] Error accepting ticket:', error);
         alert('Hubo un error al aceptar la solicitud.');
         setSubmitting(false);
         return;
       }
 
-      setRecipient({ ...recipient, status: 'accepted', accepted_at: new Date().toISOString() });
+      setRecipient({ ...recipient, status: 'accepted', accepted_at: now, rejected_at: null });
       setActionCompleted(true);
     } catch (err) {
-      console.error('Unexpected error:', err);
+      console.error('[TicketDetail] Unexpected error:', err);
       alert('Ocurrió un error inesperado.');
     } finally {
       setSubmitting(false);
@@ -145,26 +179,29 @@ fetchData();
 
     setSubmitting(true);
     try {
+      const now = new Date().toISOString();
+
       const { error } = await supabase
         .from('ticket_recipients')
         .update({
           status: 'rejected',
-          rejected_at: new Date().toISOString(),
+          rejected_at: now,
+          accepted_at: null,
           recipient_profile_id: user.id,
         })
         .eq('id', recipient.id);
 
       if (error) {
-        console.error('Error rejecting ticket:', error);
+        console.error('[TicketDetail] Error rejecting ticket:', error);
         alert('Hubo un error al rechazar la solicitud.');
         setSubmitting(false);
         return;
       }
 
-      setRecipient({ ...recipient, status: 'rejected', rejected_at: new Date().toISOString() });
+      setRecipient({ ...recipient, status: 'rejected', rejected_at: now, accepted_at: null });
       setActionCompleted(true);
     } catch (err) {
-      console.error('Unexpected error:', err);
+      console.error('[TicketDetail] Unexpected error:', err);
       alert('Ocurrió un error inesperado.');
     } finally {
       setSubmitting(false);
@@ -247,9 +284,7 @@ fetchData();
     );
   }
 
-  if (!ticket || !recipient) {
-    return null;
-  }
+  if (!ticket || !recipient) return null;
 
   const alreadyResponded = recipient.status !== 'sent';
   const canRespond = !alreadyResponded && !actionCompleted;
@@ -337,10 +372,8 @@ fetchData();
             <div
               className="mb-6 p-4 rounded-xl border text-center"
               style={{
-                backgroundColor:
-                  recipient.status === 'accepted' ? `${NEON}10` : '#FF444410',
-                borderColor:
-                  recipient.status === 'accepted' ? `${NEON}40` : '#FF444440',
+                backgroundColor: recipient.status === 'accepted' ? `${NEON}10` : '#FF444410',
+                borderColor: recipient.status === 'accepted' ? `${NEON}40` : '#FF444440',
                 color: recipient.status === 'accepted' ? NEON : '#FF4444',
               }}
             >
@@ -348,18 +381,16 @@ fetchData();
                 {recipient.status === 'accepted' ? (
                   <>
                     <CheckCircle className="w-6 h-6" />
-                    Solicitud Aceptada
+                    Oferta Enviada (Aceptada)
                   </>
                 ) : (
                   <>
                     <XCircle className="w-6 h-6" />
-                    Solicitud Rechazada
+                    Oferta Rechazada
                   </>
                 )}
               </div>
-              <p className="text-sm mt-2 opacity-80">
-                Tu respuesta ha sido registrada correctamente.
-              </p>
+              <p className="text-sm mt-2 opacity-80">Tu respuesta ha sido registrada correctamente.</p>
             </div>
           )}
 
@@ -394,7 +425,7 @@ fetchData();
                 }}
               >
                 <CheckCircle className="w-6 h-6" />
-                {submitting ? 'Aceptando...' : 'Aceptar'}
+                {submitting ? 'Enviando...' : 'Aceptar'}
               </button>
               <button
                 onClick={handleReject}
@@ -407,7 +438,7 @@ fetchData();
                 }}
               >
                 <XCircle className="w-6 h-6" />
-                {submitting ? 'Rechazando...' : 'Rechazar'}
+                {submitting ? 'Enviando...' : 'Rechazar'}
               </button>
             </div>
           )}
