@@ -326,9 +326,31 @@ const BudgetManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteRequest = (requestId: string) => {
-    console.log('Eliminar (futuro: basurero) solicitud con id:', requestId);
-  };
+const handleDeleteRequest = async (requestId: string) => {
+  console.log('[BudgetManagement] Soft delete ticket:', requestId);
+
+  const { data, error } = await supabase
+    .from('tickets') // 👈 tu tabla real
+    .update({
+      deleted_at: new Date().toISOString(),
+    })
+    .eq('id', requestId)
+    .select();
+
+  console.log('[SoftDelete] data:', data);
+  console.log('[SoftDelete] error:', error);
+
+  if (error) {
+    alert('No se pudo eliminar la solicitud');
+    return;
+  }
+
+  // 🔁 refrescar listas
+  await Promise.all([
+    fetchTickets(),
+    fetchDeletedTickets(),
+  ]);
+};
 
   const handleNewRequest = (type: 'constructor' | 'supplier') => {
     setEditingRequest(null);
