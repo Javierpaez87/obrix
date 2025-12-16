@@ -98,7 +98,7 @@ const getTypeText = (type: string) => {
 };
 
 const BudgetManagement: React.FC = () => {
-  const { budgetRequests, budgets, projects, user, tasks, setTasks } = useApp();
+  const { budgetRequests, budgets, projects, user, tasks, setTasks, contacts } = useApp();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'requests' | 'quotes' | 'sent'>(
     'requests',
@@ -110,6 +110,11 @@ const BudgetManagement: React.FC = () => {
   const [selectedBudget, setSelectedBudget] = useState<any>(null);
   const [requestType, setRequestType] =
     useState<'constructor' | 'supplier'>('constructor');
+
+  const [editingRequest, setEditingRequest] = useState<any>(null);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendRequest, setSendRequest] = useState<any>(null);
+  const [recipientsSummary, setRecipientsSummary] = useState<Record<string, any>>({});
 
   // ✅ Mapa id -> name traído desde profiles
   const [profileNameById, setProfileNameById] = useState<Record<string, string>>(
@@ -180,6 +185,55 @@ const BudgetManagement: React.FC = () => {
       isMounted = false;
     };
   }, [creatorIds]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchRecipientsSummary = async () => {
+      try {
+        const ticketIds = budgetRequests.map((r: any) => r.id);
+        if (!ticketIds.length) return;
+
+        const { data, error } = await supabase
+          .from('ticket_recipients')
+          .select('ticket_id, status')
+          .in('ticket_id', ticketIds);
+
+        if (error) {
+          console.error('Error fetching recipients summary:', error.message);
+          return;
+        }
+
+        const summary: Record<string, any> = {};
+        (data || []).forEach((r: any) => {
+          if (!summary[r.ticket_id]) {
+            summary[r.ticket_id] = {
+              sent: 0,
+              accepted: 0,
+              rejected: 0,
+              in_review: 0,
+            };
+          }
+          if (r.status === 'sent') summary[r.ticket_id].sent++;
+          else if (r.status === 'accepted') summary[r.ticket_id].accepted++;
+          else if (r.status === 'rejected') summary[r.ticket_id].rejected++;
+          else if (r.status === 'in_review') summary[r.ticket_id].in_review++;
+        });
+
+        if (isMounted) {
+          setRecipientsSummary(summary);
+        }
+      } catch (e) {
+        console.error('Error inesperado fetching recipients summary:', e);
+      }
+    };
+
+    fetchRecipientsSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [budgetRequests]);
 
   // ✅ Enriquecer requests con creatorName (sin tocar el contexto)
   const budgetRequestsEnriched = useMemo(() => {
@@ -261,20 +315,69 @@ const BudgetManagement: React.FC = () => {
     setShowBudgetReview(true);
   };
 
-  // 👉 Ver / editar: por ahora abre el modal de solicitud.
   const handleViewRequest = (requestId: string) => {
-    console.log('Ver / editar solicitud con id:', requestId);
-    setShowRequestForm(true);
+    const request = myRequests.find((r: any) => r.id === requestId);
+    if (request) {
+      setEditingRequest(request);
+      setShowRequestForm(true);
+    } else {
+      console.error('Request not found:', requestId);
+    }
   };
 
-  // 👉 Eliminar: de momento solo deja trazas.
   const handleDeleteRequest = (requestId: string) => {
     console.log('Eliminar (futuro: basurero) solicitud con id:', requestId);
   };
 
   const handleNewRequest = (type: 'constructor' | 'supplier') => {
+    setEditingRequest(null);
     setRequestType(type);
     setShowRequestForm(true);
+  };
+
+  const handleSendRequest = (request: any) => {
+    setSendRequest(request);
+    setShowSendModal(true);
+  };
+
+  const sendWhatsAppToContact = async (contact: any) => {
+    if (!user?.id || !sendRequest) return;
+
+    try {
+      const phone = contact.phone?.replace(/\D/g, '') || '';
+      const email = contact.email || '';
+
+      const { error } = await supabase
+        .from('ticket_recipients')
+        .insert({
+          ticket_id: sendRequest.id,
+          ticket_creator_id: user.id,
+          recipient_phone: phone || null,
+          recipient_email: email || null,
+          status: 'sent',
+        });
+
+      if (error) {
+        console.error('Error creating recipient:', error);
+        alert('Error al registrar el envío');
+        return;
+      }
+
+      const origin = window.location.origin;
+      const ticketLink = `${origin}/tickets/${sendRequest.id}`;
+      const message = `Hola! Te comparto una solicitud de presupuesto desde Obrix:\n\nTítulo: ${sendRequest.title}\nDescripción: ${sendRequest.description}\n\nVer detalle: ${ticketLink}`;
+
+      window.open(
+        `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+        '_blank',
+      );
+
+      setShowSendModal(false);
+      setSendRequest(null);
+    } catch (err) {
+      console.error('Error sending WhatsApp:', err);
+      alert('Error al enviar por WhatsApp');
+    }
   };
 
   return (
@@ -444,7 +547,11 @@ const BudgetManagement: React.FC = () => {
                   <div key={request.id} className={cardBase}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
+                        <h3
+                          className="text-base sm:text-lg font-semibold text-white mb-1 cursor-pointer hover:text-[--neon] transition-colors"
+                          onClick={() => navigate(`/tickets/${request.id}`)}
+                          style={{ ['--neon' as any]: NEON }}
+                        >
                           {request.title}
                         </h3>
                         <p className="text-xs sm:text-sm text-white/70 mb-2">
@@ -466,6 +573,42 @@ const BudgetManagement: React.FC = () => {
                         {getStatusText(request.status)}
                       </span>
                     </div>
+
+                    {recipientsSummary[request.id] && (
+                      <div className="mb-3 p-3 bg-zinc-800/50 rounded-lg border border-white/10">
+                        <p className="text-xs font-medium text-white/70 mb-2">
+                          Estado de respuestas:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {recipientsSummary[request.id].sent > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs bg-zinc-700 text-white/80 rounded">
+                              Enviado sin respuesta: {recipientsSummary[request.id].sent}
+                            </span>
+                          )}
+                          {recipientsSummary[request.id].accepted > 0 && (
+                            <span
+                              className="inline-flex items-center px-2 py-1 text-xs rounded"
+                              style={{
+                                backgroundColor: `${NEON}20`,
+                                color: NEON,
+                              }}
+                            >
+                              Aceptado: {recipientsSummary[request.id].accepted}
+                            </span>
+                          )}
+                          {recipientsSummary[request.id].rejected > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs bg-red-900/30 text-red-400 rounded">
+                              Rechazado: {recipientsSummary[request.id].rejected}
+                            </span>
+                          )}
+                          {recipientsSummary[request.id].in_review > 0 && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs bg-blue-900/30 text-blue-400 rounded">
+                              En revisión: {recipientsSummary[request.id].in_review}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between text-xs sm:text-sm">
@@ -529,22 +672,19 @@ const BudgetManagement: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Enviar (antes WhatsApp) */}
-                      <button
-                        onClick={() =>
-                          openWhatsApp(
-                            getContactPhone(isClient ? 'constructor' : 'client'),
-                            `Hola! Quería conversar sobre la solicitud: ${request.title}`,
-                          )
-                        }
-                        className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
-                                   bg-zinc-800 border border-white/10 text-white/90 rounded-md
-                                   hover:bg-zinc-700 transition-colors"
-                      >
-                        <ChatBubbleLeftRightIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                        <span className="hidden sm:inline">Enviar</span>
-                        <span className="sm:hidden">💬</span>
-                      </button>
+                      {/* Enviar */}
+                      {isClient && (
+                        <button
+                          onClick={() => handleSendRequest(request)}
+                          className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
+                                     bg-zinc-800 border border-white/10 text-white/90 rounded-md
+                                     hover:bg-zinc-700 transition-colors"
+                        >
+                          <ChatBubbleLeftRightIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="hidden sm:inline">Enviar</span>
+                          <span className="sm:hidden">💬</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -692,9 +832,14 @@ const BudgetManagement: React.FC = () => {
 
       {/* Modals */}
       <RequestForm
+        key={editingRequest?.id || 'new'}
         isOpen={showRequestForm}
-        onClose={() => setShowRequestForm(false)}
+        onClose={() => {
+          setShowRequestForm(false);
+          setEditingRequest(null);
+        }}
         requestType={requestType}
+        editingRequest={editingRequest}
       />
 
       <QuoteForm
@@ -709,6 +854,92 @@ const BudgetManagement: React.FC = () => {
           onClose={() => setShowBudgetReview(false)}
           budget={selectedBudget}
         />
+      )}
+
+      {showSendModal && sendRequest && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowSendModal(false)}
+          />
+
+          <div className="relative bg-zinc-900 border border-white/10 rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <div>
+                <h3 className="text-xl font-semibold text-white">
+                  Seleccionar Destinatario
+                </h3>
+                <p className="text-sm text-white/70 mt-1">
+                  Elegí un contacto para enviar esta solicitud por WhatsApp
+                </p>
+              </div>
+              <button
+                onClick={() => setShowSendModal(false)}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/70"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-5">
+              {contacts && contacts.length > 0 ? (
+                <div className="space-y-3">
+                  {contacts
+                    .filter((c: any) => c.category === 'labor')
+                    .map((contact: any) => (
+                      <div
+                        key={contact.id}
+                        onClick={() => sendWhatsAppToContact(contact)}
+                        className="p-4 bg-zinc-800/50 border border-white/10 rounded-lg cursor-pointer hover:border-[--neon]/50 hover:bg-zinc-800/70 transition-all"
+                        style={{ ['--neon' as any]: NEON }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-white">
+                              {contact.name}
+                            </h4>
+                            {contact.company && (
+                              <p className="text-sm text-white/70">
+                                {contact.company}
+                              </p>
+                            )}
+                            <p className="text-sm text-white/60 mt-1">
+                              {contact.phone}
+                            </p>
+                            {contact.subcategory && (
+                              <span
+                                className="inline-block mt-2 px-2 py-1 rounded text-xs font-medium text-black"
+                                style={{ backgroundColor: NEON }}
+                              >
+                                {contact.subcategory}
+                              </span>
+                            )}
+                          </div>
+                          <ArrowRightIcon className="h-5 w-5 text-white/50 ml-3" />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-white/60">No hay contactos disponibles</p>
+                  <p className="text-sm text-white/50 mt-2">
+                    Agregá contactos en la sección Agenda
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 p-5 border-t border-white/10">
+              <button
+                onClick={() => setShowSendModal(false)}
+                className="px-4 py-2 rounded-lg bg-zinc-800 border border-white/10 text-white hover:bg-zinc-700 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
