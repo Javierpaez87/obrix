@@ -40,12 +40,16 @@ const TicketDetail: React.FC = () => {
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [recipient, setRecipient] = useState<Recipient | null>(null);
+  const [recipients, setRecipients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [actionCompleted, setActionCompleted] = useState(false);
 
-  console.log('[TicketDetail] MOUNTED', ticketId);
+  const isClient = user?.role === 'client';
+  const isConstructor = user?.role === 'constructor';
+
+  console.log('[TicketDetail] MOUNTED', ticketId, 'role:', user?.role);
 
   useEffect(() => {
     if (authLoading) return;
@@ -69,7 +73,6 @@ const TicketDetail: React.FC = () => {
 
         console.log('[TicketDetail] Loading ticket for user:', user.id, 'ticket:', ticketId);
 
-        // 1) Leer ticket (ahora es "readable by authenticated" según la policy nueva)
         const { data: ticketData, error: ticketError } = await supabase
           .from('tickets')
           .select('*')
@@ -90,62 +93,90 @@ const TicketDetail: React.FC = () => {
           return;
         }
 
-        // 2) Buscar si ya existe "mi recipient row" (mi oferta) para este ticket
-        const { data: myRecipient, error: myRecipientError } = await supabase
-          .from('ticket_recipients')
-          .select('*')
-          .eq('ticket_id', ticketId)
-          .eq('recipient_profile_id', user.id)
-          .maybeSingle();
+        setTicket(ticketData);
 
-        if (myRecipientError) {
-          console.error('[TicketDetail] myRecipientError:', myRecipientError?.message || myRecipientError);
-          setError(`Error al cargar tu respuesta: ${myRecipientError.message || 'Error desconocido'}`);
-          setLoading(false);
-          return;
-        }
-
-        // 3) Si no existe, crearla (esto habilita el flujo multi-constructores con un solo link)
-        let recipientRow = myRecipient;
-
-        if (!recipientRow) {
-          console.log('[TicketDetail] No recipient row found for user. Creating one...');
-
-          const { data: createdRecipient, error: createRecipientError } = await supabase
+        if (isClient) {
+          const { data: allRecipients, error: recipientsError } = await supabase
             .from('ticket_recipients')
-            .insert({
-              ticket_id: ticketId,
-              ticket_creator_id: (ticketData as any).created_by ?? null,
-              recipient_profile_id: user.id,
-              status: 'sent',
-              recipient_phone: null,
-              recipient_email: null,
-            })
+            .select(`
+              id,
+              status,
+              accepted_at,
+              rejected_at,
+              recipient_profile_id,
+              recipient_phone,
+              recipient_email,
+              profiles:recipient_profile_id ( name )
+            `)
+            .eq('ticket_id', ticketId)
+            .eq('ticket_creator_id', user.id);
+
+          if (recipientsError) {
+            console.error('[TicketDetail] recipientsError:', recipientsError?.message || recipientsError);
+          } else {
+            setRecipients(allRecipients || []);
+          }
+
+          setLoading(false);
+        } else if (isConstructor) {
+          const { data: myRecipient, error: myRecipientError } = await supabase
+            .from('ticket_recipients')
             .select('*')
+            .eq('ticket_id', ticketId)
+            .eq('recipient_profile_id', user.id)
             .maybeSingle();
 
-          if (createRecipientError) {
-            console.error('[TicketDetail] createRecipientError:', createRecipientError?.message || createRecipientError);
-            setError(
-              `No se pudo crear tu respuesta: ${createRecipientError.message || 'Error desconocido'}. Revisá policies de ticket_recipients.`
-            );
+          if (myRecipientError) {
+            console.error('[TicketDetail] myRecipientError:', myRecipientError?.message || myRecipientError);
+            setError(`Error al cargar tu respuesta: ${myRecipientError.message || 'Error desconocido'}`);
             setLoading(false);
             return;
           }
 
-          if (!createdRecipient) {
-            console.error('[TicketDetail] No data returned after insert');
-            setError('No se pudo crear tu respuesta para este ticket (no data). Revisá policies de ticket_recipients.');
-            setLoading(false);
-            return;
+          let recipientRow = myRecipient;
+
+          if (!recipientRow) {
+            console.log('[TicketDetail] No recipient row found for constructor. Creating one...');
+
+            const { data: createdRecipient, error: createRecipientError } = await supabase
+              .from('ticket_recipients')
+              .upsert({
+                ticket_id: ticketId,
+                ticket_creator_id: (ticketData as any).created_by ?? null,
+                recipient_profile_id: user.id,
+                status: 'sent',
+                recipient_phone: null,
+                recipient_email: null,
+              }, {
+                onConflict: 'ticket_id,recipient_profile_id',
+              })
+              .select('*')
+              .maybeSingle();
+
+            if (createRecipientError) {
+              console.error('[TicketDetail] createRecipientError:', createRecipientError?.message || createRecipientError);
+              setError(
+                `No se pudo crear tu respuesta: ${createRecipientError.message || 'Error desconocido'}. Revisá policies de ticket_recipients.`
+              );
+              setLoading(false);
+              return;
+            }
+
+            if (!createdRecipient) {
+              console.error('[TicketDetail] No data returned after upsert');
+              setError('No se pudo crear tu respuesta para este ticket (no data). Revisá policies de ticket_recipients.');
+              setLoading(false);
+              return;
+            }
+
+            recipientRow = createdRecipient;
           }
 
-          recipientRow = createdRecipient;
+          setRecipient(recipientRow);
+          setLoading(false);
+        } else {
+          setLoading(false);
         }
-
-        setTicket(ticketData);
-        setRecipient(recipientRow);
-        setLoading(false);
       } catch (err) {
         console.error('[TicketDetail] Unexpected error:', err);
         setError('Ocurrió un error inesperado.');
@@ -154,7 +185,7 @@ const TicketDetail: React.FC = () => {
     };
 
     fetchData();
-  }, [ticketId, isAuthenticated, authLoading, navigate, user?.id]);
+  }, [ticketId, isAuthenticated, authLoading, navigate, user?.id, isClient, isConstructor]);
 
   const handleAccept = async () => {
     if (!recipient || !user) return;
@@ -298,7 +329,7 @@ const TicketDetail: React.FC = () => {
     );
   }
 
-  if (!ticket || !recipient) {
+  if (!ticket) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
@@ -325,8 +356,35 @@ const TicketDetail: React.FC = () => {
     );
   }
 
-  const alreadyResponded = recipient.status !== 'sent';
-  const canRespond = !alreadyResponded && !actionCompleted;
+  if (isConstructor && !recipient) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="mb-4">
+            <AlertTriangle className="w-16 h-16 mx-auto" style={{ color: '#FF4444' }} />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">Error al cargar</h1>
+          <p className="text-white/70 mb-6">
+            No se pudo cargar tu respuesta para este ticket.
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 rounded-lg font-medium transition-colors"
+            style={{
+              backgroundColor: NEON,
+              color: '#0a0a0a',
+              boxShadow: `0 0 20px ${NEON}40`,
+            }}
+          >
+            Volver al Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const alreadyResponded = recipient ? recipient.status !== 'sent' : false;
+  const canRespond = isConstructor && !alreadyResponded && !actionCompleted;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white p-4 py-8">
@@ -407,7 +465,7 @@ const TicketDetail: React.FC = () => {
             )}
           </div>
 
-          {actionCompleted && (
+          {isConstructor && actionCompleted && recipient && (
             <div
               className="mb-6 p-4 rounded-xl border text-center"
               style={{
@@ -433,7 +491,7 @@ const TicketDetail: React.FC = () => {
             </div>
           )}
 
-          {alreadyResponded && !actionCompleted && (
+          {isConstructor && alreadyResponded && !actionCompleted && recipient && (
             <div
               className="mb-6 p-4 rounded-xl border text-center"
               style={{
@@ -448,6 +506,65 @@ const TicketDetail: React.FC = () => {
                   {recipient.status === 'accepted' ? 'Aceptada' : 'Rechazada'}
                 </span>
               </p>
+            </div>
+          )}
+
+          {isClient && (
+            <div className="mb-8">
+              <h2 className="text-xl font-bold mb-4">Respuestas de Constructores</h2>
+
+              {recipients.length === 0 ? (
+                <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <p className="text-white/60">Todavía no hay respuestas para esta solicitud.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recipients.map((r: any) => {
+                    const statusColor =
+                      r.status === 'accepted'
+                        ? NEON
+                        : r.status === 'rejected'
+                        ? '#FF4444'
+                        : '#888888';
+                    const statusLabel =
+                      r.status === 'accepted'
+                        ? 'Aceptado'
+                        : r.status === 'rejected'
+                        ? 'Rechazado'
+                        : 'Enviado';
+
+                    return (
+                      <div
+                        key={r.id}
+                        className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium text-white">
+                            {r.profiles?.name || r.recipient_phone || r.recipient_email || 'Constructor'}
+                          </h3>
+                          {(r.accepted_at || r.rejected_at) && (
+                            <p className="text-xs text-white/60 mt-1">
+                              {r.accepted_at
+                                ? `Aceptado el ${new Date(r.accepted_at).toLocaleDateString('es-AR')}`
+                                : `Rechazado el ${new Date(r.rejected_at).toLocaleDateString('es-AR')}`}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className="px-3 py-1 rounded-full text-sm font-medium"
+                          style={{
+                            backgroundColor: `${statusColor}20`,
+                            color: statusColor,
+                            border: `1px solid ${statusColor}40`,
+                          }}
+                        >
+                          {statusLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

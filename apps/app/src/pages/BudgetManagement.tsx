@@ -348,14 +348,19 @@ const BudgetManagement: React.FC = () => {
       const phone = contact.phone?.replace(/\D/g, '') || '';
       const email = contact.email || '';
 
+      const recipientProfileId = contact.id || null;
+
       const { error } = await supabase
         .from('ticket_recipients')
-        .insert({
+        .upsert({
           ticket_id: sendRequest.id,
           ticket_creator_id: user.id,
+          recipient_profile_id: recipientProfileId,
           recipient_phone: phone || null,
           recipient_email: email || null,
           status: 'sent',
+        }, {
+          onConflict: 'ticket_id,recipient_profile_id',
         });
 
       if (error) {

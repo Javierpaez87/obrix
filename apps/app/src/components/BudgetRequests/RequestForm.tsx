@@ -252,13 +252,15 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     // 4) Crear recipient (UNA sola vez, bien)
     const { data: recipientData, error: recipientError } = await supabase
       .from('ticket_recipients')
-      .insert({
+      .upsert({
         ticket_id: ticketId,
         ticket_creator_id: user.id, // 👈 importante para tu RLS
         recipient_profile_id: matchedUser ? matchedUser.id : null,
         recipient_phone: matchedUser ? null : (isPhone ? phone : null),
         recipient_email: matchedUser ? null : (!isPhone ? firstContact : null),
         status: 'sent',
+      }, {
+        onConflict: 'ticket_id,recipient_profile_id',
       })
       .select('id')
       .single();
@@ -303,13 +305,15 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
         const { data: rd, error: re } = await supabase
           .from('ticket_recipients')
-          .insert({
+          .upsert({
             ticket_id: ticketId,
             ticket_creator_id: user.id,
             recipient_profile_id: uMatched ? uMatched.id : null,
             recipient_phone: uMatched ? null : (pIsPhone ? p : null),
             recipient_email: uMatched ? null : (!pIsPhone ? phoneOrEmail : null),
             status: 'sent',
+          }, {
+            onConflict: 'ticket_id,recipient_profile_id',
           })
           .select('id')
           .single();
