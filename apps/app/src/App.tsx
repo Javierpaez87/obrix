@@ -45,6 +45,10 @@ const AppContent: React.FC = () => {
         element={<TicketDetail />}
       />
       <Route
+        path="/tickets/:ticketId"
+        element={<TicketDetail />}
+      />
+      <Route
         path="/*"
         element={
           isAuthenticated ? (

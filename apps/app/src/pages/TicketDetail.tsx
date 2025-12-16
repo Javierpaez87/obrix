@@ -45,6 +45,8 @@ const TicketDetail: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [actionCompleted, setActionCompleted] = useState(false);
 
+  console.log('[TicketDetail] MOUNTED', ticketId);
+
   useEffect(() => {
     if (authLoading) return;
 
