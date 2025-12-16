@@ -296,7 +296,32 @@ const TicketDetail: React.FC = () => {
     );
   }
 
-  if (!ticket || !recipient) return null;
+  if (!ticket || !recipient) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="mb-4">
+            <AlertTriangle className="w-16 h-16 mx-auto" style={{ color: '#FF4444' }} />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2">Ticket no encontrado</h1>
+          <p className="text-white/70 mb-6">
+            No se pudo cargar la información del ticket.
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 rounded-lg font-medium transition-colors"
+            style={{
+              backgroundColor: NEON,
+              color: '#0a0a0a',
+              boxShadow: `0 0 20px ${NEON}40`,
+            }}
+          >
+            Volver al Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const alreadyResponded = recipient.status !== 'sent';
   const canRespond = !alreadyResponded && !actionCompleted;
