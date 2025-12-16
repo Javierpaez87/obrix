@@ -21,7 +21,10 @@ interface AppContextType {
   setBudgets: (budgets: Budget[]) => void;
   budgetRequests: BudgetRequest[];
   setBudgetRequests: (budgetRequests: BudgetRequest[]) => void;
+
+  /** ✅ Refresca activos + eliminados */
   refreshBudgetRequests: () => Promise<void>;
+
   deletedRequests: BudgetRequest[];
   loadDeletedRequests: () => Promise<void>;
   restoreRequest: (requestId: string) => Promise<void>;
@@ -62,19 +65,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [budgetRequests, setBudgetRequests] = useState<BudgetRequest[]>([]);
   const [deletedRequests, setDeletedRequests] = useState<BudgetRequest[]>([]);
-
-  // Load tickets from Supabase when user is authenticated
-  useEffect(() => {
-    if (auth.user?.id) {
-      console.log('[AppContext] User authenticated, loading tickets for user:', auth.user.id);
-      loadTicketsFromSupabase();
-      loadDeletedTickets();
-    } else {
-      console.log('[AppContext] No user authenticated, clearing tickets');
-      setBudgetRequests([]);
-      setDeletedRequests([]);
-    }
-  }, [auth.user?.id]);
 
   // ✅ Ahora el ticket puede traer el join como ticket.profiles?.name
   const mapTicketToRequest = (ticket: any): BudgetRequest => ({
@@ -166,6 +156,29 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
+  /** ✅ FIX CLAVE: refresca activos + eliminados */
+  const refreshBudgetRequests = async () => {
+    await Promise.all([
+      loadTicketsFromSupabase(),
+      loadDeletedTickets(),
+    ]);
+  };
+
+  // Load tickets from Supabase when user is authenticated
+  useEffect(() => {
+    if (auth.user?.id) {
+      console.log('[AppContext] User authenticated, loading tickets for user:', auth.user.id);
+
+      // ✅ antes llamabas a ambas por separado, ahora lo centralizamos
+      refreshBudgetRequests();
+    } else {
+      console.log('[AppContext] No user authenticated, clearing tickets');
+      setBudgetRequests([]);
+      setDeletedRequests([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.user?.id]);
+
   const restoreTicket = async (requestId: string) => {
     try {
       const { error } = await supabase
@@ -178,8 +191,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         throw error;
       }
 
-      await loadTicketsFromSupabase();
-      await loadDeletedTickets();
+      await refreshBudgetRequests();
     } catch (err) {
       console.error('Unexpected error restoring ticket:', err);
       throw err;
@@ -338,7 +350,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       projects, setProjects,
       budgets, setBudgets,
       budgetRequests, setBudgetRequests,
-      refreshBudgetRequests: loadTicketsFromSupabase,
+
+      // ✅ ahora refresca ambos
+      refreshBudgetRequests,
+
       deletedRequests,
       loadDeletedRequests: loadDeletedTickets,
       restoreRequest: restoreTicket,
