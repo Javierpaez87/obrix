@@ -350,23 +350,32 @@ const BudgetManagement: React.FC = () => {
 
       const recipientProfileId = contact.id || null;
 
-      const { error } = await supabase
+      const { data: existingRecipient } = await supabase
         .from('ticket_recipients')
-        .upsert({
-          ticket_id: sendRequest.id,
-          ticket_creator_id: user.id,
-          recipient_profile_id: recipientProfileId,
-          recipient_phone: phone || null,
-          recipient_email: email || null,
-          status: 'sent',
-        }, {
-          onConflict: 'ticket_id,recipient_profile_id',
-        });
+        .select('id')
+        .eq('ticket_id', sendRequest.id)
+        .eq('recipient_profile_id', recipientProfileId)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error creating recipient:', error);
-        alert('Error al registrar el envío');
-        return;
+      if (!existingRecipient) {
+        const { error } = await supabase
+          .from('ticket_recipients')
+          .insert({
+            ticket_id: sendRequest.id,
+            ticket_creator_id: user.id,
+            recipient_profile_id: recipientProfileId,
+            recipient_phone: phone || null,
+            recipient_email: email || null,
+            status: 'sent',
+          });
+
+        if (error) {
+          console.error('Error creating recipient:', error);
+          alert('Error al registrar el envío');
+          return;
+        }
+      } else {
+        console.log('Recipient already exists, reusing:', existingRecipient);
       }
 
       const origin = window.location.origin;

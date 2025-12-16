@@ -249,27 +249,41 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           )
         : null;
 
-    // 4) Crear recipient (UNA sola vez, bien)
-    const { data: recipientData, error: recipientError } = await supabase
+    // 4) Verificar si ya existe un recipient para evitar duplicados
+    const { data: existingRecipient } = await supabase
       .from('ticket_recipients')
-      .upsert({
-        ticket_id: ticketId,
-        ticket_creator_id: user.id, // 👈 importante para tu RLS
-        recipient_profile_id: matchedUser ? matchedUser.id : null,
-        recipient_phone: matchedUser ? null : (isPhone ? phone : null),
-        recipient_email: matchedUser ? null : (!isPhone ? firstContact : null),
-        status: 'sent',
-      }, {
-        onConflict: 'ticket_id,recipient_profile_id',
-      })
       .select('id')
-      .single();
+      .eq('ticket_id', ticketId)
+      .eq('recipient_profile_id', matchedUser ? matchedUser.id : null)
+      .maybeSingle();
 
-    if (recipientError || !recipientData) {
-      console.error('[RequestForm] Error creating recipient:', recipientError);
-      alert(`Error al crear destinatario: ${recipientError?.message || 'Error desconocido'}`);
-      setIsSubmitting(false);
-      return;
+    let recipientData;
+
+    if (existingRecipient) {
+      recipientData = existingRecipient;
+      console.log('[RequestForm] Recipient already exists, reusing:', recipientData);
+    } else {
+      const { data: newRecipient, error: recipientError } = await supabase
+        .from('ticket_recipients')
+        .insert({
+          ticket_id: ticketId,
+          ticket_creator_id: user.id,
+          recipient_profile_id: matchedUser ? matchedUser.id : null,
+          recipient_phone: matchedUser ? null : (isPhone ? phone : null),
+          recipient_email: matchedUser ? null : (!isPhone ? firstContact : null),
+          status: 'sent',
+        })
+        .select('id')
+        .single();
+
+      if (recipientError || !newRecipient) {
+        console.error('[RequestForm] Error creating recipient:', recipientError);
+        alert(`Error al crear destinatario: ${recipientError?.message || 'Error desconocido'}`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      recipientData = newRecipient;
     }
 
     // 5) Link y WA URL (sin ?r= param, link compartido)
@@ -303,17 +317,27 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               )
             : null;
 
+        const { data: existingRec } = await supabase
+          .from('ticket_recipients')
+          .select('id')
+          .eq('ticket_id', ticketId)
+          .eq('recipient_profile_id', uMatched ? uMatched.id : null)
+          .maybeSingle();
+
+        if (existingRec) {
+          console.log('[RequestForm] Recipient already exists (remaining), skipping:', existingRec);
+          return { phoneOrEmail, recipientId: existingRec.id };
+        }
+
         const { data: rd, error: re } = await supabase
           .from('ticket_recipients')
-          .upsert({
+          .insert({
             ticket_id: ticketId,
             ticket_creator_id: user.id,
             recipient_profile_id: uMatched ? uMatched.id : null,
             recipient_phone: uMatched ? null : (pIsPhone ? p : null),
             recipient_email: uMatched ? null : (!pIsPhone ? phoneOrEmail : null),
             status: 'sent',
-          }, {
-            onConflict: 'ticket_id,recipient_profile_id',
           })
           .select('id')
           .single();

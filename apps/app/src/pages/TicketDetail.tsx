@@ -140,15 +140,13 @@ const TicketDetail: React.FC = () => {
 
             const { data: createdRecipient, error: createRecipientError } = await supabase
               .from('ticket_recipients')
-              .upsert({
+              .insert({
                 ticket_id: ticketId,
                 ticket_creator_id: (ticketData as any).created_by ?? null,
                 recipient_profile_id: user.id,
                 status: 'sent',
                 recipient_phone: null,
                 recipient_email: null,
-              }, {
-                onConflict: 'ticket_id,recipient_profile_id',
               })
               .select('*')
               .maybeSingle();
@@ -163,7 +161,7 @@ const TicketDetail: React.FC = () => {
             }
 
             if (!createdRecipient) {
-              console.error('[TicketDetail] No data returned after upsert');
+              console.error('[TicketDetail] No data returned after insert');
               setError('No se pudo crear tu respuesta para este ticket (no data). Revisá policies de ticket_recipients.');
               setLoading(false);
               return;
