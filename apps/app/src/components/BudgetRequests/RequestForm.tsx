@@ -162,9 +162,11 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     setShowContactsModal(true);
   };
 
-  const sendWhatsAppToContacts = async (selectedContacts: string[]) => {
-  if (!selectedContacts.length) {
-    alert('Seleccioná al menos un contacto para enviar.');
+  const sendWhatsAppToContacts = async (selectedContacts: string[], manualPhones: string[] = []) => {
+  const allRecipients = [...selectedContacts, ...manualPhones];
+
+  if (!allRecipients.length) {
+    alert('Seleccioná al menos un contacto o agregá un número para enviar.');
     return;
   }
 
@@ -234,7 +236,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     const base = composeBaseMessage();
     const origin = window.location.origin;
 
-    const firstContact = selectedContacts[0];
+    const firstContact = allRecipients[0];
     const phone = cleanPhone(firstContact);
     const isPhone = phone.length > 0;
 
@@ -304,8 +306,8 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     onClose();
 
     // 7) Crear recipients restantes en background (no abre WA para cada uno)
-    if (selectedContacts.length > 1) {
-      const remainingPromises = selectedContacts.slice(1).map(async (phoneOrEmail) => {
+    if (allRecipients.length > 1) {
+      const remainingPromises = allRecipients.slice(1).map(async (phoneOrEmail) => {
         const p = cleanPhone(phoneOrEmail);
         const pIsPhone = p.length > 0;
 
@@ -504,24 +506,64 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-6">
-          {/* Tipo de Presupuesto */}
-          <div className={sectionCard} style={{ borderColor: NEON }}>
-            <label className={labelBase}>Tipo de Presupuesto</label>
-            <select
-              value={formData.type}
-              onChange={(e) => set('type', e.target.value as any)}
-              className={fieldBase}
-              required
-            >
-              {requestType === 'constructor' ? (
-                <>
-                  <option value="labor">Solo Mano de Obra</option>
-                  <option value="combined">Mano de Obra + Materiales</option>
-                </>
-              ) : (
-                <option value="materials">Solo Materiales</option>
-              )}
-            </select>
+          {/* Campos principales */}
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900">Campos principales</h3>
+              <span className="text-xs text-slate-600">Obligatorios</span>
+            </div>
+
+            {/* Tipo de Presupuesto */}
+            <div className="mb-4">
+              <label className={labelBase}>Tipo de Presupuesto</label>
+              <select
+                value={formData.type}
+                onChange={(e) => set('type', e.target.value as any)}
+                className={fieldBase}
+                required
+              >
+                {requestType === 'constructor' ? (
+                  <>
+                    <option value="labor">Solo Mano de Obra</option>
+                    <option value="combined">Mano de Obra + Materiales</option>
+                  </>
+                ) : (
+                  <option value="materials">Solo Materiales</option>
+                )}
+              </select>
+            </div>
+
+            {/* Título */}
+            <div className="mb-4">
+              <label className={labelBase}>
+                {requestType === 'constructor' ? 'Título del Trabajo' : 'Lista de Materiales'}
+              </label>
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => set('title', e.target.value)}
+                placeholder={requestType === 'constructor' ? 'Ej: Colocación de cerámicos' : 'Ej: Materiales para fundación'}
+                className={fieldBase}
+                required
+              />
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label className={labelBase}>Descripción Detallada</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => set('description', e.target.value)}
+                placeholder={
+                  requestType === 'constructor'
+                    ? 'Describe en detalle: superficie, especificaciones, materiales incluidos, etc.'
+                    : 'Lista detallada: cantidades, especificaciones, marcas preferidas, etc.'
+                }
+                rows={4}
+                className={fieldBase}
+                required
+              />
+            </div>
           </div>
 
           {/* Obra */}
@@ -539,56 +581,9 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             </select>
           </div>
 
-          {/* Título */}
-          <div className={sectionCard} style={{ borderColor: NEON }}>
-            <label className={labelBase}>
-              {requestType === 'constructor' ? 'Título del Trabajo' : 'Lista de Materiales'}
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => set('title', e.target.value)}
-              placeholder={requestType === 'constructor' ? 'Ej: Colocación de cerámicos' : 'Ej: Materiales para fundación'}
-              className={fieldBase}
-              required
-            />
-          </div>
-
-          {/* Descripción */}
-          <div className={sectionCard} style={{ borderColor: NEON }}>
-            <label className={labelBase}>Descripción Detallada</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => set('description', e.target.value)}
-              placeholder={
-                requestType === 'constructor'
-                  ? 'Describe en detalle: superficie, especificaciones, materiales incluidos, etc.'
-                  : 'Lista detallada: cantidades, especificaciones, marcas preferidas, etc.'
-              }
-              rows={4}
-              className={fieldBase}
-              required
-            />
-          </div>
-
-          {/* Prioridad + Fechas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className={sectionCard} style={{ borderColor: NEON }}>
-              <label className={labelBase}>Prioridad</label>
-              <select
-                value={formData.priority}
-                onChange={(e) => set('priority', e.target.value as any)}
-                className={fieldBase}
-                required
-              >
-                <option value="low">Baja</option>
-                <option value="medium">Media</option>
-                <option value="high">Alta</option>
-                <option value="urgent">Urgente</option>
-              </select>
-            </div>
-
-            <div className={`${sectionCard} space-y-3`} style={{ borderColor: NEON }}>
+          {/* Fechas y Prioridad */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className={`${sectionCard} space-y-3 md:col-span-2`} style={{ borderColor: NEON }}>
               <div>
                 <label className={labelBase}>Fecha Límite (Opcional)</label>
                 <input
@@ -636,6 +631,29 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                 onChange={(e) => set('endDate', e.target.value)}
                 className={`${fieldBase} ${!formData.useEndDate ? 'opacity-50 pointer-events-none' : ''}`}
               />
+            </div>
+
+            <div className="md:col-span-1">
+              <div className={sectionCard} style={{ borderColor: NEON }}>
+                <label className="mb-1 block text-xs font-medium text-slate-700">
+                  Prioridad (opcional)
+                </label>
+                <div className="opacity-90">
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => set('priority', e.target.value as any)}
+                    className={fieldBase}
+                  >
+                    <option value="low">Baja</option>
+                    <option value="medium">Media</option>
+                    <option value="high">Alta</option>
+                    <option value="urgent">Urgente</option>
+                  </select>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Podés dejarlo en "Media".
+                </p>
+              </div>
             </div>
           </div>
 
@@ -744,10 +762,36 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 // Componente interno para la lista de contactos
 const ContactsList: React.FC<{
   contacts: any[];
-  onSend: (selected: string[]) => void;
+  onSend: (selected: string[], manualPhones: string[]) => void;
   onCancel: () => void;
 }> = ({ contacts, onSend, onCancel }) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [manualPhone, setManualPhone] = useState('');
+  const [manualPhones, setManualPhones] = useState<string[]>([]);
+
+  const normalizePhone = (raw: string) => {
+    let v = raw.trim().replace(/[^\d+]/g, '');
+    if (!v.startsWith('+')) v = '+54' + v.replace(/^0+/, '');
+    return v;
+  };
+
+  const isValidPhone = (v: string) => {
+    const digits = v.replace(/[^\d]/g, '');
+    return digits.length >= 10 && digits.length <= 15;
+  };
+
+  const addManualPhone = () => {
+    const normalized = normalizePhone(manualPhone);
+    if (!isValidPhone(normalized)) {
+      return;
+    }
+    setManualPhones(prev => prev.includes(normalized) ? prev : [...prev, normalized]);
+    setManualPhone('');
+  };
+
+  const removeManualPhone = (phone: string) => {
+    setManualPhones(prev => prev.filter(p => p !== phone));
+  };
 
   const toggleContact = (phoneOrEmail: string) => {
     const newSelected = new Set(selected);
@@ -760,7 +804,7 @@ const ContactsList: React.FC<{
   };
 
   const handleSend = () => {
-    onSend(Array.from(selected));
+    onSend(Array.from(selected), manualPhones);
   };
 
   return (
@@ -820,6 +864,55 @@ const ContactsList: React.FC<{
         })}
       </div>
 
+      {/* Input para números manuales */}
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <p className="text-sm font-medium text-slate-900">
+          Si no está en tu agenda, escribilo acá
+        </p>
+        <p className="text-xs text-slate-600 mt-1">
+          Ej: +54 9 11 1234 5678
+        </p>
+
+        <div className="mt-3 flex gap-2">
+          <input
+            value={manualPhone}
+            onChange={(e) => setManualPhone(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addManualPhone())}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            placeholder="+54 9 ..."
+          />
+          <button
+            type="button"
+            onClick={addManualPhone}
+            className="rounded-xl px-4 py-2 text-sm font-medium"
+            style={{ backgroundColor: NEON, color: '#0a0a0a' }}
+          >
+            Agregar
+          </button>
+        </div>
+
+        {manualPhones.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {manualPhones.map((p) => (
+              <span
+                key={p}
+                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-800"
+              >
+                {p}
+                <button
+                  type="button"
+                  onClick={() => removeManualPhone(p)}
+                  className="ml-1 hover:text-red-600"
+                  aria-label="Eliminar"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-3 pt-4 border-t" style={{ borderColor: NEON }}>
         <button
           onClick={onCancel}
@@ -834,7 +927,7 @@ const ContactsList: React.FC<{
         </button>
         <button
           onClick={handleSend}
-          disabled={selected.size === 0}
+          disabled={selected.size === 0 && manualPhones.length === 0}
           className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: NEON,
@@ -843,7 +936,7 @@ const ContactsList: React.FC<{
             border: `1px solid ${NEON}33`
           }}
         >
-          Enviar a {selected.size} contacto{selected.size !== 1 ? 's' : ''}
+          Enviar a {selected.size + manualPhones.length} contacto{(selected.size + manualPhones.length) !== 1 ? 's' : ''}
         </button>
       </div>
     </div>
