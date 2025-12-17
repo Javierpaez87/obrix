@@ -26,6 +26,26 @@ import { supabase } from '../lib/supabase';
 
 const NEON = '#00FFA3';
 
+type ReceivedRequestRow = {
+  id: string;
+  status: string;
+  accepted_at?: string | null;
+  rejected_at?: string | null;
+  offer_amount?: number | null;
+  offer_message?: string | null;
+  offer_estimated_days?: number | null;
+  ticket: {
+    id: string;
+    title: string;
+    description: string;
+    type?: string | null;
+    priority?: string | null;
+    created_at: string;
+    created_by?: string | null;
+    deleted_at?: string | null;
+  } | null;
+};
+
 const chipBase = 'inline-flex px-2 py-1 text-xs font-medium rounded-full border';
 const cardBase =
   'bg-zinc-900/80 border border-white/10 rounded-xl p-4 sm:p-6 shadow-sm';
@@ -116,6 +136,9 @@ const BudgetManagement: React.FC = () => {
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendRequest, setSendRequest] = useState<any>(null);
   const [recipientsSummary, setRecipientsSummary] = useState<Record<string, any>>({});
+
+  const [receivedRequests, setReceivedRequests] = useState<ReceivedRequestRow[]>([]);
+  const [receivedLoading, setReceivedLoading] = useState(false);
 
   // ✅ Mapa id -> name traído desde profiles
   const [profileNameById, setProfileNameById] = useState<Record<string, string>>(
@@ -235,6 +258,57 @@ const BudgetManagement: React.FC = () => {
       isMounted = false;
     };
   }, [budgetRequests]);
+
+  useEffect(() => {
+    const fetchReceivedRequests = async () => {
+      if (!user?.id) return;
+
+      try {
+        setReceivedLoading(true);
+
+        const { data, error } = await supabase
+          .from('ticket_recipients')
+          .select(`
+            id,
+            status,
+            accepted_at,
+            rejected_at,
+            offer_amount,
+            offer_message,
+            offer_estimated_days,
+            ticket:ticket_id (
+              id,
+              title,
+              description,
+              type,
+              priority,
+              created_at,
+              created_by,
+              deleted_at
+            )
+          `)
+          .eq('recipient_profile_id', user.id)
+          .is('ticket.deleted_at', null)
+          .order('id', { ascending: false });
+
+        if (error) {
+          console.error('[BudgetManagement] Error fetching received requests:', error);
+          return;
+        }
+
+        const cleaned = (data || []).filter((row: any) => row.ticket);
+        setReceivedRequests(cleaned as any);
+
+        console.log('[BudgetManagement] Received requests:', cleaned);
+      } catch (err) {
+        console.error('[BudgetManagement] Unexpected error fetching received requests:', err);
+      } finally {
+        setReceivedLoading(false);
+      }
+    };
+
+    fetchReceivedRequests();
+  }, [user?.id]);
 
   // ✅ Enriquecer requests con creatorName (sin tocar el contexto)
   const budgetRequestsEnriched = useMemo(() => {
