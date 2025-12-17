@@ -110,12 +110,6 @@ const RequestForm: React.FC<RequestFormProps> = ({
                 material: item.material || '',
                 quantity: item.quantity != null ? String(item.quantity) : '',
                 unit: item.unit || 'unidad',
-                thickness_value: item.thickness_value || '',
-                thickness_unit: item.thickness_unit || 'mm',
-                width_value: item.width_value || '',
-                width_unit: item.width_unit || 'mm',
-                length_value: item.length_value || '',
-                length_unit: item.length_unit || 'mm',
                 spec: item.spec || '',
                 comment: item.comment || '',
               })));
@@ -127,7 +121,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
       } else {
         setMaterialsListName(defaultListName);
         setMaterialsListDescription('');
-        setMaterials([{ material: '', quantity: '', unit: 'unidad', thickness_value: '', thickness_unit: 'mm', width_value: '', width_unit: 'mm', length_value: '', length_unit: 'mm', spec: '', comment: '' }]);
+        setMaterials([{ material: '', quantity: '', unit: 'unidad', spec: '', comment: '' }]);
       }
     };
 
@@ -143,12 +137,6 @@ const RequestForm: React.FC<RequestFormProps> = ({
     material: string;
     quantity: string;
     unit: string;
-    thickness_value: string;
-    thickness_unit: string;
-    width_value: string;
-    width_unit: string;
-    length_value: string;
-    length_unit: string;
     spec: string;
     comment: string;
   };
@@ -156,11 +144,11 @@ const RequestForm: React.FC<RequestFormProps> = ({
   const [materialsListName, setMaterialsListName] = useState(defaultListName);
   const [materialsListDescription, setMaterialsListDescription] = useState('');
   const [materials, setMaterials] = useState<MaterialRow[]>([
-    { material: '', quantity: '', unit: 'unidad', thickness_value: '', thickness_unit: 'mm', width_value: '', width_unit: 'mm', length_value: '', length_unit: 'mm', spec: '', comment: '' },
+    { material: '', quantity: '', unit: 'unidad', spec: '', comment: '' },
   ]);
 
   const addMaterialRow = () =>
-    setMaterials((prev) => [...prev, { material: '', quantity: '', unit: 'unidad', thickness_value: '', thickness_unit: 'mm', width_value: '', width_unit: 'mm', length_value: '', length_unit: 'mm', spec: '', comment: '' }]);
+    setMaterials((prev) => [...prev, { material: '', quantity: '', unit: 'unidad', spec: '', comment: '' }]);
 
   const removeMaterialRow = (idx: number) =>
     setMaterials((prev) => prev.filter((_, i) => i !== idx));
@@ -231,12 +219,12 @@ const RequestForm: React.FC<RequestFormProps> = ({
           material: r.material,
           quantity: r.quantity ? Number(String(r.quantity).replace(',', '.')) : null,
           unit: r.unit || null,
-          thickness_value: r.thickness_value || null,
-          thickness_unit: r.thickness_unit || null,
-          width_value: r.width_value || null,
-          width_unit: r.width_unit || null,
-          length_value: r.length_value || null,
-          length_unit: r.length_unit || null,
+          thickness_value: null,
+          thickness_unit: null,
+          width_value: null,
+          width_unit: null,
+          length_value: null,
+          length_unit: null,
           spec: r.spec || null,
           comment: r.comment || null,
         }));
@@ -252,6 +240,16 @@ const RequestForm: React.FC<RequestFormProps> = ({
     }
   };
 
+  const padRight = (str: string, len: number): string => {
+    const s = String(str || '').slice(0, len);
+    return s + ' '.repeat(Math.max(0, len - s.length));
+  };
+
+  const truncate = (str: string, max: number): string => {
+    const s = String(str || '');
+    return s.length > max ? s.slice(0, max - 1) + '…' : s;
+  };
+
   const composeMaterialsText = () => {
     const rows = materials.filter(r => String(r.material || '').trim());
     const name = (materialsListName || defaultListName).trim() || defaultListName;
@@ -259,21 +257,27 @@ const RequestForm: React.FC<RequestFormProps> = ({
 
     if (!rows.length) return `Lista: ${name}\n(la lista está vacía)`;
 
-    const header = `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n`;
+    const colItem = 20;
+    const colQty = 6;
+    const colUnit = 8;
+    const colSpec = 18;
+    const colComment = 18;
 
-    const lines = rows.map((r, i) => {
-      const qty = r.quantity || '-';
-      const unit = r.unit || '-';
-      const thickness = r.thickness_value ? `${r.thickness_value} ${r.thickness_unit}` : '-';
-      const width = r.width_value ? `${r.width_value} ${r.width_unit}` : '-';
-      const length = r.length_value ? `${r.length_value} ${r.length_unit}` : '-';
-      const spec = r.spec || '-';
-      const comment = r.comment || '-';
+    const headerLine = padRight('Item', colItem) + padRight('Cant', colQty) + padRight('Unidad', colUnit) + padRight('Medidas/Specs', colSpec) + padRight('Comentario', colComment);
+    const separatorLine = '-'.repeat(colItem + colQty + colUnit + colSpec + colComment);
 
-      return `${i + 1}) ${r.material}\nCant.: ${qty} | Unidad: ${unit} | Espesor: ${thickness} | Ancho: ${width} | Largo: ${length} | Specs: ${spec} | Comentario: ${comment}`;
+    const tableRows = rows.map((r) => {
+      const item = padRight(truncate(r.material, colItem), colItem);
+      const qty = padRight(r.quantity || '-', colQty);
+      const unit = padRight(r.unit || '-', colUnit);
+      const spec = padRight(truncate(r.spec, colSpec), colSpec);
+      const comment = padRight(truncate(r.comment, colComment), colComment);
+      return item + qty + unit + spec + comment;
     });
 
-    return `${header}\n${lines.join('\n\n')}`;
+    const table = '```\n' + headerLine + '\n' + separatorLine + '\n' + tableRows.join('\n') + '\n```';
+
+    return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}`;
   };
 
   // Mensajería
@@ -320,7 +324,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
   };
 
   const composeInviteTail = (_: string) => `\n\nNo tenés cuenta en Obrix aún. Unite acá y gestionemos todo desde la app: https://obrix.app/`;
-  const composeActionTail = (phoneOrEmail: string) => {
+  const composeActionTail = (_: string) => {
     if (formData.type === 'materials') {
       return `\n\nAbrí Obrix para ofertar o rechazar por esta lista de materiales.`;
     }
@@ -819,13 +823,10 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                   <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr style={{ color: LIGHT_MUTED }}>
-                        <th className="text-left py-2 pr-2 min-w-[120px]">Material</th>
-                        <th className="text-left py-2 pr-2 w-16">Cant.</th>
-                        <th className="text-left py-2 pr-2 w-20">Unidad</th>
-                        <th className="text-left py-2 pr-2 w-24">Espesor</th>
-                        <th className="text-left py-2 pr-2 w-24">Ancho</th>
-                        <th className="text-left py-2 pr-2 w-24">Largo</th>
-                        <th className="text-left py-2 pr-2 min-w-[100px]">Specs</th>
+                        <th className="text-left py-2 pr-2 min-w-[140px]">Material / Producto</th>
+                        <th className="text-left py-2 pr-2 w-20">Cant.</th>
+                        <th className="text-left py-2 pr-2 w-24">Unidad</th>
+                        <th className="text-left py-2 pr-2 min-w-[120px]">Medidas / Specs</th>
                         <th className="text-left py-2 pr-2 min-w-[100px]">Comentario</th>
                         <th className="py-2 w-10"></th>
                       </tr>
@@ -839,7 +840,8 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                               value={row.material}
                               onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
                               className={fieldBase}
-                              placeholder="Ej: Cemento"
+                              style={{ color: LIGHT_TEXT }}
+                              placeholder="Ej: Madera pino"
                             />
                           </td>
 
@@ -848,6 +850,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                               value={row.quantity}
                               onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
                               className={fieldBase}
+                              style={{ color: LIGHT_TEXT }}
                               placeholder="0"
                               inputMode="decimal"
                             />
@@ -858,81 +861,18 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                               value={row.unit}
                               onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
                               className={fieldBase}
+                              style={{ color: LIGHT_TEXT }}
                             >
                               <option value="unidad">unidad</option>
-                              <option value="bolsa">bolsa</option>
+                              <option value="bolsa/s">bolsa/s</option>
                               <option value="kg">kg</option>
+                              <option value="mm">mm</option>
+                              <option value="cm">cm</option>
                               <option value="m">m</option>
-                              <option value="m2">m²</option>
-                              <option value="m3">m³</option>
+                              <option value="m²">m²</option>
+                              <option value="m³">m³</option>
                               <option value="litro">litro</option>
                             </select>
-                          </td>
-
-                          <td className="py-2 pr-2">
-                            <div className="flex gap-1">
-                              <input
-                                value={row.thickness_value}
-                                onChange={(e) => updateMaterialRow(idx, { thickness_value: e.target.value })}
-                                className={fieldBase}
-                                placeholder="1"
-                                inputMode="decimal"
-                              />
-                              <select
-                                value={row.thickness_unit}
-                                onChange={(e) => updateMaterialRow(idx, { thickness_unit: e.target.value })}
-                                className={fieldBase}
-                              >
-                                <option value="mm">mm</option>
-                                <option value="cm">cm</option>
-                                <option value="m">m</option>
-                                <option value="in">in</option>
-                              </select>
-                            </div>
-                          </td>
-
-                          <td className="py-2 pr-2">
-                            <div className="flex gap-1">
-                              <input
-                                value={row.width_value}
-                                onChange={(e) => updateMaterialRow(idx, { width_value: e.target.value })}
-                                className={fieldBase}
-                                placeholder="10"
-                                inputMode="decimal"
-                              />
-                              <select
-                                value={row.width_unit}
-                                onChange={(e) => updateMaterialRow(idx, { width_unit: e.target.value })}
-                                className={fieldBase}
-                              >
-                                <option value="mm">mm</option>
-                                <option value="cm">cm</option>
-                                <option value="m">m</option>
-                                <option value="in">in</option>
-                              </select>
-                            </div>
-                          </td>
-
-                          <td className="py-2 pr-2">
-                            <div className="flex gap-1">
-                              <input
-                                value={row.length_value}
-                                onChange={(e) => updateMaterialRow(idx, { length_value: e.target.value })}
-                                className={fieldBase}
-                                placeholder="2.4"
-                                inputMode="decimal"
-                              />
-                              <select
-                                value={row.length_unit}
-                                onChange={(e) => updateMaterialRow(idx, { length_unit: e.target.value })}
-                                className={fieldBase}
-                              >
-                                <option value="mm">mm</option>
-                                <option value="cm">cm</option>
-                                <option value="m">m</option>
-                                <option value="in">in</option>
-                              </select>
-                            </div>
                           </td>
 
                           <td className="py-2 pr-2">
@@ -940,7 +880,8 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                               value={row.spec}
                               onChange={(e) => updateMaterialRow(idx, { spec: e.target.value })}
                               className={fieldBase}
-                              placeholder="Ej: 50kg"
+                              style={{ color: LIGHT_TEXT }}
+                              placeholder="Ej: 1'' x 3m"
                             />
                           </td>
 
@@ -949,6 +890,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                               value={row.comment}
                               onChange={(e) => updateMaterialRow(idx, { comment: e.target.value })}
                               className={fieldBase}
+                              style={{ color: LIGHT_TEXT }}
                               placeholder="Opcional"
                             />
                           </td>
@@ -972,7 +914,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                 </div>
 
                 <p className="text-xs mt-2" style={{ color: LIGHT_MUTED }}>
-                  Tip: podés dejar filas vacías; solo se guardarán las que tengan "Material".
+                  Tip: solo completá "Material / Producto" para que el ítem cuente. El resto es opcional.
                 </p>
               </div>
             </div>
@@ -1283,9 +1225,9 @@ const ContactsList: React.FC<{
             value={manualPhone}
             onChange={(e) => setManualPhone(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addManualPhone())}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
             placeholder="+54 9 ..."
-            style={{ color: LIGHT_TEXT }}
+            style={{ color: LIGHT_TEXT, backgroundColor: '#FFFFFF' }}
           />
           <button
             type="button"
