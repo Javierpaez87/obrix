@@ -119,9 +119,9 @@ const getTypeText = (type: string) => {
 };
 
 const BudgetManagement: React.FC = () => {
-  const { budgetRequests, budgets, projects, user, tasks, setTasks, contacts } = useApp();
+  const { budgetRequests, budgets, projects, user, tasks, setTasks, contacts, deletedRequests, refreshBudgetRequests } = useApp();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'requests' | 'quotes' | 'sent'>(
+  const [activeTab, setActiveTab] = useState<'requests' | 'quotes' | 'sent' | 'received' | 'deleted'>(
     'requests',
   );
   const [showRequestForm, setShowRequestForm] = useState(false);
@@ -420,10 +420,7 @@ const handleDeleteRequest = async (requestId: string) => {
   }
 
   // 🔁 refrescar listas
-  await Promise.all([
-    fetchTickets(),
-    fetchDeletedTickets(),
-  ]);
+  await refreshBudgetRequests();
 };
 
   const handleNewRequest = (type: 'constructor' | 'supplier') => {
@@ -635,6 +632,32 @@ const handleDeleteRequest = async (requestId: string) => {
           >
             {isClient ? 'Presupuestos Recibidos' : 'Presupuestos Enviados'} (
             {receivedBudgets.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('received')}
+            className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition
+              ${
+                activeTab === 'received'
+                  ? 'border-[--neon] text-[--neon]'
+                  : 'border-transparent text-white/60 hover:text-white/90 hover:border-white/20'
+              }`}
+            style={{ ['--neon' as any]: NEON }}
+          >
+            Solicitudes recibidas ({receivedRequests.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('deleted')}
+            className={`py-2 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition
+              ${
+                activeTab === 'deleted'
+                  ? 'border-[--neon] text-[--neon]'
+                  : 'border-transparent text-white/60 hover:text-white/90 hover:border-white/20'
+              }`}
+            style={{ ['--neon' as any]: NEON }}
+          >
+            Eliminados ({deletedRequests.length})
           </button>
         </nav>
       </div>
@@ -936,6 +959,150 @@ const handleDeleteRequest = async (requestId: string) => {
                   ? 'Los presupuestos que recibas aparecerán aquí'
                   : 'Los presupuestos que envíes aparecerán aquí'}
               </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Received Requests Tab */}
+      {activeTab === 'received' && (
+        <div className="space-y-4">
+          {receivedRequests.length === 0 ? (
+            <div className="text-center py-12">
+              <DocumentTextIcon className="h-12 w-12 text-white/30 mx-auto mb-4" />
+              <div className="text-white/60 text-lg mb-2">No tenés solicitudes recibidas</div>
+              <p className="text-white/50">
+                Cuando otros usuarios te envíen solicitudes de presupuesto, aparecerán aquí
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {receivedRequests.map((row) => (
+                <div key={row.id} className={cardBase}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
+                        {row.ticket?.title || 'Solicitud'}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-white/70 mb-2">
+                        {row.ticket?.description || ''}
+                      </p>
+                    </div>
+                    <span className={getStatusClasses(row.status)}>
+                      {getStatusText(row.status)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-xs sm:text-sm">
+                      <span className="text-white/70">Estado:</span>
+                      <span className="text-white font-medium">{row.status}</span>
+                    </div>
+                    {row.offer_amount != null && (
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-white/70">Monto ofertado:</span>
+                        <span className="text-white font-medium">
+                          ${row.offer_amount.toLocaleString('es-AR')}
+                        </span>
+                      </div>
+                    )}
+                    {row.offer_estimated_days != null && (
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-white/70">Días estimados:</span>
+                        <span className="text-white font-medium">
+                          {row.offer_estimated_days} días
+                        </span>
+                      </div>
+                    )}
+                    {row.accepted_at && (
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-white/70">Aceptado:</span>
+                        <span className="text-white">
+                          {new Date(row.accepted_at).toLocaleDateString('es-AR')}
+                        </span>
+                      </div>
+                    )}
+                    {row.rejected_at && (
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-white/70">Rechazado:</span>
+                        <span className="text-white">
+                          {new Date(row.rejected_at).toLocaleDateString('es-AR')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-3 border-t border-white/10">
+                    <button
+                      onClick={() => navigate(`/tickets/${row.ticket?.id}`)}
+                      className="flex items-center justify-center px-3 py-2 text-xs sm:text-sm
+                                 bg-zinc-800 border border-white/10 text-white/90 rounded-md
+                                 hover:bg-zinc-700 transition-colors"
+                    >
+                      <EyeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      Ver detalle
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Deleted Requests Tab */}
+      {activeTab === 'deleted' && (
+        <div className="space-y-4">
+          {deletedRequests.length === 0 ? (
+            <div className="text-center py-12">
+              <TrashIcon className="h-12 w-12 text-white/30 mx-auto mb-4" />
+              <div className="text-white/60 text-lg mb-2">No hay solicitudes eliminadas</div>
+              <p className="text-white/50">
+                Las solicitudes que elimines aparecerán aquí temporalmente
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {deletedRequests.map((req) => (
+                <div key={req.id} className={`${cardBase} opacity-70`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
+                        {req.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-white/70 mb-2">
+                        {req.description}
+                      </p>
+                    </div>
+                    <span className={`${chipBase} text-red-400 border-red-500/50 bg-red-900/30`}>
+                      Eliminado
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between text-xs sm:text-sm">
+                      <span className="text-white/70">Creado:</span>
+                      <span className="text-white">
+                        {req.createdAt?.toLocaleDateString
+                          ? req.createdAt.toLocaleDateString('es-AR')
+                          : new Date(req.createdAt).toLocaleDateString('es-AR')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-3 border-t border-white/10">
+                    <button
+                      onClick={() => navigate(`/tickets/${req.id}`)}
+                      className="flex items-center justify-center px-3 py-2 text-xs sm:text-sm
+                                 bg-zinc-800 border border-white/10 text-white/60 rounded-md
+                                 hover:bg-zinc-700 transition-colors"
+                    >
+                      <EyeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      Ver detalle
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
