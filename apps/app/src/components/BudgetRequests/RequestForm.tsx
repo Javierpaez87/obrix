@@ -85,8 +85,73 @@ const RequestForm: React.FC<RequestFormProps> = ({
     }
   }, [editingRequest, projectId, requestType]);
 
+  React.useEffect(() => {
+    const loadMaterialsList = async () => {
+      if (editingRequest && editingRequest.type === 'materials') {
+        try {
+          const { data: list } = await supabase
+            .from('material_lists')
+            .select('id, name')
+            .eq('ticket_id', editingRequest.id)
+            .maybeSingle();
+
+          if (list) {
+            setMaterialsListName(list.name || defaultListName);
+
+            const { data: items } = await supabase
+              .from('material_items')
+              .select('*')
+              .eq('list_id', list.id)
+              .order('position');
+
+            if (items && items.length > 0) {
+              setMaterials(items.map(item => ({
+                material: item.material || '',
+                quantity: item.quantity != null ? String(item.quantity) : '',
+                unit: item.unit || 'unidad',
+                spec: item.spec || '',
+                comment: item.comment || '',
+              })));
+            }
+          }
+        } catch (err) {
+          console.error('[RequestForm] Error loading materials list:', err);
+        }
+      } else {
+        setMaterialsListName(defaultListName);
+        setMaterials([{ material: '', quantity: '', unit: 'unidad', spec: '', comment: '' }]);
+      }
+    };
+
+    loadMaterialsList();
+  }, [editingRequest]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showContactsModal, setShowContactsModal] = useState(false);
+
+  const defaultListName = 'Lista de materiales #1';
+
+  type MaterialRow = {
+    material: string;
+    quantity: string;
+    unit: string;
+    spec: string;
+    comment: string;
+  };
+
+  const [materialsListName, setMaterialsListName] = useState(defaultListName);
+  const [materials, setMaterials] = useState<MaterialRow[]>([
+    { material: '', quantity: '', unit: 'unidad', spec: '', comment: '' },
+  ]);
+
+  const addMaterialRow = () =>
+    setMaterials((prev) => [...prev, { material: '', quantity: '', unit: 'unidad', spec: '', comment: '' }]);
+
+  const removeMaterialRow = (idx: number) =>
+    setMaterials((prev) => prev.filter((_, i) => i !== idx));
+
+  const updateMaterialRow = (idx: number, patch: Partial<MaterialRow>) =>
+    setMaterials((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
 
   const set = <K extends keyof typeof formData>(k: K, v: (typeof formData)[K]) =>
     setFormData((s) => ({ ...s, [k]: v }));
@@ -114,6 +179,71 @@ const RequestForm: React.FC<RequestFormProps> = ({
     return inContacts || inUsers;
   };
 
+  const persistMaterialsForTicket = async (ticketId: string) => {
+    if (formData.type !== 'materials') return;
+
+    try {
+      const name = (materialsListName || defaultListName).trim() || defaultListName;
+
+      const cleanRows = materials
+        .map((r, idx) => ({ ...r, position: idx + 1 }))
+        .filter((r) => String(r.material || '').trim().length > 0);
+
+      const { data: list, error: listErr } = await supabase
+        .from('material_lists')
+        .upsert({
+          ticket_id: ticketId,
+          name,
+          created_by: user?.id ?? null,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'ticket_id' })
+        .select('id')
+        .single();
+
+      if (listErr || !list) {
+        console.error('[RequestForm] Error upserting material list:', listErr);
+        throw listErr;
+      }
+
+      await supabase.from('material_items').delete().eq('list_id', list.id);
+
+      if (cleanRows.length) {
+        const payload = cleanRows.map((r) => ({
+          list_id: list.id,
+          position: r.position,
+          material: r.material,
+          quantity: r.quantity ? Number(String(r.quantity).replace(',', '.')) : null,
+          unit: r.unit || null,
+          spec: r.spec || null,
+          comment: r.comment || null,
+        }));
+
+        const { error: itemsErr } = await supabase.from('material_items').insert(payload);
+        if (itemsErr) {
+          console.error('[RequestForm] Error inserting material items:', itemsErr);
+          throw itemsErr;
+        }
+      }
+    } catch (err) {
+      console.error('[RequestForm] Error persisting materials:', err);
+    }
+  };
+
+  const composeMaterialsText = () => {
+    const rows = materials.filter(r => String(r.material || '').trim());
+    const name = (materialsListName || defaultListName).trim() || defaultListName;
+    if (!rows.length) return `Lista: ${name}\n(la lista está vacía)`;
+
+    const lines = rows.map((r, i) => {
+      const qtyUnit = `${r.quantity || ''} ${r.unit || ''}`.trim();
+      const spec = r.spec ? ` · ${r.spec}` : '';
+      const cmt = r.comment ? `\n   - ${r.comment}` : '';
+      return `${i + 1}) ${r.material}\n   - ${qtyUnit}${spec}${cmt}`;
+    });
+
+    return `Lista: ${name}\n\n${lines.join('\n\n')}`;
+  };
+
   // Mensajería
   const composeBaseMessage = () => {
     const projName = formData.projectId ?
@@ -136,6 +266,18 @@ const RequestForm: React.FC<RequestFormProps> = ({
       fechas.push(`Fecha límite: ${new Date(formData.dueDate).toLocaleDateString('es-AR')}`);
 
     const projectLine = projName ? `\nObra: ${projName}` : '';
+
+    if (formData.type === 'materials') {
+      const materialsText = composeMaterialsText();
+      const notasGenerales = formData.description ? `\n\nNotas generales: ${formData.description}` : '';
+      return (
+`${tipo}${projectLine}
+Título: ${formData.title}
+
+${materialsText}${notasGenerales}
+${fechas.length ? '\n' + fechas.join(' · ') : ''}`.trim()
+      );
+    }
 
     return (
 `${tipo}${projectLine}
@@ -231,6 +373,8 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
       ticketId = data[0].id;
     }
+
+    await persistMaterialsForTicket(ticketId);
 
     // 2) Preparar mensaje y primer contacto
     const base = composeBaseMessage();
@@ -407,6 +551,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
         }
 
         console.log('[RequestForm] Ticket updated successfully, refreshing list');
+        await persistMaterialsForTicket(editingRequest.id);
         await refreshBudgetRequests();
         alert('Solicitud actualizada correctamente.');
       } else {
@@ -439,6 +584,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
         }
 
         console.log('[RequestForm] Ticket created successfully:', data);
+        await persistMaterialsForTicket(data[0].id);
         await refreshBudgetRequests();
         alert('Solicitud creada correctamente.');
       }
@@ -565,6 +711,125 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
               />
             </div>
           </div>
+
+          {/* Lista de Materiales - Solo para tipo materials */}
+          {formData.type === 'materials' && (
+            <div className={sectionCard} style={{ borderColor: NEON }}>
+              <label className={labelBase}>Nombre de la lista (opcional)</label>
+              <input
+                type="text"
+                value={materialsListName}
+                onChange={(e) => setMaterialsListName(e.target.value)}
+                placeholder="Ej: Fundación / Terminaciones"
+                className={fieldBase}
+              />
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold" style={{ color: LIGHT_TEXT }}>Materiales solicitados</h4>
+                  <button
+                    type="button"
+                    onClick={addMaterialRow}
+                    className="px-3 py-2 rounded-lg text-sm font-medium"
+                    style={{ backgroundColor: `${NEON}20`, color: LIGHT_TEXT, border: `1px solid ${NEON}33` }}
+                  >
+                    + Agregar material
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr style={{ color: LIGHT_MUTED }}>
+                        <th className="text-left py-2 pr-2">Material</th>
+                        <th className="text-left py-2 pr-2 w-24">Cant.</th>
+                        <th className="text-left py-2 pr-2 w-28">Unidad</th>
+                        <th className="text-left py-2 pr-2">Medidas / Specs</th>
+                        <th className="text-left py-2 pr-2">Comentario</th>
+                        <th className="py-2 w-10"></th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {materials.map((row, idx) => (
+                        <tr key={idx} className="border-t" style={{ borderColor: LIGHT_BORDER }}>
+                          <td className="py-2 pr-2">
+                            <input
+                              value={row.material}
+                              onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
+                              className={fieldBase}
+                              placeholder="Ej: Cemento Portland"
+                            />
+                          </td>
+
+                          <td className="py-2 pr-2">
+                            <input
+                              value={row.quantity}
+                              onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
+                              className={fieldBase}
+                              placeholder="0"
+                              inputMode="decimal"
+                            />
+                          </td>
+
+                          <td className="py-2 pr-2">
+                            <select
+                              value={row.unit}
+                              onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
+                              className={fieldBase}
+                            >
+                              <option value="unidad">unidad</option>
+                              <option value="bolsa">bolsa</option>
+                              <option value="kg">kg</option>
+                              <option value="m">m</option>
+                              <option value="m2">m²</option>
+                              <option value="m3">m³</option>
+                              <option value="litro">litro</option>
+                            </select>
+                          </td>
+
+                          <td className="py-2 pr-2">
+                            <input
+                              value={row.spec}
+                              onChange={(e) => updateMaterialRow(idx, { spec: e.target.value })}
+                              className={fieldBase}
+                              placeholder="Ej: 50kg / 8mm / 20x20"
+                            />
+                          </td>
+
+                          <td className="py-2 pr-2">
+                            <input
+                              value={row.comment}
+                              onChange={(e) => updateMaterialRow(idx, { comment: e.target.value })}
+                              className={fieldBase}
+                              placeholder="Opcional"
+                            />
+                          </td>
+
+                          <td className="py-2">
+                            <button
+                              type="button"
+                              onClick={() => removeMaterialRow(idx)}
+                              className="p-2 rounded-lg hover:opacity-80"
+                              style={{ color: LIGHT_MUTED, border: `1px solid ${LIGHT_BORDER}` }}
+                              aria-label="Eliminar fila"
+                              title="Eliminar fila"
+                            >
+                              🗑
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <p className="text-xs mt-2" style={{ color: LIGHT_MUTED }}>
+                  Tip: podés dejar filas vacías; solo se guardarán las que tengan "Material".
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Obra */}
           <div className={sectionCard} style={{ borderColor: NEON }}>
