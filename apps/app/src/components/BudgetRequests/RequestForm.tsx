@@ -91,12 +91,13 @@ const RequestForm: React.FC<RequestFormProps> = ({
         try {
           const { data: list } = await supabase
             .from('material_lists')
-            .select('id, name')
+            .select('id, name, description')
             .eq('ticket_id', editingRequest.id)
             .maybeSingle();
 
           if (list) {
             setMaterialsListName(list.name || defaultListName);
+            setMaterialsListDescription(list.description || '');
 
             const { data: items } = await supabase
               .from('material_items')
@@ -109,6 +110,12 @@ const RequestForm: React.FC<RequestFormProps> = ({
                 material: item.material || '',
                 quantity: item.quantity != null ? String(item.quantity) : '',
                 unit: item.unit || 'unidad',
+                thickness_value: item.thickness_value || '',
+                thickness_unit: item.thickness_unit || 'mm',
+                width_value: item.width_value || '',
+                width_unit: item.width_unit || 'mm',
+                length_value: item.length_value || '',
+                length_unit: item.length_unit || 'mm',
                 spec: item.spec || '',
                 comment: item.comment || '',
               })));
@@ -119,7 +126,8 @@ const RequestForm: React.FC<RequestFormProps> = ({
         }
       } else {
         setMaterialsListName(defaultListName);
-        setMaterials([{ material: '', quantity: '', unit: 'unidad', spec: '', comment: '' }]);
+        setMaterialsListDescription('');
+        setMaterials([{ material: '', quantity: '', unit: 'unidad', thickness_value: '', thickness_unit: 'mm', width_value: '', width_unit: 'mm', length_value: '', length_unit: 'mm', spec: '', comment: '' }]);
       }
     };
 
@@ -135,17 +143,24 @@ const RequestForm: React.FC<RequestFormProps> = ({
     material: string;
     quantity: string;
     unit: string;
+    thickness_value: string;
+    thickness_unit: string;
+    width_value: string;
+    width_unit: string;
+    length_value: string;
+    length_unit: string;
     spec: string;
     comment: string;
   };
 
   const [materialsListName, setMaterialsListName] = useState(defaultListName);
+  const [materialsListDescription, setMaterialsListDescription] = useState('');
   const [materials, setMaterials] = useState<MaterialRow[]>([
-    { material: '', quantity: '', unit: 'unidad', spec: '', comment: '' },
+    { material: '', quantity: '', unit: 'unidad', thickness_value: '', thickness_unit: 'mm', width_value: '', width_unit: 'mm', length_value: '', length_unit: 'mm', spec: '', comment: '' },
   ]);
 
   const addMaterialRow = () =>
-    setMaterials((prev) => [...prev, { material: '', quantity: '', unit: 'unidad', spec: '', comment: '' }]);
+    setMaterials((prev) => [...prev, { material: '', quantity: '', unit: 'unidad', thickness_value: '', thickness_unit: 'mm', width_value: '', width_unit: 'mm', length_value: '', length_unit: 'mm', spec: '', comment: '' }]);
 
   const removeMaterialRow = (idx: number) =>
     setMaterials((prev) => prev.filter((_, i) => i !== idx));
@@ -184,6 +199,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
 
     try {
       const name = (materialsListName || defaultListName).trim() || defaultListName;
+      const description = materialsListDescription.trim();
 
       const cleanRows = materials
         .map((r, idx) => ({ ...r, position: idx + 1 }))
@@ -194,6 +210,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
         .upsert({
           ticket_id: ticketId,
           name,
+          description: description || null,
           created_by: user?.id ?? null,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'ticket_id' })
@@ -214,6 +231,12 @@ const RequestForm: React.FC<RequestFormProps> = ({
           material: r.material,
           quantity: r.quantity ? Number(String(r.quantity).replace(',', '.')) : null,
           unit: r.unit || null,
+          thickness_value: r.thickness_value || null,
+          thickness_unit: r.thickness_unit || null,
+          width_value: r.width_value || null,
+          width_unit: r.width_unit || null,
+          length_value: r.length_value || null,
+          length_unit: r.length_unit || null,
           spec: r.spec || null,
           comment: r.comment || null,
         }));
@@ -232,16 +255,25 @@ const RequestForm: React.FC<RequestFormProps> = ({
   const composeMaterialsText = () => {
     const rows = materials.filter(r => String(r.material || '').trim());
     const name = (materialsListName || defaultListName).trim() || defaultListName;
+    const desc = materialsListDescription.trim();
+
     if (!rows.length) return `Lista: ${name}\n(la lista está vacía)`;
 
+    const header = `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n`;
+
     const lines = rows.map((r, i) => {
-      const qtyUnit = `${r.quantity || ''} ${r.unit || ''}`.trim();
-      const spec = r.spec ? ` · ${r.spec}` : '';
-      const cmt = r.comment ? `\n   - ${r.comment}` : '';
-      return `${i + 1}) ${r.material}\n   - ${qtyUnit}${spec}${cmt}`;
+      const qty = r.quantity || '-';
+      const unit = r.unit || '-';
+      const thickness = r.thickness_value ? `${r.thickness_value} ${r.thickness_unit}` : '-';
+      const width = r.width_value ? `${r.width_value} ${r.width_unit}` : '-';
+      const length = r.length_value ? `${r.length_value} ${r.length_unit}` : '-';
+      const spec = r.spec || '-';
+      const comment = r.comment || '-';
+
+      return `${i + 1}) ${r.material}\nCant.: ${qty} | Unidad: ${unit} | Espesor: ${thickness} | Ancho: ${width} | Largo: ${length} | Specs: ${spec} | Comentario: ${comment}`;
     });
 
-    return `Lista: ${name}\n\n${lines.join('\n\n')}`;
+    return `${header}\n${lines.join('\n\n')}`;
   };
 
   // Mensajería
@@ -271,7 +303,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
       const materialsText = composeMaterialsText();
       const notasGenerales = formData.description ? `\n\nNotas generales: ${formData.description}` : '';
       return (
-`${tipo}${projectLine}
+`Has recibido una solicitud de: ${tipo}${projectLine}
 Título: ${formData.title}
 
 ${materialsText}${notasGenerales}
@@ -280,7 +312,7 @@ ${fechas.length ? '\n' + fechas.join(' · ') : ''}`.trim()
     }
 
     return (
-`${tipo}${projectLine}
+`Has recibido una solicitud de: ${tipo}${projectLine}
 Título: ${formData.title}
 Detalle: ${formData.description}
 ${fechas.length ? fechas.join(' · ') : ''}`.trim()
@@ -288,7 +320,12 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
   };
 
   const composeInviteTail = (_: string) => `\n\nNo tenés cuenta en Obrix aún. Unite acá y gestionemos todo desde la app: https://obrix.app/`;
-  const composeActionTail = (_: string) => `\n\nAbrí Obrix para **Aceptar** o **Rechazar** esta solicitud.`;
+  const composeActionTail = (phoneOrEmail: string) => {
+    if (formData.type === 'materials') {
+      return `\n\nAbrí Obrix para ofertar o rechazar por esta lista de materiales.`;
+    }
+    return `\n\nAbrí Obrix para **Aceptar** o **Rechazar** esta solicitud.`;
+  };
 
   const handleWhatsAppBlast = async () => {
     if (!user?.id) {
@@ -299,6 +336,20 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     if (!formData.title || !formData.description) {
       alert('Completá el título y la descripción antes de enviar.');
       return;
+    }
+
+    if (formData.type === 'materials') {
+      const listName = (materialsListName || '').trim();
+      if (!listName) {
+        alert('El nombre de la lista es obligatorio.');
+        return;
+      }
+
+      const hasValidItems = materials.some(r => String(r.material || '').trim().length > 0);
+      if (!hasValidItems) {
+        alert('Debés agregar al menos un material a la lista.');
+        return;
+      }
     }
 
     setShowContactsModal(true);
@@ -521,6 +572,20 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
       return;
     }
 
+    if (formData.type === 'materials') {
+      const listName = (materialsListName || '').trim();
+      if (!listName) {
+        alert('El nombre de la lista es obligatorio.');
+        return;
+      }
+
+      const hasValidItems = materials.some(r => String(r.material || '').trim().length > 0);
+      if (!hasValidItems) {
+        alert('Debés agregar al menos un material a la lista.');
+        return;
+      }
+    }
+
     console.log('[RequestForm] Submitting form, user:', user.id, 'editing:', !!editingRequest);
     setIsSubmitting(true);
 
@@ -654,9 +719,8 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-6">
           {/* Campos principales */}
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3">
               <h3 className="text-sm font-semibold text-slate-900">Campos principales</h3>
-              <span className="text-xs text-slate-600">Obligatorios</span>
             </div>
 
             {/* Tipo de Presupuesto */}
@@ -696,18 +760,20 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
             {/* Descripción */}
             <div>
-              <label className={labelBase}>Descripción Detallada</label>
+              <label className={labelBase}>
+                {formData.type === 'materials' ? 'Notas generales (opcional)' : 'Descripción Detallada'}
+              </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => set('description', e.target.value)}
                 placeholder={
                   requestType === 'constructor'
                     ? 'Describe en detalle: superficie, especificaciones, materiales incluidos, etc.'
-                    : 'Lista detallada: cantidades, especificaciones, marcas preferidas, etc.'
+                    : 'Notas adicionales sobre la lista de materiales'
                 }
                 rows={4}
                 className={fieldBase}
-                required
+                required={formData.type !== 'materials'}
               />
             </div>
           </div>
@@ -715,14 +781,26 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
           {/* Lista de Materiales - Solo para tipo materials */}
           {formData.type === 'materials' && (
             <div className={sectionCard} style={{ borderColor: NEON }}>
-              <label className={labelBase}>Nombre de la lista (opcional)</label>
+              <label className={labelBase}>Nombre de la lista</label>
               <input
                 type="text"
                 value={materialsListName}
                 onChange={(e) => setMaterialsListName(e.target.value)}
                 placeholder="Ej: Fundación / Terminaciones"
                 className={fieldBase}
+                required
               />
+
+              <div className="mt-4">
+                <label className={labelBase}>Descripción de la lista (opcional)</label>
+                <input
+                  type="text"
+                  value={materialsListDescription}
+                  onChange={(e) => setMaterialsListDescription(e.target.value)}
+                  placeholder="Descripción breve de esta lista"
+                  className={fieldBase}
+                />
+              </div>
 
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
@@ -738,14 +816,17 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
+                  <table className="w-full text-xs border-collapse">
                     <thead>
                       <tr style={{ color: LIGHT_MUTED }}>
-                        <th className="text-left py-2 pr-2">Material</th>
-                        <th className="text-left py-2 pr-2 w-24">Cant.</th>
-                        <th className="text-left py-2 pr-2 w-28">Unidad</th>
-                        <th className="text-left py-2 pr-2">Medidas / Specs</th>
-                        <th className="text-left py-2 pr-2">Comentario</th>
+                        <th className="text-left py-2 pr-2 min-w-[120px]">Material</th>
+                        <th className="text-left py-2 pr-2 w-16">Cant.</th>
+                        <th className="text-left py-2 pr-2 w-20">Unidad</th>
+                        <th className="text-left py-2 pr-2 w-24">Espesor</th>
+                        <th className="text-left py-2 pr-2 w-24">Ancho</th>
+                        <th className="text-left py-2 pr-2 w-24">Largo</th>
+                        <th className="text-left py-2 pr-2 min-w-[100px]">Specs</th>
+                        <th className="text-left py-2 pr-2 min-w-[100px]">Comentario</th>
                         <th className="py-2 w-10"></th>
                       </tr>
                     </thead>
@@ -758,7 +839,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                               value={row.material}
                               onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
                               className={fieldBase}
-                              placeholder="Ej: Cemento Portland"
+                              placeholder="Ej: Cemento"
                             />
                           </td>
 
@@ -789,11 +870,77 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                           </td>
 
                           <td className="py-2 pr-2">
+                            <div className="flex gap-1">
+                              <input
+                                value={row.thickness_value}
+                                onChange={(e) => updateMaterialRow(idx, { thickness_value: e.target.value })}
+                                className={fieldBase}
+                                placeholder="1"
+                                inputMode="decimal"
+                              />
+                              <select
+                                value={row.thickness_unit}
+                                onChange={(e) => updateMaterialRow(idx, { thickness_unit: e.target.value })}
+                                className={fieldBase}
+                              >
+                                <option value="mm">mm</option>
+                                <option value="cm">cm</option>
+                                <option value="m">m</option>
+                                <option value="in">in</option>
+                              </select>
+                            </div>
+                          </td>
+
+                          <td className="py-2 pr-2">
+                            <div className="flex gap-1">
+                              <input
+                                value={row.width_value}
+                                onChange={(e) => updateMaterialRow(idx, { width_value: e.target.value })}
+                                className={fieldBase}
+                                placeholder="10"
+                                inputMode="decimal"
+                              />
+                              <select
+                                value={row.width_unit}
+                                onChange={(e) => updateMaterialRow(idx, { width_unit: e.target.value })}
+                                className={fieldBase}
+                              >
+                                <option value="mm">mm</option>
+                                <option value="cm">cm</option>
+                                <option value="m">m</option>
+                                <option value="in">in</option>
+                              </select>
+                            </div>
+                          </td>
+
+                          <td className="py-2 pr-2">
+                            <div className="flex gap-1">
+                              <input
+                                value={row.length_value}
+                                onChange={(e) => updateMaterialRow(idx, { length_value: e.target.value })}
+                                className={fieldBase}
+                                placeholder="2.4"
+                                inputMode="decimal"
+                              />
+                              <select
+                                value={row.length_unit}
+                                onChange={(e) => updateMaterialRow(idx, { length_unit: e.target.value })}
+                                className={fieldBase}
+                              >
+                                <option value="mm">mm</option>
+                                <option value="cm">cm</option>
+                                <option value="m">m</option>
+                                <option value="in">in</option>
+                              </select>
+                            </div>
+                          </td>
+
+                          <td className="py-2 pr-2">
                             <input
                               value={row.spec}
                               onChange={(e) => updateMaterialRow(idx, { spec: e.target.value })}
                               className={fieldBase}
-                              placeholder="Ej: 50kg / 8mm / 20x20"
+                              placeholder="Ej: 50kg"
                             />
                           </td>
 
@@ -846,80 +993,73 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             </select>
           </div>
 
-          {/* Fechas y Prioridad */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className={`${sectionCard} space-y-3 md:col-span-2`} style={{ borderColor: NEON }}>
-              <div>
-                <label className={labelBase}>Fecha Límite (Opcional)</label>
-                <input
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => set('dueDate', e.target.value)}
-                  className={fieldBase}
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  id="useStartDate"
-                  type="checkbox"
-                  checked={formData.useStartDate}
-                  onChange={(e) => set('useStartDate', e.target.checked)}
-                  className="h-4 w-4 rounded border-[--border] text-[--neon] focus:ring-[--neon]"
-                />
-                <label htmlFor="useStartDate" className="text-sm" style={{ color: LIGHT_MUTED }}>
-                  Incluir Fecha de Inicio
-                </label>
-              </div>
+          {/* Fechas */}
+          <div className={sectionCard} style={{ borderColor: NEON }}>
+            <div>
+              <label className={labelBase}>Fecha Límite (Opcional)</label>
               <input
                 type="date"
-                value={formData.startDate}
-                onChange={(e) => set('startDate', e.target.value)}
-                className={`${fieldBase} ${!formData.useStartDate ? 'opacity-50 pointer-events-none' : ''}`}
-              />
-
-              <div className="flex items-center gap-3">
-                <input
-                  id="useEndDate"
-                  type="checkbox"
-                  checked={formData.useEndDate}
-                  onChange={(e) => set('useEndDate', e.target.checked)}
-                  className="h-4 w-4 rounded border-[--border] text-[--neon] focus:ring-[--neon]"
-                />
-                <label htmlFor="useEndDate" className="text-sm" style={{ color: LIGHT_MUTED }}>
-                  Incluir Fecha de Fin
-                </label>
-              </div>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => set('endDate', e.target.value)}
-                className={`${fieldBase} ${!formData.useEndDate ? 'opacity-50 pointer-events-none' : ''}`}
+                value={formData.dueDate}
+                onChange={(e) => set('dueDate', e.target.value)}
+                className={fieldBase}
               />
             </div>
 
-            <div className="md:col-span-1">
-              <div className={sectionCard} style={{ borderColor: NEON }}>
-                <label className="mb-1 block text-xs font-medium text-slate-700">
-                  Prioridad (opcional)
-                </label>
-                <div className="opacity-90">
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => set('priority', e.target.value as any)}
-                    className={fieldBase}
-                  >
-                    <option value="low">Baja</option>
-                    <option value="medium">Media</option>
-                    <option value="high">Alta</option>
-                    <option value="urgent">Urgente</option>
-                  </select>
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  Podés dejarlo en "Media".
-                </p>
-              </div>
+            <div className="mt-4 flex items-center gap-3">
+              <input
+                id="useStartDate"
+                type="checkbox"
+                checked={formData.useStartDate}
+                onChange={(e) => set('useStartDate', e.target.checked)}
+                className="h-4 w-4 rounded border-[--border] text-[--neon] focus:ring-[--neon]"
+              />
+              <label htmlFor="useStartDate" className="text-sm" style={{ color: LIGHT_MUTED }}>
+                Incluir Fecha de Inicio
+              </label>
             </div>
+            <input
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => set('startDate', e.target.value)}
+              className={`${fieldBase} mt-2 ${!formData.useStartDate ? 'opacity-50 pointer-events-none' : ''}`}
+            />
+
+            <div className="mt-4 flex items-center gap-3">
+              <input
+                id="useEndDate"
+                type="checkbox"
+                checked={formData.useEndDate}
+                onChange={(e) => set('useEndDate', e.target.checked)}
+                className="h-4 w-4 rounded border-[--border] text-[--neon] focus:ring-[--neon]"
+              />
+              <label htmlFor="useEndDate" className="text-sm" style={{ color: LIGHT_MUTED }}>
+                Incluir Fecha de Fin
+              </label>
+            </div>
+            <input
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => set('endDate', e.target.value)}
+              className={`${fieldBase} mt-2 ${!formData.useEndDate ? 'opacity-50 pointer-events-none' : ''}`}
+            />
+          </div>
+
+          {/* Prioridad */}
+          <div className={sectionCard} style={{ borderColor: NEON }}>
+            <label className={labelBase}>Prioridad (opcional)</label>
+            <select
+              value={formData.priority}
+              onChange={(e) => set('priority', e.target.value as any)}
+              className={fieldBase}
+            >
+              <option value="low">Baja</option>
+              <option value="medium">Media</option>
+              <option value="high">Alta</option>
+              <option value="urgent">Urgente</option>
+            </select>
+            <p className="mt-2 text-xs" style={{ color: LIGHT_MUTED }}>
+              Podés dejarlo en "Media".
+            </p>
           </div>
 
           {/* Envío por WhatsApp */}
@@ -1143,8 +1283,9 @@ const ContactsList: React.FC<{
             value={manualPhone}
             onChange={(e) => setManualPhone(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addManualPhone())}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900"
             placeholder="+54 9 ..."
+            style={{ color: LIGHT_TEXT }}
           />
           <button
             type="button"
