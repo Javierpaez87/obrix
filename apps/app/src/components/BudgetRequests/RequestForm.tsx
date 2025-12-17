@@ -782,142 +782,153 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             </div>
           </div>
 
-          {/* Lista de Materiales - Solo para tipo materials */}
-          {formData.type === 'materials' && (
-            <div className={sectionCard} style={{ borderColor: NEON }}>
-              <label className={labelBase}>Nombre de la lista</label>
-              <input
-                type="text"
-                value={materialsListName}
-                onChange={(e) => setMaterialsListName(e.target.value)}
-                placeholder="Ej: Fundación / Terminaciones"
-                className={fieldBase}
-                required
-              />
+{/* Lista de Materiales - Solo para tipo materials */}
+{formData.type === 'materials' && (
+  <div className={sectionCard} style={{ borderColor: NEON }}>
+    <label className={labelBase}>Nombre de la lista</label>
+    <input
+      type="text"
+      value={materialsListName}
+      onChange={(e) => setMaterialsListName(e.target.value)}
+      placeholder="Ej: Fundación / Terminaciones"
+      className={fieldBase}
+      required
+    />
 
-              <div className="mt-4">
-                <label className={labelBase}>Descripción de la lista (opcional)</label>
-                <input
-                  type="text"
-                  value={materialsListDescription}
-                  onChange={(e) => setMaterialsListDescription(e.target.value)}
-                  placeholder="Descripción breve de esta lista"
-                  className={fieldBase}
-                />
-              </div>
+    <div className="mt-4">
+      <label className={labelBase}>Descripción de la lista (opcional)</label>
+      <input
+        type="text"
+        value={materialsListDescription}
+        onChange={(e) => setMaterialsListDescription(e.target.value)}
+        placeholder="Descripción breve de esta lista"
+        className={fieldBase}
+      />
+    </div>
 
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-semibold" style={{ color: LIGHT_TEXT }}>Materiales solicitados</h4>
+    {/* Materiales */}
+    <div className="mt-4">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-sm font-semibold" style={{ color: LIGHT_TEXT }}>
+          Materiales solicitados
+        </h4>
+
+        <button
+          type="button"
+          onClick={addMaterialRow}
+          className="px-3 py-2 rounded-lg text-sm font-medium"
+          style={{
+            backgroundColor: `${NEON}20`,
+            color: LIGHT_TEXT,
+            border: `1px solid ${NEON}33`
+          }}
+        >
+          + Agregar material
+        </button>
+      </div>
+
+      {/* Tabla (desktop + mobile por ahora) */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr style={{ color: LIGHT_MUTED }}>
+              <th className="text-left py-2 pr-2 min-w-[140px]">Material / Producto</th>
+              <th className="text-left py-2 pr-2 w-20">Cant.</th>
+              <th className="text-left py-2 pr-2 w-24">Unidad</th>
+              <th className="text-left py-2 pr-2 min-w-[120px]">Medidas / Specs</th>
+              <th className="text-left py-2 pr-2 min-w-[100px]">Comentario</th>
+              <th className="py-2 w-10"></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {materials.map((row, idx) => (
+              <tr key={idx} className="border-t" style={{ borderColor: LIGHT_BORDER }}>
+                <td className="py-2 pr-2">
+                  <input
+                    value={row.material}
+                    onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
+                    className={fieldBase}
+                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+                    placeholder="Ej: Madera pino"
+                  />
+                </td>
+
+                <td className="py-2 pr-2">
+                  <input
+                    value={row.quantity}
+                    onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
+                    className={fieldBase}
+                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+                    placeholder="0"
+                    inputMode="decimal"
+                  />
+                </td>
+
+                <td className="py-2 pr-2">
+                  <select
+                    value={row.unit}
+                    onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
+                    className={fieldBase}
+                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+                  >
+                    <option value="unidad">unidad</option>
+                    <option value="bolsa/s">bolsa/s</option>
+                    <option value="kg">kg</option>
+                    <option value="mm">mm</option>
+                    <option value="cm">cm</option>
+                    <option value="m">m</option>
+                    <option value="m²">m²</option>
+                    <option value="m³">m³</option>
+                    <option value="litro">litro</option>
+                  </select>
+                </td>
+
+                <td className="py-2 pr-2">
+                  <input
+                    value={row.spec}
+                    onChange={(e) => updateMaterialRow(idx, { spec: e.target.value })}
+                    className={fieldBase}
+                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+                    placeholder="Ej: 1'' x 3m"
+                  />
+                </td>
+
+                <td className="py-2 pr-2">
+                  <input
+                    value={row.comment}
+                    onChange={(e) => updateMaterialRow(idx, { comment: e.target.value })}
+                    className={fieldBase}
+                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+                    placeholder="Opcional"
+                  />
+                </td>
+
+                <td className="py-2">
                   <button
                     type="button"
-                    onClick={addMaterialRow}
-                    className="px-3 py-2 rounded-lg text-sm font-medium"
-                    style={{ backgroundColor: `${NEON}20`, color: LIGHT_TEXT, border: `1px solid ${NEON}33` }}
+                    onClick={() => removeMaterialRow(idx)}
+                    className="p-2 rounded-lg hover:opacity-80"
+                    style={{ color: LIGHT_MUTED, border: `1px solid ${LIGHT_BORDER}` }}
+                    aria-label="Eliminar fila"
+                    title="Eliminar fila"
                   >
-                    + Agregar material
+                    🗑
                   </button>
-                </div>
-<div className="overflow-x-auto">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr style={{ color: LIGHT_MUTED }}>
-                        <th className="text-left py-2 pr-2 min-w-[140px]">Material / Producto</th>
-                        <th className="text-left py-2 pr-2 w-20">Cant.</th>
-                        <th className="text-left py-2 pr-2 w-24">Unidad</th>
-                        <th className="text-left py-2 pr-2 min-w-[120px]">Medidas / Specs</th>
-                        <th className="text-left py-2 pr-2 min-w-[100px]">Comentario</th>
-                        <th className="py-2 w-10"></th>
-                      </tr>
-                    </thead>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-                    <tbody>
-                      {materials.map((row, idx) => (
-                        <tr key={idx} className="border-t" style={{ borderColor: LIGHT_BORDER }}>
-                          <td className="py-2 pr-2">
-                            <input
-                              value={row.material}
-                              onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
-                              className={fieldBase}
-                              style={{ color: LIGHT_TEXT }}
-                              placeholder="Ej: Madera pino"
-                            />
-                          </td>
+      <p className="text-xs mt-2" style={{ color: LIGHT_MUTED }}>
+        Tip: solo completá "Material / Producto" para que el ítem cuente. El resto es opcional.
+      </p>
+    </div>
+  </div>
+)}
 
-                          <td className="py-2 pr-2">
-                            <input
-                              value={row.quantity}
-                              onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
-                              className={fieldBase}
-                              style={{ color: LIGHT_TEXT }}
-                              placeholder="0"
-                              inputMode="decimal"
-                            />
-                          </td>
-
-                          <td className="py-2 pr-2">
-                            <select
-                              value={row.unit}
-                              onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
-                              className={fieldBase}
-                              style={{ color: LIGHT_TEXT }}
-                            >
-                              <option value="unidad">unidad</option>
-                              <option value="bolsa/s">bolsa/s</option>
-                              <option value="kg">kg</option>
-                              <option value="mm">mm</option>
-                              <option value="cm">cm</option>
-                              <option value="m">m</option>
-                              <option value="m²">m²</option>
-                              <option value="m³">m³</option>
-                              <option value="litro">litro</option>
-                            </select>
-                          </td>
-
-                          <td className="py-2 pr-2">
-                            <input
-                              value={row.spec}
-                              onChange={(e) => updateMaterialRow(idx, { spec: e.target.value })}
-                              className={fieldBase}
-                              style={{ color: LIGHT_TEXT }}
-                              placeholder="Ej: 1'' x 3m"
-                            />
-                          </td>
-
-                          <td className="py-2 pr-2">
-                            <input
-                              value={row.comment}
-                              onChange={(e) => updateMaterialRow(idx, { comment: e.target.value })}
-                              className={fieldBase}
-                              style={{ color: LIGHT_TEXT }}
-                              placeholder="Opcional"
-                            />
-                          </td>
-
-                          <td className="py-2">
-                            <button
-                              type="button"
-                              onClick={() => removeMaterialRow(idx)}
-                              className="p-2 rounded-lg hover:opacity-80"
-                              style={{ color: LIGHT_MUTED, border: `1px solid ${LIGHT_BORDER}` }}
-                              aria-label="Eliminar fila"
-                              title="Eliminar fila"
-                            >
-                              🗑
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <p className="text-xs mt-2" style={{ color: LIGHT_MUTED }}>
-                  Tip: solo completá "Material / Producto" para que el ítem cuente. El resto es opcional.
-                </p>
-              </div>
-            </div>
-          )}
           {/* Obra */}
           <div className={sectionCard} style={{ borderColor: NEON }}>
             <label className={labelBase}>Obra (Opcional)</label>
