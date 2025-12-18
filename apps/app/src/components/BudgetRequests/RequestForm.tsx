@@ -251,55 +251,35 @@ const RequestForm: React.FC<RequestFormProps> = ({
     return s.length > max ? s.slice(0, max - 1) + '…' : s;
   };
 
-  const waSanitize = (s: string) =>
-  String(s ?? '')
-    .replace(/m²/g, 'm2')
-    .replace(/m³/g, 'm3')
-    .replace(/\t/g, ' ')
-    .replace(/…/g, '...')
-    .trim();
+  const composeMaterialsText = () => {
+    const rows = materials.filter(r => String(r.material || '').trim());
+    const name = (materialsListName || defaultListName).trim() || defaultListName;
+    const desc = materialsListDescription.trim();
 
-const truncateSafe = (str: string, max: number): string => {
-  const s = waSanitize(str);
-  return s.length > max ? s.slice(0, Math.max(0, max - 3)) + '...' : s;
-};
+    if (!rows.length) return `Lista: ${name}\n(la lista está vacía)`;
 
-const padRightSafe = (str: string, len: number): string => {
-  const s = truncateSafe(str, len);
-  return s + ' '.repeat(Math.max(0, len - s.length));
-};
+    const colItem = 20;
+    const colQty = 6;
+    const colUnit = 8;
+    const colSpec = 18;
+    const colComment = 18;
 
-const joinCols = (cols: string[], widths: number[]) =>
-  cols.map((c, i) => padRightSafe(c, widths[i])).join('  '); // 👈 2 espacios entre columnas
+    const headerLine = padRight('Item', colItem) + padRight('Cant', colQty) + padRight('Unidad', colUnit) + padRight('Medidas/Specs', colSpec) + padRight('Comentario', colComment);
+    const separatorLine = '-'.repeat(colItem + colQty + colUnit + colSpec + colComment);
 
-const composeMaterialsText = () => {
-  const rows = materials.filter(r => waSanitize(r.material).length > 0);
-  const name = (materialsListName || defaultListName).trim() || defaultListName;
-  const desc = waSanitize(materialsListDescription);
+    const tableRows = rows.map((r) => {
+      const item = padRight(truncate(r.material, colItem), colItem);
+      const qty = padRight(r.quantity || '-', colQty);
+      const unit = padRight(r.unit || '-', colUnit);
+      const spec = padRight(truncate(r.spec, colSpec), colSpec);
+      const comment = padRight(truncate(r.comment, colComment), colComment);
+      return item + qty + unit + spec + comment;
+    });
 
-  if (!rows.length) return `Lista: ${name}\n(la lista está vacía)`;
+    const table = '```\n' + headerLine + '\n' + separatorLine + '\n' + tableRows.join('\n') + '\n```';
 
-  // ✅ anchos pensados para WhatsApp móvil (evita wrap)
-  const widths = [12, 4, 5, 10, 8]; // ITEM, CANT, UNID, SPECS, COMENT
-
-  const headerLine = joinCols(['ITEM', 'CANT', 'UNID', 'SPECS', 'COMENT'], widths);
-  const separatorLine = '-'.repeat(headerLine.length);
-
-  const tableRows = rows.map((r) => {
-    const item = waSanitize(r.material);
-    const qty = waSanitize(r.quantity || '-');
-    const unit = waSanitize(r.unit || '-');
-    const spec = waSanitize(r.spec || '-');
-    const comment = waSanitize(r.comment || '-');
-
-    return joinCols([item, qty, unit, spec, comment], widths);
-  });
-
-  const table = ['```', headerLine, separatorLine, ...tableRows, '```'].join('\n');
-
-  return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}`;
-};
-
+    return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}`;
+  };
 
   // Mensajería
   const composeBaseMessage = () => {
