@@ -830,17 +830,35 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
       {/* Tabla (desktop + mobile por ahora) */}
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
+        
+          
           <thead>
-            <tr style={{ color: LIGHT_MUTED }}>
-              <th className="text-left py-2 pr-2 min-w-[140px]">Material / Producto</th>
-              <th className="text-left py-2 pr-2 w-20">Cant.</th>
-              <th className="text-left py-2 pr-2 w-24">Unidad</th>
-              <th className="text-left py-2 pr-2 min-w-[120px]">Medidas / Specs</th>
-              <th className="text-left py-2 pr-2 min-w-[100px]">Comentario</th>
-              <th className="py-2 w-10"></th>
-            </tr>
-          </thead>
+  <tr style={{ color: LIGHT_MUTED }}>
+    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[140px]">
+      Material / Producto
+    </th>
 
+    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 w-[56px] md:w-20">
+      Cant.
+    </th>
+
+    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 w-[76px] md:w-24">
+      Unidad
+    </th>
+
+    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[120px]">
+      Medidas
+    </th>
+
+    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[100px]">
+      Comentario
+    </th>
+
+    <th className="py-1 md:py-2 w-10"></th>
+  </tr>
+</thead>
+
+          
           <tbody>
             {materials.map((row, idx) => (
               <tr key={idx} className="border-t" style={{ borderColor: LIGHT_BORDER }}>
