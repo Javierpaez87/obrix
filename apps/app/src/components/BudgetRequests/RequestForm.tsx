@@ -29,7 +29,8 @@ const fieldBase =
   'focus:ring-2 focus:ring-[--neon] focus:border-transparent transition-colors duration-300';
 
 const labelBase = 'block text-sm font-medium text-[--tx-muted] mb-2';
-const sectionCard = 'rounded-xl p-4 sm:p-5 border bg-[--surface] transition-colors duration-300';
+const sectionCard =
+  'rounded-xl p-2 sm:p-4 border bg-[--surface] transition-colors duration-300';
 const divider = 'border-t';
 
 const RequestForm: React.FC<RequestFormProps> = ({
