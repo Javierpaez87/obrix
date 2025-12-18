@@ -831,102 +831,100 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
       {/* Tabla (desktop + mobile por ahora) */}
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
-        
-          
           <thead>
-  <tr style={{ color: LIGHT_MUTED }}>
-    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[140px]">
-      Material / Producto
-    </th>
+            <tr style={{ color: LIGHT_MUTED }}>
+              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[140px]">
+                Material / Producto
+              </th>
 
-    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 w-[56px] md:w-20">
-      Cant.
-    </th>
+              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 w-[56px] md:w-20">
+                Cant.
+              </th>
 
-    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 w-[76px] md:w-24">
-      Unidad
-    </th>
+              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 w-[76px] md:w-24">
+                Unidad
+              </th>
 
-    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[120px]">
-      Medidas
-    </th>
+              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[120px]">
+                Medidas
+              </th>
 
-    <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[100px]">
-      Comentario
-    </th>
+              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[100px]">
+                Comentario
+              </th>
 
-    <th className="py-1 md:py-2 w-10"></th>
-  </tr>
-</thead>
+              <th className="py-1 md:py-2 w-10"></th>
+            </tr>
+          </thead>
 
-          
-<td className="py-1 md:py-2 pr-1 md:pr-2">
-  <input
-    value={row.material}
-    onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
-    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
-    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-    placeholder="Ej: Madera pino"
-  />
-</td>
+          <tbody>
+            {materials.map((row, idx) => (
+              <tr key={idx}>
+                <td className="py-1 md:py-2 pr-1 md:pr-2">
+                  <input
+                    value={row.material}
+                    onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
+                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
+                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+                    placeholder="Ej: Madera pino"
+                  />
+                </td>
 
+                <td className="py-1 md:py-2 pr-1 md:pr-2">
+                  <input
+                    value={row.quantity}
+                    onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
+                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
+                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+                    placeholder="0"
+                    inputMode="decimal"
+                  />
+                </td>
 
-<td className="py-1 md:py-2 pr-1 md:pr-2">
-  <input
-    value={row.quantity}
-    onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
-    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
-    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-    placeholder="0"
-    inputMode="decimal"
-  />
-</td>
+                <td className="py-1 md:py-2 pr-1 md:pr-2">
+                  <select
+                    value={row.unit}
+                    onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
+                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
+                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+                  >
+                    <option value="unidad">unidad</option>
+                    <option value="bolsa/s">bolsa/s</option>
+                    <option value="kg">kg</option>
+                    <option value="mm">mm</option>
+                    <option value="cm">cm</option>
+                    <option value="m">m</option>
+                    <option value="m²">m²</option>
+                    <option value="m³">m³</option>
+                    <option value="litro">litro</option>
+                  </select>
+                </td>
 
-<td className="py-1 md:py-2 pr-1 md:pr-2">
-  <select
-    value={row.unit}
-    onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
-    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
-    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-  >
-    <option value="unidad">unidad</option>
-    <option value="bolsa/s">bolsa/s</option>
-    <option value="kg">kg</option>
-    <option value="mm">mm</option>
-    <option value="cm">cm</option>
-    <option value="m">m</option>
-    <option value="m²">m²</option>
-    <option value="m³">m³</option>
-    <option value="litro">litro</option>
-  </select>
-</td>
-
-
-                <td className="py-2 pr-2">
+                <td className="py-1 md:py-2 pr-1 md:pr-2">
                   <input
                     value={row.spec}
                     onChange={(e) => updateMaterialRow(idx, { spec: e.target.value })}
-                    className={fieldBase}
+                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
                     style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
                     placeholder="Ej: 1'' x 3m"
                   />
                 </td>
 
-                <td className="py-2 pr-2">
+                <td className="py-1 md:py-2 pr-1 md:pr-2">
                   <input
                     value={row.comment}
                     onChange={(e) => updateMaterialRow(idx, { comment: e.target.value })}
-                    className={fieldBase}
+                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
                     style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
                     placeholder="Opcional"
                   />
                 </td>
 
-                <td className="py-2">
+                <td className="py-1 md:py-2">
                   <button
                     type="button"
                     onClick={() => removeMaterialRow(idx)}
-                    className="p-2 rounded-lg hover:opacity-80"
+                    className="p-1 md:p-2 rounded-lg hover:opacity-80"
                     style={{ color: LIGHT_MUTED, border: `1px solid ${LIGHT_BORDER}` }}
                     aria-label="Eliminar fila"
                     title="Eliminar fila"
