@@ -872,16 +872,17 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
                   />
                 </td>
 
-                <td className="py-2 pr-2">
-                  <input
-                    value={row.quantity}
-                    onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
-                    className={fieldBase}
-                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-                    placeholder="0"
-                    inputMode="decimal"
-                  />
-                </td>
+<td className="py-1 md:py-2 pr-1 md:pr-2">
+  <input
+    value={row.quantity}
+    onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
+    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
+    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+    placeholder="0"
+    inputMode="decimal"
+  />
+</td>
+
 
                 <td className="py-2 pr-2">
                   <select
