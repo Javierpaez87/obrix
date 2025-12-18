@@ -859,18 +859,16 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 </thead>
 
           
-          <tbody>
-            {materials.map((row, idx) => (
-              <tr key={idx} className="border-t" style={{ borderColor: LIGHT_BORDER }}>
-                <td className="py-2 pr-2">
-                  <input
-                    value={row.material}
-                    onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
-                    className={fieldBase}
-                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-                    placeholder="Ej: Madera pino"
-                  />
-                </td>
+<td className="py-1 md:py-2 pr-1 md:pr-2">
+  <input
+    value={row.material}
+    onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
+    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
+    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+    placeholder="Ej: Madera pino"
+  />
+</td>
+
 
 <td className="py-1 md:py-2 pr-1 md:pr-2">
   <input
