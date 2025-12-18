@@ -273,44 +273,32 @@ const joinCols = (cols: string[], widths: number[]) =>
   cols.map((c, i) => padRightSafe(c, widths[i])).join('  '); // 👈 2 espacios entre columnas
 
 const composeMaterialsText = () => {
-  const rows = materials.filter(r => String(r.material || '').trim());
+  const rows = materials.filter(r => waSanitize(r.material).length > 0);
   const name = (materialsListName || defaultListName).trim() || defaultListName;
-  const desc = materialsListDescription.trim();
+  const desc = waSanitize(materialsListDescription);
 
   if (!rows.length) return `Lista: ${name}\n(la lista está vacía)`;
 
-  const colItem = 20;
-  const colQty = 6;
-  const colUnit = 8;
-  const colSpec = 18;
-  const colComment = 18;
+  // ✅ anchos pensados para WhatsApp móvil (evita wrap)
+  const widths = [12, 4, 5, 10, 8]; // ITEM, CANT, UNID, SPECS, COMENT
 
-  const headerLine =
-    padRight('ITEM', colItem) +
-    padRight('CANT', colQty) +
-    padRight('UNID', colUnit) +
-    padRight('SPECS', colSpec) +
-    padRight('COMENT', colComment);
-
-  const separatorLine = '-'.repeat(colItem + colQty + colUnit + colSpec + colComment);
+  const headerLine = joinCols(['ITEM', 'CANT', 'UNID', 'SPECS', 'COMENT'], widths);
+  const separatorLine = '-'.repeat(headerLine.length);
 
   const tableRows = rows.map((r) => {
-    const item = padRight(truncate(r.material, colItem), colItem);
-    const qty = padRight(r.quantity || '-', colQty);
-    const unit = padRight(r.unit || '-', colUnit);
-    const spec = padRight(truncate(r.spec || '-', colSpec), colSpec);
-    const comment = padRight(truncate(r.comment || '-', colComment), colComment);
-    return item + qty + unit + spec + comment;
+    const item = waSanitize(r.material);
+    const qty = waSanitize(r.quantity || '-');
+    const unit = waSanitize(r.unit || '-');
+    const spec = waSanitize(r.spec || '-');
+    const comment = waSanitize(r.comment || '-');
+
+    return joinCols([item, qty, unit, spec, comment], widths);
   });
 
-  const table = '```\n' + headerLine + '\n' + separatorLine + '\n' + tableRows.join('\n') + '\n```';
+  const table = ['```', headerLine, separatorLine, ...tableRows, '```'].join('\n');
 
-  const tip = `\n\nPara visualizar en WhatsApp la tabla completa, poné el celular en horizontal.`;
-
-  return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}${tip}`;
+  return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}`;
 };
-
-
 
 
   // Mensajería
