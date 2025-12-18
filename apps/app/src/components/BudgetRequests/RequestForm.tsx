@@ -883,25 +883,25 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
   />
 </td>
 
+<td className="py-1 md:py-2 pr-1 md:pr-2">
+  <select
+    value={row.unit}
+    onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
+    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
+    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
+  >
+    <option value="unidad">unidad</option>
+    <option value="bolsa/s">bolsa/s</option>
+    <option value="kg">kg</option>
+    <option value="mm">mm</option>
+    <option value="cm">cm</option>
+    <option value="m">m</option>
+    <option value="m²">m²</option>
+    <option value="m³">m³</option>
+    <option value="litro">litro</option>
+  </select>
+</td>
 
-                <td className="py-2 pr-2">
-                  <select
-                    value={row.unit}
-                    onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
-                    className={fieldBase}
-                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-                  >
-                    <option value="unidad">unidad</option>
-                    <option value="bolsa/s">bolsa/s</option>
-                    <option value="kg">kg</option>
-                    <option value="mm">mm</option>
-                    <option value="cm">cm</option>
-                    <option value="m">m</option>
-                    <option value="m²">m²</option>
-                    <option value="m³">m³</option>
-                    <option value="litro">litro</option>
-                  </select>
-                </td>
 
                 <td className="py-2 pr-2">
                   <input
