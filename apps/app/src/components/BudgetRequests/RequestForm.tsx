@@ -272,27 +272,6 @@ const padRightSafe = (str: string, len: number): string => {
 const joinCols = (cols: string[], widths: number[]) =>
   cols.map((c, i) => padRightSafe(c, widths[i])).join('  '); // 👈 2 espacios entre columnas
 
-const waSanitize = (s: any) =>
-  String(s ?? '')
-    .replace(/m²/g, 'm2')
-    .replace(/m³/g, 'm3')
-    .replace(/\t/g, ' ')
-    .replace(/…/g, '...')
-    .trim();
-
-const truncateSafe = (str: any, max: number): string => {
-  const s = waSanitize(str);
-  return s.length > max ? s.slice(0, Math.max(0, max - 3)) + '...' : s;
-};
-
-const padRightSafe = (str: any, len: number): string => {
-  const s = truncateSafe(str, len);
-  return s + ' '.repeat(Math.max(0, len - s.length));
-};
-
-const joinCols = (cols: any[], widths: number[]) =>
-  cols.map((c, i) => padRightSafe(c, widths[i])).join('  '); // 2 espacios entre columnas
-
 const composeMaterialsText = () => {
   const rows = materials.filter((r) => waSanitize(r.material).length > 0);
   const name = (materialsListName || defaultListName).trim() || defaultListName;
