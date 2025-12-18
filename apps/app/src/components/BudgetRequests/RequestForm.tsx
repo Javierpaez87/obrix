@@ -279,31 +279,32 @@ const composeMaterialsText = () => {
 
   if (!rows.length) return `Lista: ${name}\n(la lista está vacía)`;
 
-  // ✅ Vertical-first (WhatsApp portrait): 4 columnas compactas
-  const widths = [12, 4, 3, 12]; // ITEM, CANT, UN, SPECS
+  // ✅ Versión ANCHA (se lee bien en modo horizontal)
+  const widths = [18, 6, 6, 16, 16]; // ITEM, CANT, UNID, SPECS, COMENT
 
-  const headerLine = joinCols(['ITEM', 'CANT', 'UN', 'SPECS'], widths);
+  const headerLine = joinCols(['ITEM', 'CANT', 'UNID', 'SPECS', 'COMENT'], widths);
   const separatorLine = '-'.repeat(headerLine.length);
 
-  const tableRows = rows.map((r) => {
-    const item = waSanitize(r.material);
-    const qty = waSanitize(r.quantity || '-');
-    const unit = waSanitize(r.unit || '-');
-    const spec = waSanitize(r.spec || '-');
-    return joinCols([item, qty, unit, spec], widths);
-  });
+  const tableRows = rows.map((r) =>
+    joinCols(
+      [
+        waSanitize(r.material),
+        waSanitize(r.quantity || '-'),
+        waSanitize(r.unit || '-'),
+        waSanitize(r.spec || '-'),
+        waSanitize(r.comment || '-'),
+      ],
+      widths
+    )
+  );
 
   const table = ['```', headerLine, separatorLine, ...tableRows, '```'].join('\n');
 
-  // ✅ Comentarios fuera de la tabla (si existen)
-  const comments = rows
-    .filter((r) => waSanitize(r.comment).length > 0)
-    .map((r) => `- ${truncateSafe(r.material, 20)}: ${waSanitize(r.comment)}`);
+  const tip = `\n\nTip: si girás el teléfono (modo horizontal), vas a ver la tabla completa con más detalle.`;
 
-  const commentsBlock = comments.length ? `\n\nComentarios:\n${comments.join('\n')}` : '';
-
-  return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}${commentsBlock}`;
+  return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}${tip}`;
 };
+
 
 
 
