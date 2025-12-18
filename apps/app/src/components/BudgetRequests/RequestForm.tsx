@@ -279,8 +279,8 @@ const composeMaterialsText = () => {
 
   if (!rows.length) return `Lista: ${name}\n(la lista está vacía)`;
 
-  // ✅ Versión ANCHA (se lee bien en modo horizontal)
-  const widths = [18, 6, 6, 16, 16]; // ITEM, CANT, UNID, SPECS, COMENT
+  // ✅ Tabla ANCHA (mejor en horizontal)
+  const widths = [20, 6, 8, 18, 18]; // ITEM, CANT, UNID, SPECS, COMENT
 
   const headerLine = joinCols(['ITEM', 'CANT', 'UNID', 'SPECS', 'COMENT'], widths);
   const separatorLine = '-'.repeat(headerLine.length);
@@ -300,7 +300,7 @@ const composeMaterialsText = () => {
 
   const table = ['```', headerLine, separatorLine, ...tableRows, '```'].join('\n');
 
-  const tip = `\n\nTip: si girás el teléfono (modo horizontal), vas a ver la tabla completa con más detalle.`;
+  const tip = `\n\nPara visualizar en WhatsApp la tabla completa, poné el celular en horizontal.`;
 
   return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}${tip}`;
 };
