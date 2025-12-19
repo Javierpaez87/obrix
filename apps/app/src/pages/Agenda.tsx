@@ -102,15 +102,15 @@ const Agenda: React.FC = () => {
     category: 'materials',
     subcategory: '',
     notes: '',
-    rating: undefined
+    rating: undefined,
   });
 
   const isClient = user?.role === 'client';
   const isConstructor = user?.role === 'constructor';
 
-  const materialsContacts = contacts.filter(c => c.category === 'materials');
-  const laborContacts = contacts.filter(c => c.category === 'labor');
-  const clientContacts = contacts.filter(c => c.category === 'clients');
+  const materialsContacts = contacts.filter((c) => c.category === 'materials');
+  const laborContacts = contacts.filter((c) => c.category === 'labor');
+  const clientContacts = contacts.filter((c) => c.category === 'clients');
 
   const getSubcategoryLabel = (subcategory: string, category: string) => {
     const labels = {
@@ -120,7 +120,7 @@ const Agenda: React.FC = () => {
         ceramicos: 'Cerámicos',
         sanitarios: 'Sanitarios',
         electricidad: 'Electricidad',
-        pintureria: 'Pinturería'
+        pintureria: 'Pinturería',
       },
       labor: {
         constructor: 'Constructor',
@@ -129,9 +129,10 @@ const Agenda: React.FC = () => {
         electricista: 'Electricista',
         carpintero: 'Carpintero',
         pintor: 'Pintor',
-        techista: 'Techista'
-      }
+        techista: 'Techista',
+      },
     } as const;
+
     // @ts-ignore
     return labels[category]?.[subcategory] || subcategory;
   };
@@ -142,35 +143,43 @@ const Agenda: React.FC = () => {
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const handleAddContact = async () => {
-    if (newContact.name && newContact.company && newContact.phone && newContact.subcategory) {
-      try {
-        await addContact({
-          name: newContact.name!,
-          company: newContact.company!,
-          phone: newContact.phone!,
-          email: newContact.email,
-          category: newContact.category!,
-          subcategory: newContact.subcategory!,
-          notes: newContact.notes,
-          rating: newContact.rating
-        });
+  const resetModalState = () => {
+    setShowAddContact(false);
+    setShowEditContact(false);
+    setEditingContact(null);
+    setNewContact({
+      name: '',
+      company: '',
+      phone: '',
+      email: '',
+      category: 'materials',
+      subcategory: '',
+      notes: '',
+      rating: undefined,
+    });
+  };
 
-        setNewContact({
-          name: '',
-          company: '',
-          phone: '',
-          email: '',
-          category: 'materials',
-          subcategory: '',
-          notes: '',
-          rating: undefined
-        });
-        setShowAddContact(false);
-      } catch (e) {
-        console.error('Error adding contact:', e);
-        alert('No se pudo guardar el contacto. Revisá permisos (RLS) y conexión.');
-      }
+  const handleAddContact = async () => {
+    console.log('[Agenda] handleAddContact', newContact);
+
+    if (!newContact.name || !newContact.company || !newContact.phone || !newContact.subcategory) return;
+
+    try {
+      await addContact({
+        name: newContact.name,
+        company: newContact.company,
+        phone: newContact.phone,
+        email: newContact.email,
+        category: newContact.category,
+        subcategory: newContact.subcategory,
+        notes: newContact.notes,
+        rating: newContact.rating,
+      });
+
+      resetModalState();
+    } catch (e: any) {
+      console.error('[Agenda] addContact error:', e);
+      alert(e?.message ?? 'No se pudo guardar el contacto. Revisá permisos (RLS) y conexión.');
     }
   };
 
@@ -184,58 +193,50 @@ const Agenda: React.FC = () => {
       category: contact.category,
       subcategory: contact.subcategory,
       notes: contact.notes,
-      rating: contact.rating
+      rating: contact.rating,
     });
     setShowEditContact(true);
   };
 
   const handleUpdateContact = async () => {
-    if (editingContact && newContact.name && newContact.company && newContact.phone && newContact.subcategory) {
-      try {
-        await updateContact(editingContact.id, {
-          name: newContact.name!,
-          company: newContact.company!,
-          phone: newContact.phone!,
-          email: newContact.email,
-          category: newContact.category!,
-          subcategory: newContact.subcategory!,
-          notes: newContact.notes,
-          rating: newContact.rating
-        });
+    console.log('[Agenda] handleUpdateContact', { id: editingContact?.id, newContact });
 
-        setNewContact({
-          name: '',
-          company: '',
-          phone: '',
-          email: '',
-          category: 'materials',
-          subcategory: '',
-          notes: '',
-          rating: undefined
-        });
-        setEditingContact(null);
-        setShowEditContact(false);
-      } catch (e) {
-        console.error('Error updating contact:', e);
-        alert('No se pudo actualizar el contacto.');
-      }
+    if (!editingContact) return;
+    if (!newContact.name || !newContact.company || !newContact.phone || !newContact.subcategory) return;
+
+    try {
+      await updateContact(editingContact.id, {
+        name: newContact.name,
+        company: newContact.company,
+        phone: newContact.phone,
+        email: newContact.email,
+        category: newContact.category,
+        subcategory: newContact.subcategory,
+        notes: newContact.notes,
+        rating: newContact.rating,
+      });
+
+      resetModalState();
+    } catch (e: any) {
+      console.error('[Agenda] updateContact error:', e);
+      alert(e?.message ?? 'No se pudo actualizar el contacto.');
     }
   };
 
   const handleDeleteContact = async (contactId: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este contacto?')) {
-      try {
-        await deleteContact(contactId);
-      } catch (e) {
-        console.error('Error deleting contact:', e);
-        alert('No se pudo eliminar el contacto.');
-      }
+    if (!confirm('¿Estás seguro de que quieres eliminar este contacto?')) return;
+
+    try {
+      await deleteContact(contactId);
+    } catch (e: any) {
+      console.error('[Agenda] deleteContact error:', e);
+      alert(e?.message ?? 'No se pudo eliminar el contacto.');
     }
   };
 
   const renderStars = (rating: number) => (
     <div className="flex items-center">
-      {[1, 2, 3, 4, 5].map(star => (
+      {[1, 2, 3, 4, 5].map((star) => (
         <svg
           key={star}
           className={`h-4 w-4 ${star <= rating ? 'text-emerald-300' : 'text-white/25'}`}
@@ -249,8 +250,7 @@ const Agenda: React.FC = () => {
   );
 
   const list =
-    selectedCategory === 'materials' ? materialsContacts :
-    selectedCategory === 'labor' ? laborContacts : clientContacts;
+    selectedCategory === 'materials' ? materialsContacts : selectedCategory === 'labor' ? laborContacts : clientContacts;
 
   return (
     <div className="space-y-6 text-white bg-neutral-950/0">
@@ -271,9 +271,7 @@ const Agenda: React.FC = () => {
       {/* CONTENEDOR PRINCIPAL con identidad Obrix */}
       <NeonFrame>
         <div className="p-4 sm:p-6">
-          {contactsLoading && (
-            <div className="text-white/60 text-sm mb-3">Cargando contactos...</div>
-          )}
+          {contactsLoading && <div className="text-white/60 text-sm mb-3">Cargando contactos...</div>}
 
           {/* TABS */}
           <div className="flex gap-1 p-1 rounded-xl mb-5 bg-white/5 border border-white/10 overflow-x-auto">
@@ -290,6 +288,7 @@ const Agenda: React.FC = () => {
               </span>
               <span className="sm:hidden">Materiales ({materialsContacts.length})</span>
             </button>
+
             <button
               onClick={() => setSelectedCategory('labor')}
               className={`${tabBtn} ${
@@ -303,6 +302,7 @@ const Agenda: React.FC = () => {
               </span>
               <span className="sm:hidden">Mano de obra ({laborContacts.length})</span>
             </button>
+
             {isConstructor && (
               <button
                 onClick={() => setSelectedCategory('clients')}
@@ -322,7 +322,7 @@ const Agenda: React.FC = () => {
 
           {/* LISTA DE CONTACTOS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {list.map(contact => (
+            {list.map((contact) => (
               <NeonFrame key={contact.id} className="rounded-2xl">
                 <div className="p-4 sm:p-5 flex flex-col h-full">
                   {/* Título + rating */}
@@ -344,12 +344,14 @@ const Agenda: React.FC = () => {
                       <PhoneIcon className="h-4 w-4 mr-2 text-cyan-300" />
                       {contact.phone}
                     </div>
+
                     {contact.email && (
                       <div className="flex items-center text-xs sm:text-sm break-all">
                         <EnvelopeIcon className="h-4 w-4 mr-2 text-teal-300" />
                         {contact.email}
                       </div>
                     )}
+
                     {contact.lastContact && (
                       <div className="text-xs text-white/50">
                         Último contacto: {contact.lastContact.toLocaleDateString('es-AR')}
@@ -363,7 +365,7 @@ const Agenda: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Acciones (todos los botones con el MISMO estilo outline Obrix) */}
+                  {/* Acciones */}
                   <div className="mt-auto">
                     <div className="grid grid-cols-4 gap-2">
                       {/* WhatsApp */}
@@ -402,7 +404,7 @@ const Agenda: React.FC = () => {
             ))}
           </div>
 
-          {list.length === 0 && (
+          {list.length === 0 && !contactsLoading && (
             <div className="text-center py-12">
               <div className="text-white/70 text-base sm:text-lg mb-2">No hay contactos</div>
               <p className="text-sm sm:text-base text-white/60">
@@ -426,22 +428,9 @@ const Agenda: React.FC = () => {
               <h3 className="text-base sm:text-lg font-semibold text-white">
                 {showEditContact ? 'Editar contacto' : 'Agregar contacto'}
               </h3>
+
               <button
-                onClick={() => {
-                  setShowAddContact(false);
-                  setShowEditContact(false);
-                  setEditingContact(null);
-                  setNewContact({
-                    name: '',
-                    company: '',
-                    phone: '',
-                    email: '',
-                    category: 'materials',
-                    subcategory: '',
-                    notes: '',
-                    rating: undefined
-                  });
-                }}
+                onClick={resetModalState}
                 className="text-white/60 hover:text-white transition p-2 rounded-lg hover:bg-white/5"
               >
                 <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -458,7 +447,7 @@ const Agenda: React.FC = () => {
                       setNewContact({
                         ...newContact,
                         category: e.target.value as 'materials' | 'labor' | 'clients',
-                        subcategory: ''
+                        subcategory: '',
                       })
                     }
                     className={field}
@@ -558,7 +547,7 @@ const Agenda: React.FC = () => {
                 <div>
                   <label className={label}>Calificación</label>
                   <div className="flex items-center space-x-1">
-                    {[1, 2, 3, 4, 5].map(star => (
+                    {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
@@ -601,25 +590,8 @@ const Agenda: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t border-white/10">
-              <OutlineBtn
-                onClick={() => {
-                  setShowAddContact(false);
-                  setShowEditContact(false);
-                  setEditingContact(null);
-                  setNewContact({
-                    name: '',
-                    company: '',
-                    phone: '',
-                    email: '',
-                    category: 'materials',
-                    subcategory: '',
-                    notes: '',
-                    rating: undefined
-                  });
-                }}
-              >
-                Cancelar
-              </OutlineBtn>
+              <OutlineBtn onClick={resetModalState}>Cancelar</OutlineBtn>
+
               <SolidGradBtn onClick={showEditContact ? handleUpdateContact : handleAddContact}>
                 {showEditContact ? 'Actualizar contacto' : 'Agregar contacto'}
               </SolidGradBtn>
