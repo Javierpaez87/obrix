@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   BuildingOfficeIcon,
   CurrencyDollarIcon,
@@ -8,6 +8,8 @@ import {
   ChatBubbleLeftRightIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
+
+import RequestForm from '../components/BudgetRequests/RequestForm';
 
 // 🎨 Paleta restringida a cyan–teal–verde (sin violetas/fucsias)
 // Sin dependencias nuevas ni comentarios multilinea para evitar errores de cierre.
@@ -43,9 +45,7 @@ const formatARS = (n: number) =>
 
 const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
   <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 to-emerald-500/60 ${className}`}>
-    <div className="rounded-2xl bg-neutral-950/95 backdrop-blur-sm border border-white/10">
-      {children}
-    </div>
+    <div className="rounded-2xl bg-neutral-950/95 backdrop-blur-sm border border-white/10">{children}</div>
   </div>
 );
 
@@ -116,10 +116,33 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
   const projects = (inputProjects ?? []) as ObrixProject[];
   const user = inputUser ?? { name: '—' };
 
+  const [isRequestOpen, setIsRequestOpen] = useState(false);
+  const [requestType, setRequestType] = useState<'constructor' | 'supplier'>('constructor');
+
   const activeProjects = projects.filter((p) => p.status === 'in_progress').length;
   const totalBudget = projects.reduce((sum, p) => sum + toNumber(p?.budget), 0);
   const totalSpent = projects.reduce((sum, p) => sum + toNumber(p?.spent), 0);
   const pendingTasks = 5;
+
+  const projectIdForRequest = projects?.[0]?.id;
+
+  const openRequest = (t: 'constructor' | 'supplier') => {
+    setRequestType(t);
+    setIsRequestOpen(true);
+  };
+
+  const closeRequest = () => setIsRequestOpen(false);
+
+  const inviteHref = useMemo(() => {
+    const baseLink = 'https://obrix.netlify.app';
+    const msg =
+      `Hola! Te invito a sumarte a Obrix para colaborar en un proyecto.\n\n` +
+      `Elegí tu rol al registrarte:\n` +
+      `• Constructor/Estudio\n` +
+      `• Cliente\n\n` +
+      `Link: ${baseLink}`;
+    return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  }, []);
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
@@ -141,8 +164,17 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <StatCard icon={<BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />} label="Obras activas" value={activeProjects} hint="+3 este mes" />
-          <StatCard icon={<CurrencyDollarIcon className="w-5 h-5 text-emerald-300" />} label="Presupuesto total" value={formatARS(totalBudget)} />
+          <StatCard
+            icon={<BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />}
+            label="Obras activas"
+            value={activeProjects}
+            hint="+3 este mes"
+          />
+          <StatCard
+            icon={<CurrencyDollarIcon className="w-5 h-5 text-emerald-300" />}
+            label="Presupuesto total"
+            value={formatARS(totalBudget)}
+          />
           <StatCard icon={<ClockIcon className="w-5 h-5 text-teal-300" />} label="Tareas pendientes" value={pendingTasks} />
           <StatCard icon={<CheckCircleIcon className="w-5 h-5 text-emerald-300" />} label="Gastado" value={formatARS(totalSpent)} />
         </div>
@@ -150,7 +182,9 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
         <NeonCard>
           <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-semibold tracking-tight">Obras recientes</h2>
-            <button className="text-xs rounded-lg px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 transition">Ver todas</button>
+            <button className="text-xs rounded-lg px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 transition">
+              Ver todas
+            </button>
           </div>
           <div className="p-4 sm:p-6">
             {projects.length > 0 ? (
@@ -165,7 +199,9 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
                       <p className="text-xs sm:text-sm text-white/60 truncate">{p?.address}</p>
                       <div className="mt-2 flex items-center gap-2">
                         <StatusPill status={p?.status} />
-                        <span className="text-xs text-white/50">{formatARS(toNumber(p?.spent))} / {formatARS(toNumber(p?.budget))}</span>
+                        <span className="text-xs text-white/50">
+                          {formatARS(toNumber(p?.spent))} / {formatARS(toNumber(p?.budget))}
+                        </span>
                       </div>
                     </div>
 
@@ -176,7 +212,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
 
                     <div className="flex items-center gap-2 sm:gap-3">
                       <WhatsAppButton phone={p?.whatsapp} text={`Hola, te escribo por el proyecto *${p?.name}* en Obrix.`} />
-                      <a href="#" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10 transition">
+                      <a
+                        href="#"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10 transition"
+                      >
                         Ver detalle <ArrowUpRightIcon className="w-3.5 h-3.5 opacity-70" />
                       </a>
                     </div>
@@ -195,33 +234,76 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
               <p className="text-sm text-white/70">Acción rápida</p>
               <h3 className="text-lg font-semibold mt-1">Crear solicitud de presupuesto</h3>
               <p className="text-sm text-white/60 mt-1">Guía paso a paso con adjuntos y alcance.</p>
-              <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 px-4 py-2 text-sm font-medium hover:opacity-90 transition">
-                Iniciar <ArrowUpRightIcon className="w-4 h-4" />
-              </button>
+
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => openRequest('constructor')}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 px-4 py-2 text-sm font-medium hover:opacity-90 transition"
+                >
+                  Solicitar a constructor <ArrowUpRightIcon className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => openRequest('supplier')}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-sm hover:bg-white/15 transition"
+                >
+                  Solicitar materiales <ArrowUpRightIcon className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </NeonCard>
+
           <NeonCard>
             <div className="p-5 sm:p-6">
               <p className="text-sm text-white/70">Acción rápida</p>
               <h3 className="text-lg font-semibold mt-1">Registrar cobro/pago</h3>
               <p className="text-sm text-white/60 mt-1">Impacta en el Cashflow y en el proyecto vinculado.</p>
-              <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-sm hover:bg-white/15 transition">
+              <a
+                href="https://obrix.netlify.app/payments"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-sm hover:bg-white/15 transition"
+              >
                 Abrir <ArrowUpRightIcon className="w-4 h-4" />
-              </button>
+              </a>
             </div>
           </NeonCard>
+
           <NeonCard>
             <div className="p-5 sm:p-6">
               <p className="text-sm text-white/70">Acción rápida</p>
-              <h3 className="text-lg font-semibold mt-1">Invitar constructor/estudio</h3>
+              <h3 className="text-lg font-semibold mt-1">Invitar a alguien</h3>
               <p className="text-sm text-white/60 mt-1">Enviá invitación con rol y permisos.</p>
-              <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-sm hover:bg-white/15 transition">
-                Invitar <ArrowUpRightIcon className="w-4 h-4" />
-              </button>
+
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <a
+                  href={inviteHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-sm hover:bg-white/15 transition"
+                >
+                  Invitar Constructor/Estudio <ArrowUpRightIcon className="w-4 h-4" />
+                </a>
+
+                <a
+                  href={inviteHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-sm hover:bg-white/15 transition"
+                >
+                  Invitar Cliente <ArrowUpRightIcon className="w-4 h-4" />
+                </a>
+              </div>
             </div>
           </NeonCard>
         </div>
       </div>
+
+      <RequestForm
+        isOpen={isRequestOpen}
+        onClose={closeRequest}
+        projectId={projectIdForRequest}
+        requestType={requestType}
+        theme="light"
+      />
     </div>
   );
 };
