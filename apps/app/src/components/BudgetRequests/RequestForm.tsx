@@ -305,7 +305,7 @@ const composeMaterialsText = () => {
 
   const table = '```\n' + headerLine + '\n' + separatorLine + '\n' + tableRows.join('\n') + '\n```';
 
-  const tip = `\n\nPara visualizar en WhatsApp la tabla completa, poné el celular en horizontal.`;
+  const tip = `\n\nPara visualizar en WhatsApp la tabla completa, *poné el celular en horizontal.*`;
 
   return `Lista: ${name}${desc ? `\nDescripción: ${desc}` : ''}\n\n${table}${tip}`;
 };
