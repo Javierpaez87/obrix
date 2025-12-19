@@ -531,72 +531,129 @@ const handleDeleteRequest = async (requestId: string) => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        <div className={cardBase}>
-          <div className="flex items-center">
-            <div className={iconPill}>
-              <ClockIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
-            </div>
-            <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-white/70">
-                Pendientes
-              </p>
-              <p className="text-lg sm:text-2xl font-bold text-white">
-                {myRequests.filter((r: any) => r.status === 'pending').length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className={cardBase}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setActiveTab('requests')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setActiveTab('requests');
+            }
+          }}
+          className={`${cardBase} cursor-pointer transition-all hover:brightness-110 ${
+            activeTab === 'requests'
+              ? 'border-[--neon] shadow-[0_0_20px_rgba(0,255,163,0.3)]'
+              : 'hover:border-white/20'
+          }`}
+          style={{ ['--neon' as any]: NEON }}
+        >
           <div className="flex items-center">
             <div className={iconPill}>
               <DocumentTextIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
             </div>
             <div className="ml-2 sm:ml-3">
               <p className="text-xs sm:text-sm font-medium text-white/70">
-                Cotizados
+                {isClient ? 'Mis Solicitudes' : 'Solicitudes Recibidas'}
               </p>
               <p className="text-lg sm:text-2xl font-bold text-white">
-                {receivedBudgets.filter((b) => b.status === 'sent').length}
+                {myRequests.length}
               </p>
             </div>
           </div>
         </div>
 
-        <div className={cardBase}>
-          <div className="flex items-center">
-            <div className={iconPill}>
-              <CheckCircleIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
-            </div>
-            <div className="ml-2 sm:ml-3">
-              <p className="text-xs sm:text-sm font-medium text-white/70">
-                Aprobados
-              </p>
-              <p className="text-lg sm:text-2xl font-bold text-white">
-                {receivedBudgets.filter((b) => b.status === 'approved').length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className={cardBase}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setActiveTab('quotes')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setActiveTab('quotes');
+            }
+          }}
+          className={`${cardBase} cursor-pointer transition-all hover:brightness-110 ${
+            activeTab === 'quotes'
+              ? 'border-[--neon] shadow-[0_0_20px_rgba(0,255,163,0.3)]'
+              : 'hover:border-white/20'
+          }`}
+          style={{ ['--neon' as any]: NEON }}
+        >
           <div className="flex items-center">
             <div className={iconPill}>
               <CurrencyDollarIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
             </div>
             <div className="ml-2 sm:ml-3">
               <p className="text-xs sm:text-sm font-medium text-white/70">
-                Total
+                {isClient ? 'Presupuestos Recibidos' : 'Presupuestos Enviados'}
               </p>
-              <p
-                className="text-lg sm:text-2xl font-bold text-[--neon]"
-                style={{ ['--neon' as any]: NEON }}
-              >
-                $
-                {receivedBudgets
-                  .filter((b) => b.status === 'approved')
-                  .reduce((sum, b) => sum + b.amount, 0)
-                  .toLocaleString('es-AR')}
+              <p className="text-lg sm:text-2xl font-bold text-white">
+                {receivedBudgets.length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setActiveTab('received')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setActiveTab('received');
+            }
+          }}
+          className={`${cardBase} cursor-pointer transition-all hover:brightness-110 ${
+            activeTab === 'received'
+              ? 'border-[--neon] shadow-[0_0_20px_rgba(0,255,163,0.3)]'
+              : 'hover:border-white/20'
+          }`}
+          style={{ ['--neon' as any]: NEON }}
+        >
+          <div className="flex items-center">
+            <div className={iconPill}>
+              <ChatBubbleLeftRightIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
+            </div>
+            <div className="ml-2 sm:ml-3">
+              <p className="text-xs sm:text-sm font-medium text-white/70">
+                Solicitudes recibidas
+              </p>
+              <p className="text-lg sm:text-2xl font-bold text-white">
+                {receivedRequests.length}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setActiveTab('deleted')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setActiveTab('deleted');
+            }
+          }}
+          className={`${cardBase} cursor-pointer transition-all hover:brightness-110 ${
+            activeTab === 'deleted'
+              ? 'border-[--neon] shadow-[0_0_20px_rgba(0,255,163,0.3)]'
+              : 'hover:border-white/20'
+          }`}
+          style={{ ['--neon' as any]: NEON }}
+        >
+          <div className="flex items-center">
+            <div className={iconPill}>
+              <TrashIcon className="h-4 w-4 sm:h-6 sm:w-6 text-white/80" />
+            </div>
+            <div className="ml-2 sm:ml-3">
+              <p className="text-xs sm:text-sm font-medium text-white/70">
+                Eliminados
+              </p>
+              <p className="text-lg sm:text-2xl font-bold text-white">
+                {deletedRequests.length}
               </p>
             </div>
           </div>
