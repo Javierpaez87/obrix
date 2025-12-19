@@ -83,6 +83,48 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const auth = useAuth();
 
+  // ============================
+  // ✅ Helpers de debug (para ver el error REAL)
+  // ============================
+  const logSupabaseError = (label: string, err: any) => {
+    if (!err) return;
+    console.error(label, {
+      message: err?.message,
+      details: err?.details,
+      hint: err?.hint,
+      code: err?.code,
+      status: err?.status,
+    });
+  };
+
+  const debugSupabaseAuth = async () => {
+    // 1) sesión
+    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+    console.log('[Contacts] supabase.auth.getSession():', {
+      hasSession: !!sessionData?.session,
+      sessionUserId: sessionData?.session?.user?.id ?? null,
+      sessionErr: sessionErr?.message ?? null,
+    });
+
+    // 2) user (si hay sesión, debería dar user)
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    console.log('[Contacts] supabase.auth.getUser():', {
+      userId: userData?.user?.id ?? null,
+      userErr: userErr?.message ?? null,
+    });
+
+    return {
+      hasSession: !!sessionData?.session,
+      sessionUserId: sessionData?.session?.user?.id ?? null,
+      userId: userData?.user?.id ?? null,
+    };
+  };
+
+  const normalizeEmail = (email?: string | null) => {
+    const e = (email ?? '').trim();
+    return e.length ? e : null;
+  };
+
   // (Opcional) log para ver auth en cada render
   // console.log('[AppContext] render auth:', { id: auth.user?.id, role: auth.user?.role, loading: auth.loading });
 
@@ -265,7 +307,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
       console.log('[Contacts] fetchContacts result:', { count: data?.length ?? 0, error });
 
-      if (error) throw error;
+      if (error) {
+        logSupabaseError('[Contacts] fetchContacts error:', error);
+        throw error;
+      }
 
       setContacts((data ?? []).map(mapDbContactToContact));
     } catch (e) {
@@ -281,35 +326,41 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     if (!auth.user?.id) throw new Error('No authenticated user');
 
-    // 🔎 Verifica que el usuario de Supabase Auth existe (para RLS)
-    // (Si esto da null pero auth.user.id existe, tu login NO es Supabase Auth)
-    try {
-      const { data: authData } = await supabase.auth.getUser();
-      console.log('[Contacts] supabase.auth.getUser():', authData?.user?.id);
-    } catch (e) {
-      console.warn('[Contacts] supabase.auth.getUser() failed:', e);
-    }
+    // 🔎 Esto define si el problema es RLS / sesión
+    const dbg = await debugSupabaseAuth();
+    console.log('[Contacts] auth compare:', {
+      appAuthUserId: auth.user.id,
+      supabaseSessionUserId: dbg.sessionUserId,
+      supabaseUserId: dbg.userId,
+    });
 
-    const { data, error } = await supabase
+    const insertPayload = {
+      user_id: auth.user.id,
+      name: payload.name,
+      company: payload.company,
+      phone: payload.phone,
+      email: normalizeEmail(payload.email ?? null),
+      category: payload.category,
+      subcategory: payload.subcategory,
+      notes: payload.notes ?? null,
+      rating: payload.rating ?? null,
+      last_contact: null,
+    };
+
+    console.log('[Contacts] insert payload =>', insertPayload);
+
+    const { data, error, status } = await supabase
       .from('contacts')
-      .insert({
-        user_id: auth.user.id,
-        name: payload.name,
-        company: payload.company,
-        phone: payload.phone,
-        email: payload.email ?? null,
-        category: payload.category,
-        subcategory: payload.subcategory,
-        notes: payload.notes ?? null,
-        rating: payload.rating ?? null,
-        last_contact: null,
-      })
+      .insert(insertPayload)
       .select('*')
       .single();
 
-    console.log('[Contacts] addContact result:', { data, error });
+    console.log('[Contacts] addContact result:', { status, data, error });
 
-    if (error) throw error;
+    if (error) {
+      logSupabaseError('[Contacts] addContact error:', error);
+      throw error;
+    }
 
     const mapped = mapDbContactToContact(data);
     setContacts(prev => [mapped, ...prev]);
@@ -318,13 +369,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const updateContact = async (id: string, payload: Partial<Contact>) => {
     console.log('[Contacts] updateContact called:', { id, payload });
 
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from('contacts')
       .update({
         name: payload.name,
         company: payload.company,
         phone: payload.phone,
-        email: payload.email ?? null,
+        email: normalizeEmail(payload.email ?? null),
         category: payload.category,
         subcategory: payload.subcategory,
         notes: payload.notes ?? null,
@@ -334,9 +385,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       .select('*')
       .single();
 
-    console.log('[Contacts] updateContact result:', { data, error });
+    console.log('[Contacts] updateContact result:', { status, data, error });
 
-    if (error) throw error;
+    if (error) {
+      logSupabaseError('[Contacts] updateContact error:', error);
+      throw error;
+    }
 
     const mapped = mapDbContactToContact(data);
     setContacts(prev => prev.map(c => (c.id === id ? mapped : c)));
@@ -345,11 +399,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const deleteContact = async (id: string) => {
     console.log('[Contacts] deleteContact called:', id);
 
-    const { error } = await supabase.from('contacts').delete().eq('id', id);
+    const { error, status } = await supabase.from('contacts').delete().eq('id', id);
 
-    console.log('[Contacts] deleteContact result:', { error });
+    console.log('[Contacts] deleteContact result:', { status, error });
 
-    if (error) throw error;
+    if (error) {
+      logSupabaseError('[Contacts] deleteContact error:', error);
+      throw error;
+    }
 
     setContacts(prev => prev.filter(c => c.id !== id));
   };
