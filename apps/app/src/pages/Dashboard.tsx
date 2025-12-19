@@ -7,14 +7,14 @@ import {
   ArrowUpRightIcon,
   ChatBubbleLeftRightIcon,
   ChartBarIcon,
+  ExclamationTriangleIcon,
+  BanknotesIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 
 import RequestForm from '../components/BudgetRequests/RequestForm';
 
-// 🎨 Paleta restringida a cyan–teal–verde (sin violetas/fucsias)
-// Sin dependencias nuevas ni comentarios multilinea para evitar errores de cierre.
-
-export type ObrixUser = { name?: string } | null | undefined;
+export type ObrixUser = { name?: string; role?: 'client' | 'constructor' } | null | undefined;
 export type ObrixProject = {
   id: string;
   name?: string;
@@ -31,6 +31,8 @@ export type DashboardProps = {
   user?: ObrixUser;
 };
 
+type Role = 'client' | 'constructor';
+
 const toNumber = (v: unknown, def = 0) => {
   const n = typeof v === 'string' ? Number(v) : (v as number);
   return Number.isFinite(n) ? (n as number) : def;
@@ -42,6 +44,15 @@ const formatARS = (n: number) =>
     currency: 'ARS',
     maximumFractionDigits: 0,
   }).format(n);
+
+const formatUSD = (n: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(n);
+
+const formatPct = (n: number) => `${Math.round(n)}%`;
 
 const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
   <div className={`relative rounded-2xl p-[1px] bg-gradient-to-r from-cyan-500/60 to-emerald-500/60 ${className}`}>
@@ -112,17 +123,57 @@ const WhatsAppButton: React.FC<{ phone?: string; text: string }> = ({ phone, tex
   );
 };
 
+const SectionHeader: React.FC<{ title: string; right?: React.ReactNode }> = ({ title, right }) => (
+  <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between">
+    <h2 className="text-base sm:text-lg font-semibold tracking-tight">{title}</h2>
+    {right}
+  </div>
+);
+
+const MiniPill: React.FC<{ label: string; tone?: 'ok' | 'warn' | 'danger' }> = ({ label, tone = 'ok' }) => {
+  const map = {
+    ok: 'bg-emerald-400/10 text-emerald-300 border-emerald-300/20',
+    warn: 'bg-teal-400/10 text-teal-200 border-teal-200/20',
+    danger: 'bg-cyan-400/10 text-cyan-200 border-cyan-200/20',
+  };
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border ${map[tone]}`}>{label}</span>;
+};
+
+const mockDashboardData = {
+  client: {
+    invested: { ars: 12850000, usd: 12450 },
+    pendingPaymentsArs: { total: 2350000, overdue: 420000, next7Days: 980000 },
+    delays: { delayedProjects: 2, avgDelayDays: 6, maxDelayDays: 14 },
+    criticalPending: [
+      { id: 'p1', title: 'Aprobar presupuesto de materiales (Corralón Patagonia)', severity: 'high' as const },
+      { id: 'p2', title: "Definir fecha de inicio de etapa 'Terminaciones'", severity: 'medium' as const },
+      { id: 'p3', title: 'Pago de anticipo pendiente para compra de aberturas', severity: 'high' as const },
+    ],
+  },
+  constructor: {
+    revenue: { week: 1850000, month: 7420000, ytd: 58200000 },
+    receivables: { total: 4150000, overdue: 950000, next7Days: 1250000 },
+    projects: { active: 5, planning: 2, completed: 11, avgProgress: 54 },
+    costs: { month: 4980000, varianceVsBudget: 0.12 },
+    alerts: [
+      { id: 'a1', type: 'delay', title: 'Casa Los Coihues: atraso por materiales', severity: 'high' as const },
+      { id: 'a2', type: 'payment', title: 'Cliente Rodríguez: cobro vencido ($420.000)', severity: 'high' as const },
+      { id: 'a3', type: 'approval', title: 'Presupuesto #184 sin respuesta hace 6 días', severity: 'medium' as const },
+    ],
+  },
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: inputUser }) => {
   const projects = (inputProjects ?? []) as ObrixProject[];
-  const user = inputUser ?? { name: '—' };
+  const user = inputUser ?? { name: '—', role: 'client' };
+
+  const inferredRole: Role = (user as any)?.role === 'constructor' ? 'constructor' : 'client';
+  const [mockRole, setMockRole] = useState<Role>(inferredRole);
+
+  const role: Role = mockRole;
 
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [requestType, setRequestType] = useState<'constructor' | 'supplier'>('constructor');
-
-  const activeProjects = projects.filter((p) => p.status === 'in_progress').length;
-  const totalBudget = projects.reduce((sum, p) => sum + toNumber(p?.budget), 0);
-  const totalSpent = projects.reduce((sum, p) => sum + toNumber(p?.spent), 0);
-  const pendingTasks = 5;
 
   const projectIdForRequest = projects?.[0]?.id;
 
@@ -144,6 +195,271 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
     return `https://wa.me/?text=${encodeURIComponent(msg)}`;
   }, []);
 
+  const activeProjects = projects.filter((p) => p.status === 'in_progress').length;
+  const planningProjects = projects.filter((p) => p.status === 'planning').length;
+  const completedProjects = projects.filter((p) => p.status === 'completed').length;
+
+  const totalBudget = projects.reduce((sum, p) => sum + toNumber(p?.budget), 0);
+  const totalSpent = projects.reduce((sum, p) => sum + toNumber(p?.spent), 0);
+
+  const avgProgress = useMemo(() => {
+    const values = projects.map((p) => toNumber(p?.progress, NaN)).filter((n) => Number.isFinite(n)) as number[];
+    if (values.length === 0) return 0;
+    const s = values.reduce((a, b) => a + b, 0);
+    return s / values.length;
+  }, [projects]);
+
+  const pendingTasks = 5;
+
+  const clientData = mockDashboardData.client;
+  const ctorData = mockDashboardData.constructor;
+
+  const topStats = useMemo(() => {
+    if (role === 'client') {
+      return [
+        {
+          key: 'invested',
+          icon: <BanknotesIcon className="w-5 h-5 text-emerald-300" />,
+          label: 'Total invertido (ARS)',
+          value: formatARS(clientData.invested.ars),
+          hint: `USD ${formatUSD(clientData.invested.usd)}`,
+        },
+        {
+          key: 'pending',
+          icon: <CurrencyDollarIcon className="w-5 h-5 text-cyan-300" />,
+          label: 'Pagos pendientes (ARS)',
+          value: formatARS(clientData.pendingPaymentsArs.total),
+          hint: clientData.pendingPaymentsArs.overdue > 0 ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}` : undefined,
+        },
+        {
+          key: 'delays',
+          icon: <ClockIcon className="w-5 h-5 text-teal-300" />,
+          label: 'Delays',
+          value: clientData.delays.delayedProjects,
+          hint: `Máx ${clientData.delays.maxDelayDays} días`,
+        },
+        {
+          key: 'pending_critical',
+          icon: <ExclamationTriangleIcon className="w-5 h-5 text-cyan-200" />,
+          label: 'Pendientes críticos',
+          value: clientData.criticalPending.length,
+          hint: clientData.pendingPaymentsArs.next7Days > 0 ? `7 días ${formatARS(clientData.pendingPaymentsArs.next7Days)}` : undefined,
+        },
+      ];
+    }
+
+    return [
+      {
+        key: 'rev_month',
+        icon: <CurrencyDollarIcon className="w-5 h-5 text-emerald-300" />,
+        label: 'Revenue (Mes)',
+        value: formatARS(ctorData.revenue.month),
+        hint: `Semana ${formatARS(ctorData.revenue.week)}`,
+      },
+      {
+        key: 'receivables',
+        icon: <BanknotesIcon className="w-5 h-5 text-cyan-300" />,
+        label: 'Cobros pendientes',
+        value: formatARS(ctorData.receivables.total),
+        hint: ctorData.receivables.overdue > 0 ? `Vencidos ${formatARS(ctorData.receivables.overdue)}` : undefined,
+      },
+      {
+        key: 'projects_active',
+        icon: <BuildingOfficeIcon className="w-5 h-5 text-teal-300" />,
+        label: 'Obras activas',
+        value: ctorData.projects.active,
+        hint: `Avance ${formatPct(ctorData.projects.avgProgress)}`,
+      },
+      {
+        key: 'costs',
+        icon: <ClipboardDocumentCheckIcon className="w-5 h-5 text-emerald-300" />,
+        label: 'Costos (Mes)',
+        value: formatARS(ctorData.costs.month),
+        hint: `Desvío +${Math.round(ctorData.costs.varianceVsBudget * 100)}%`,
+      },
+    ];
+  }, [role, clientData, ctorData]);
+
+  const secondaryStats = useMemo(() => {
+    if (role === 'client') {
+      return [
+        {
+          key: 'projects',
+          icon: <BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />,
+          label: 'Obras activas',
+          value: activeProjects,
+          hint: planningProjects > 0 ? `Planif. ${planningProjects}` : undefined,
+        },
+        {
+          key: 'budget',
+          icon: <CurrencyDollarIcon className="w-5 h-5 text-emerald-300" />,
+          label: 'Presupuesto total',
+          value: formatARS(totalBudget),
+        },
+        {
+          key: 'tasks',
+          icon: <ClockIcon className="w-5 h-5 text-teal-300" />,
+          label: 'Pendientes (general)',
+          value: pendingTasks,
+        },
+        {
+          key: 'spent',
+          icon: <CheckCircleIcon className="w-5 h-5 text-emerald-300" />,
+          label: 'Gastado (estimado)',
+          value: formatARS(totalSpent),
+          hint: avgProgress > 0 ? `Avance ${formatPct(avgProgress)}` : undefined,
+        },
+      ];
+    }
+
+    return [
+      {
+        key: 'ytd',
+        icon: <ChartBarIcon className="w-5 h-5 text-emerald-300" />,
+        label: 'Revenue (YTD)',
+        value: formatARS(ctorData.revenue.ytd),
+        hint: completedProjects > 0 ? `Completadas ${completedProjects}` : undefined,
+      },
+      {
+        key: 'planning',
+        icon: <BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />,
+        label: 'En planificación',
+        value: ctorData.projects.planning,
+      },
+      {
+        key: 'tasks',
+        icon: <ClockIcon className="w-5 h-5 text-teal-300" />,
+        label: 'Tareas pendientes',
+        value: pendingTasks,
+      },
+      {
+        key: 'spent',
+        icon: <CheckCircleIcon className="w-5 h-5 text-emerald-300" />,
+        label: 'Gastado (estimado)',
+        value: formatARS(totalSpent),
+        hint: avgProgress > 0 ? `Avance ${formatPct(avgProgress)}` : undefined,
+      },
+    ];
+  }, [
+    role,
+    activeProjects,
+    planningProjects,
+    completedProjects,
+    totalBudget,
+    totalSpent,
+    pendingTasks,
+    avgProgress,
+    ctorData.revenue.ytd,
+    ctorData.projects.planning,
+  ]);
+
+  const renderRolePanel = () => {
+    if (role === 'client') {
+      return (
+        <NeonCard>
+          <SectionHeader
+            title="Pendientes críticos de la obra"
+            right={
+              <button className="text-xs rounded-lg px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 transition">
+                Ver todo
+              </button>
+            }
+          />
+          <div className="p-4 sm:p-6">
+            <div className="space-y-3">
+              {clientData.criticalPending.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{p.title}</p>
+                    <div className="mt-1">
+                      <MiniPill label={p.severity === 'high' ? 'Alta' : 'Media'} tone={p.severity === 'high' ? 'danger' : 'warn'} />
+                    </div>
+                  </div>
+                  <a
+                    href="#"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10 transition"
+                  >
+                    Ver detalle <ArrowUpRightIcon className="w-3.5 h-3.5 opacity-70" />
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs text-white/60">Pagos vencidos</p>
+                <p className="mt-1 text-lg font-semibold">{formatARS(clientData.pendingPaymentsArs.overdue)}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs text-white/60">Por vencer (7 días)</p>
+                <p className="mt-1 text-lg font-semibold">{formatARS(clientData.pendingPaymentsArs.next7Days)}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs text-white/60">Atraso promedio</p>
+                <p className="mt-1 text-lg font-semibold">{clientData.delays.avgDelayDays} días</p>
+              </div>
+            </div>
+          </div>
+        </NeonCard>
+      );
+    }
+
+    return (
+      <NeonCard>
+        <SectionHeader
+          title="Alertas operativas"
+          right={
+            <button className="text-xs rounded-lg px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 transition">
+              Ver todo
+            </button>
+          }
+        />
+        <div className="p-4 sm:p-6">
+          <div className="space-y-3">
+            {ctorData.alerts.map((a) => (
+              <div
+                key={a.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{a.title}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <MiniPill label={a.type === 'payment' ? 'Cobros' : a.type === 'approval' ? 'Presupuestos' : 'Delays'} tone="warn" />
+                    <MiniPill label={a.severity === 'high' ? 'Alta' : 'Media'} tone={a.severity === 'high' ? 'danger' : 'warn'} />
+                  </div>
+                </div>
+                <a
+                  href="#"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10 transition"
+                >
+                  Ir <ArrowUpRightIcon className="w-3.5 h-3.5 opacity-70" />
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-white/60">Vencidos</p>
+              <p className="mt-1 text-lg font-semibold">{formatARS(ctorData.receivables.overdue)}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-white/60">Por cobrar (7 días)</p>
+              <p className="mt-1 text-lg font-semibold">{formatARS(ctorData.receivables.next7Days)}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-white/60">Desvío vs presupuesto</p>
+              <p className="mt-1 text-lg font-semibold">+{Math.round(ctorData.costs.varianceVsBudget * 100)}%</p>
+            </div>
+          </div>
+        </div>
+      </NeonCard>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <div className="sticky top-0 z-10 backdrop-blur bg-neutral-950/70 border-b border-white/10">
@@ -155,37 +471,59 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
               <p className="text-xs text-white/60">Bienvenido, {user?.name}</p>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-xs text-white/60">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            Sistema operativo OK
+
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-white/60">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Sistema operativo OK
+            </div>
+
+            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+              <button
+                onClick={() => setMockRole('client')}
+                className={`px-3 py-1.5 text-xs rounded-lg transition ${
+                  role === 'client' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'
+                }`}
+              >
+                Cliente
+              </button>
+              <button
+                onClick={() => setMockRole('constructor')}
+                className={`px-3 py-1.5 text-xs rounded-lg transition ${
+                  role === 'constructor' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'
+                }`}
+              >
+                Constructor
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <StatCard
-            icon={<BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />}
-            label="Obras activas"
-            value={activeProjects}
-            hint="+3 este mes"
-          />
-          <StatCard
-            icon={<CurrencyDollarIcon className="w-5 h-5 text-emerald-300" />}
-            label="Presupuesto total"
-            value={formatARS(totalBudget)}
-          />
-          <StatCard icon={<ClockIcon className="w-5 h-5 text-teal-300" />} label="Tareas pendientes" value={pendingTasks} />
-          <StatCard icon={<CheckCircleIcon className="w-5 h-5 text-emerald-300" />} label="Gastado" value={formatARS(totalSpent)} />
+          {topStats.map((s) => (
+            <StatCard key={s.key} icon={s.icon} label={s.label} value={s.value} hint={s.hint} />
+          ))}
         </div>
 
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          {secondaryStats.map((s) => (
+            <StatCard key={s.key} icon={s.icon} label={s.label} value={s.value} hint={s.hint} />
+          ))}
+        </div>
+
+        {renderRolePanel()}
+
         <NeonCard>
-          <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between">
-            <h2 className="text-base sm:text-lg font-semibold tracking-tight">Obras recientes</h2>
-            <button className="text-xs rounded-lg px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 transition">
-              Ver todas
-            </button>
-          </div>
+          <SectionHeader
+            title="Obras recientes"
+            right={
+              <button className="text-xs rounded-lg px-3 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 transition">
+                Ver todas
+              </button>
+            }
+          />
           <div className="p-4 sm:p-6">
             {projects.length > 0 ? (
               <div className="space-y-3 sm:space-y-4">
