@@ -27,10 +27,12 @@ interface AppContextType {
   updatePassword: (newPassword: string) => Promise<any>;
   deleteAccount: () => Promise<any>;
   updateProfile: (updates: Partial<User>) => Promise<any>;
+
   projects: Project[];
   setProjects: (projects: Project[]) => void;
   budgets: Budget[];
   setBudgets: (budgets: Budget[]) => void;
+
   budgetRequests: BudgetRequest[];
   setBudgetRequests: (budgetRequests: BudgetRequest[]) => void;
 
@@ -40,6 +42,7 @@ interface AppContextType {
   deletedRequests: BudgetRequest[];
   loadDeletedRequests: () => Promise<void>;
   restoreRequest: (requestId: string) => Promise<void>;
+
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
   payments: Payment[];
@@ -80,6 +83,9 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const auth = useAuth();
 
+  // (Opcional) log para ver auth en cada render
+  // console.log('[AppContext] render auth:', { id: auth.user?.id, role: auth.user?.role, loading: auth.loading });
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [budgetRequests, setBudgetRequests] = useState<BudgetRequest[]>([]);
@@ -94,7 +100,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     requestedBy: ticket.created_by,
 
     // ✅ NUEVO: nombre del creador (si viene del join)
-    // (si tu tipo BudgetRequest no tiene creatorName, lo agregamos en types.ts)
     creatorName: ticket?.profiles?.name ?? null,
 
     priority: ticket.priority as 'low' | 'medium' | 'high' | 'urgent',
@@ -118,7 +123,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       console.log('[AppContext] Loading tickets from Supabase...');
 
-      // ✅ CAMBIO CLAVE: traer join con profiles(name)
       const { data, error } = await supabase
         .from('tickets')
         .select(
@@ -153,7 +157,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       console.log('[AppContext] Loading deleted tickets from Supabase...');
 
-      // ✅ CAMBIO CLAVE: traer join también en eliminados
       const { data, error } = await supabase
         .from('tickets')
         .select(
@@ -189,12 +192,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     await Promise.all([loadTicketsFromSupabase(), loadDeletedTickets()]);
   };
 
-  // Load tickets from Supabase when user is authenticated
   useEffect(() => {
     if (auth.user?.id) {
       console.log('[AppContext] User authenticated, loading tickets for user:', auth.user.id);
-
-      // ✅ antes llamabas a ambas por separado, ahora lo centralizamos
       refreshBudgetRequests();
     } else {
       console.log('[AppContext] No user authenticated, clearing tickets');
@@ -248,7 +248,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   });
 
   const fetchContacts = async () => {
-    if (!auth.user?.id) return;
+    console.log('[Contacts] fetchContacts called. auth.user?.id =', auth.user?.id);
+
+    if (!auth.user?.id) {
+      console.warn('[Contacts] fetchContacts: no auth user -> skip');
+      return;
+    }
 
     setContactsLoading(true);
     try {
@@ -258,11 +263,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         .eq('user_id', auth.user.id)
         .order('created_at', { ascending: false });
 
+      console.log('[Contacts] fetchContacts result:', { count: data?.length ?? 0, error });
+
       if (error) throw error;
 
       setContacts((data ?? []).map(mapDbContactToContact));
     } catch (e) {
-      console.error('[AppContext] Error fetching contacts:', e);
+      console.error('[Contacts] Error fetching contacts:', e);
       setContacts([]);
     } finally {
       setContactsLoading(false);
@@ -270,7 +277,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const addContact = async (payload: Partial<Contact>) => {
+    console.log('[Contacts] addContact called. auth.user?.id =', auth.user?.id, 'payload:', payload);
+
     if (!auth.user?.id) throw new Error('No authenticated user');
+
+    // 🔎 Verifica que el usuario de Supabase Auth existe (para RLS)
+    // (Si esto da null pero auth.user.id existe, tu login NO es Supabase Auth)
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      console.log('[Contacts] supabase.auth.getUser():', authData?.user?.id);
+    } catch (e) {
+      console.warn('[Contacts] supabase.auth.getUser() failed:', e);
+    }
 
     const { data, error } = await supabase
       .from('contacts')
@@ -289,6 +307,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       .select('*')
       .single();
 
+    console.log('[Contacts] addContact result:', { data, error });
+
     if (error) throw error;
 
     const mapped = mapDbContactToContact(data);
@@ -296,6 +316,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const updateContact = async (id: string, payload: Partial<Contact>) => {
+    console.log('[Contacts] updateContact called:', { id, payload });
+
     const { data, error } = await supabase
       .from('contacts')
       .update({
@@ -312,6 +334,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       .select('*')
       .single();
 
+    console.log('[Contacts] updateContact result:', { data, error });
+
     if (error) throw error;
 
     const mapped = mapDbContactToContact(data);
@@ -319,7 +343,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   };
 
   const deleteContact = async (id: string) => {
+    console.log('[Contacts] deleteContact called:', id);
+
     const { error } = await supabase.from('contacts').delete().eq('id', id);
+
+    console.log('[Contacts] deleteContact result:', { error });
+
     if (error) throw error;
 
     setContacts(prev => prev.filter(c => c.id !== id));
@@ -349,6 +378,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         updatePassword: auth.updatePassword,
         deleteAccount: auth.deleteAccount,
         updateProfile: auth.updateProfile,
+
         projects,
         setProjects,
         budgets,
@@ -356,12 +386,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         budgetRequests,
         setBudgetRequests,
 
-        // ✅ ahora refresca ambos
         refreshBudgetRequests,
 
         deletedRequests,
         loadDeletedRequests: loadDeletedTickets,
         restoreRequest: restoreTicket,
+
         tasks,
         setTasks,
         payments,
@@ -373,7 +403,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         changeOrders,
         setChangeOrders,
 
-        // ✅ contacts
         contacts,
         contactsLoading,
         fetchContacts,
