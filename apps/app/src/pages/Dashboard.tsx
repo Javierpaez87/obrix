@@ -10,6 +10,7 @@ import {
   ExclamationTriangleIcon,
   BanknotesIcon,
   ClipboardDocumentCheckIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 
 import RequestForm from '../components/BudgetRequests/RequestForm';
@@ -69,16 +70,20 @@ const StatCard: React.FC<{
   <NeonCard>
     <div className="p-4 sm:p-6 flex items-start gap-3">
       <div className="shrink-0 rounded-xl bg-white/5 border border-white/10 p-3">{icon}</div>
-      <div className="flex-1">
+
+      <div className="flex-1 min-w-0">
         <p className="text-xs sm:text-sm text-white/60">{label}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <p className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">{value}</p>
-          {hint && (
-            <span className="inline-flex items-center gap-1 text-emerald-400 text-xs font-medium">
-              <ChartBarIcon className="w-3.5 h-3.5" /> {hint}
-            </span>
-          )}
-        </div>
+
+        <p className="mt-0.5 text-2xl sm:text-3xl font-semibold text-white tracking-tight leading-none break-words">
+          {value}
+        </p>
+
+        {hint && (
+          <div className="mt-2 flex items-center gap-1.5 text-emerald-400 text-xs font-medium min-w-0">
+            <ChartBarIcon className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{hint}</span>
+          </div>
+        )}
       </div>
     </div>
   </NeonCard>
@@ -169,7 +174,6 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
 
   const inferredRole: Role = (user as any)?.role === 'constructor' ? 'constructor' : 'client';
   const [mockRole, setMockRole] = useState<Role>(inferredRole);
-
   const role: Role = mockRole;
 
   const [isRequestOpen, setIsRequestOpen] = useState(false);
@@ -195,22 +199,6 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
     return `https://wa.me/?text=${encodeURIComponent(msg)}`;
   }, []);
 
-  const activeProjects = projects.filter((p) => p.status === 'in_progress').length;
-  const planningProjects = projects.filter((p) => p.status === 'planning').length;
-  const completedProjects = projects.filter((p) => p.status === 'completed').length;
-
-  const totalBudget = projects.reduce((sum, p) => sum + toNumber(p?.budget), 0);
-  const totalSpent = projects.reduce((sum, p) => sum + toNumber(p?.spent), 0);
-
-  const avgProgress = useMemo(() => {
-    const values = projects.map((p) => toNumber(p?.progress, NaN)).filter((n) => Number.isFinite(n)) as number[];
-    if (values.length === 0) return 0;
-    const s = values.reduce((a, b) => a + b, 0);
-    return s / values.length;
-  }, [projects]);
-
-  const pendingTasks = 5;
-
   const clientData = mockDashboardData.client;
   const ctorData = mockDashboardData.constructor;
 
@@ -222,7 +210,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           icon: <BanknotesIcon className="w-5 h-5 text-emerald-300" />,
           label: 'Total invertido (ARS)',
           value: formatARS(clientData.invested.ars),
-          hint: `USD ${formatUSD(clientData.invested.usd)}`,
+          hint: formatUSD(clientData.invested.usd),
         },
         {
           key: 'pending',
@@ -279,79 +267,6 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
       },
     ];
   }, [role, clientData, ctorData]);
-
-  const secondaryStats = useMemo(() => {
-    if (role === 'client') {
-      return [
-        {
-          key: 'projects',
-          icon: <BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />,
-          label: 'Obras activas',
-          value: activeProjects,
-          hint: planningProjects > 0 ? `Planif. ${planningProjects}` : undefined,
-        },
-        {
-          key: 'budget',
-          icon: <CurrencyDollarIcon className="w-5 h-5 text-emerald-300" />,
-          label: 'Presupuesto total',
-          value: formatARS(totalBudget),
-        },
-        {
-          key: 'tasks',
-          icon: <ClockIcon className="w-5 h-5 text-teal-300" />,
-          label: 'Pendientes (general)',
-          value: pendingTasks,
-        },
-        {
-          key: 'spent',
-          icon: <CheckCircleIcon className="w-5 h-5 text-emerald-300" />,
-          label: 'Gastado (estimado)',
-          value: formatARS(totalSpent),
-          hint: avgProgress > 0 ? `Avance ${formatPct(avgProgress)}` : undefined,
-        },
-      ];
-    }
-
-    return [
-      {
-        key: 'ytd',
-        icon: <ChartBarIcon className="w-5 h-5 text-emerald-300" />,
-        label: 'Revenue (YTD)',
-        value: formatARS(ctorData.revenue.ytd),
-        hint: completedProjects > 0 ? `Completadas ${completedProjects}` : undefined,
-      },
-      {
-        key: 'planning',
-        icon: <BuildingOfficeIcon className="w-5 h-5 text-cyan-300" />,
-        label: 'En planificación',
-        value: ctorData.projects.planning,
-      },
-      {
-        key: 'tasks',
-        icon: <ClockIcon className="w-5 h-5 text-teal-300" />,
-        label: 'Tareas pendientes',
-        value: pendingTasks,
-      },
-      {
-        key: 'spent',
-        icon: <CheckCircleIcon className="w-5 h-5 text-emerald-300" />,
-        label: 'Gastado (estimado)',
-        value: formatARS(totalSpent),
-        hint: avgProgress > 0 ? `Avance ${formatPct(avgProgress)}` : undefined,
-      },
-    ];
-  }, [
-    role,
-    activeProjects,
-    planningProjects,
-    completedProjects,
-    totalBudget,
-    totalSpent,
-    pendingTasks,
-    avgProgress,
-    ctorData.revenue.ytd,
-    ctorData.projects.planning,
-  ]);
 
   const renderRolePanel = () => {
     if (role === 'client') {
@@ -507,12 +422,6 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           ))}
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          {secondaryStats.map((s) => (
-            <StatCard key={s.key} icon={s.icon} label={s.label} value={s.value} hint={s.hint} />
-          ))}
-        </div>
-
         {renderRolePanel()}
 
         <NeonCard>
@@ -633,6 +542,12 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
             </div>
           </NeonCard>
         </div>
+
+        <NeonCard className="opacity-0 pointer-events-none">
+          <div className="p-1">
+            <ClipboardDocumentListIcon className="w-0 h-0" />
+          </div>
+        </NeonCard>
       </div>
 
       <RequestForm
