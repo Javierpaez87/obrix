@@ -88,7 +88,8 @@ const WhatsAppIcon: React.FC<{ className?: string }> = ({ className = 'h-4 w-4' 
 );
 
 const Agenda: React.FC = () => {
-  const { contacts, setContacts, user } = useApp();
+  const { contacts, user, addContact, updateContact, deleteContact, contactsLoading } = useApp();
+
   const [showAddContact, setShowAddContact] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'materials' | 'labor' | 'clients'>('materials');
@@ -141,32 +142,35 @@ const Agenda: React.FC = () => {
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const handleAddContact = () => {
+  const handleAddContact = async () => {
     if (newContact.name && newContact.company && newContact.phone && newContact.subcategory) {
-      const contact: Contact = {
-        id: Date.now().toString(),
-        name: newContact.name!,
-        company: newContact.company!,
-        phone: newContact.phone!,
-        email: newContact.email,
-        category: newContact.category!,
-        subcategory: newContact.subcategory!,
-        notes: newContact.notes,
-        rating: newContact.rating,
-        createdAt: new Date()
-      };
-      setContacts([...contacts, contact]);
-      setNewContact({
-        name: '',
-        company: '',
-        phone: '',
-        email: '',
-        category: 'materials',
-        subcategory: '',
-        notes: '',
-        rating: undefined
-      });
-      setShowAddContact(false);
+      try {
+        await addContact({
+          name: newContact.name!,
+          company: newContact.company!,
+          phone: newContact.phone!,
+          email: newContact.email,
+          category: newContact.category!,
+          subcategory: newContact.subcategory!,
+          notes: newContact.notes,
+          rating: newContact.rating
+        });
+
+        setNewContact({
+          name: '',
+          company: '',
+          phone: '',
+          email: '',
+          category: 'materials',
+          subcategory: '',
+          notes: '',
+          rating: undefined
+        });
+        setShowAddContact(false);
+      } catch (e) {
+        console.error('Error adding contact:', e);
+        alert('No se pudo guardar el contacto. Revisá permisos (RLS) y conexión.');
+      }
     }
   };
 
@@ -185,42 +189,47 @@ const Agenda: React.FC = () => {
     setShowEditContact(true);
   };
 
-  const handleUpdateContact = () => {
+  const handleUpdateContact = async () => {
     if (editingContact && newContact.name && newContact.company && newContact.phone && newContact.subcategory) {
-      const updatedContacts = contacts.map(contact =>
-        contact.id === editingContact.id
-          ? {
-              ...contact,
-              name: newContact.name!,
-              company: newContact.company!,
-              phone: newContact.phone!,
-              email: newContact.email,
-              subcategory: newContact.subcategory!,
-              notes: newContact.notes,
-              rating: newContact.rating
-            }
-          : contact
-      );
-      setContacts(updatedContacts);
-      setNewContact({
-        name: '',
-        company: '',
-        phone: '',
-        email: '',
-        category: 'materials',
-        subcategory: '',
-        notes: '',
-        rating: undefined
-      });
-      setEditingContact(null);
-      setShowEditContact(false);
+      try {
+        await updateContact(editingContact.id, {
+          name: newContact.name!,
+          company: newContact.company!,
+          phone: newContact.phone!,
+          email: newContact.email,
+          category: newContact.category!,
+          subcategory: newContact.subcategory!,
+          notes: newContact.notes,
+          rating: newContact.rating
+        });
+
+        setNewContact({
+          name: '',
+          company: '',
+          phone: '',
+          email: '',
+          category: 'materials',
+          subcategory: '',
+          notes: '',
+          rating: undefined
+        });
+        setEditingContact(null);
+        setShowEditContact(false);
+      } catch (e) {
+        console.error('Error updating contact:', e);
+        alert('No se pudo actualizar el contacto.');
+      }
     }
   };
 
-  const handleDeleteContact = (contactId: string) => {
+  const handleDeleteContact = async (contactId: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar este contacto?')) {
-      const updatedContacts = contacts.filter(contact => contact.id !== contactId);
-      setContacts(updatedContacts);
+      try {
+        await deleteContact(contactId);
+      } catch (e) {
+        console.error('Error deleting contact:', e);
+        alert('No se pudo eliminar el contacto.');
+      }
     }
   };
 
@@ -262,6 +271,10 @@ const Agenda: React.FC = () => {
       {/* CONTENEDOR PRINCIPAL con identidad Obrix */}
       <NeonFrame>
         <div className="p-4 sm:p-6">
+          {contactsLoading && (
+            <div className="text-white/60 text-sm mb-3">Cargando contactos...</div>
+          )}
+
           {/* TABS */}
           <div className="flex gap-1 p-1 rounded-xl mb-5 bg-white/5 border border-white/10 overflow-x-auto">
             <button
@@ -393,7 +406,8 @@ const Agenda: React.FC = () => {
             <div className="text-center py-12">
               <div className="text-white/70 text-base sm:text-lg mb-2">No hay contactos</div>
               <p className="text-sm sm:text-base text-white/60">
-                Agregá tu primer {selectedCategory === 'materials'
+                Agregá tu primer{' '}
+                {selectedCategory === 'materials'
                   ? 'proveedor de materiales'
                   : selectedCategory === 'labor'
                   ? 'proveedor de mano de obra'
