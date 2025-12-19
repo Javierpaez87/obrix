@@ -161,8 +161,18 @@ const Agenda: React.FC = () => {
 
   const handleAddContact = async () => {
     console.log('[Agenda] handleAddContact', newContact);
+    console.log('[Agenda] subcategory value:', newContact.subcategory);
 
-    if (!newContact.name || !newContact.company || !newContact.phone || !newContact.subcategory) return;
+    const missing = [];
+    if (!newContact.name) missing.push('Nombre');
+    if (!newContact.company) missing.push('Empresa');
+    if (!newContact.phone) missing.push('Teléfono');
+    if (!newContact.subcategory) missing.push('Tipo');
+
+    if (missing.length > 0) {
+      alert(`Faltan campos obligatorios: ${missing.join(', ')}`);
+      return;
+    }
 
     try {
       await addContact({
@@ -200,9 +210,20 @@ const Agenda: React.FC = () => {
 
   const handleUpdateContact = async () => {
     console.log('[Agenda] handleUpdateContact', { id: editingContact?.id, newContact });
+    console.log('[Agenda] subcategory value:', newContact.subcategory);
 
     if (!editingContact) return;
-    if (!newContact.name || !newContact.company || !newContact.phone || !newContact.subcategory) return;
+
+    const missing = [];
+    if (!newContact.name) missing.push('Nombre');
+    if (!newContact.company) missing.push('Empresa');
+    if (!newContact.phone) missing.push('Teléfono');
+    if (!newContact.subcategory) missing.push('Tipo');
+
+    if (missing.length > 0) {
+      alert(`Faltan campos obligatorios: ${missing.join(', ')}`);
+      return;
+    }
 
     try {
       await updateContact(editingContact.id, {
@@ -590,9 +611,9 @@ const Agenda: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row justify-end gap-2 px-4 sm:px-6 py-4 border-t border-white/10">
-              <OutlineBtn onClick={resetModalState}>Cancelar</OutlineBtn>
+              <OutlineBtn type="button" onClick={resetModalState}>Cancelar</OutlineBtn>
 
-              <SolidGradBtn onClick={showEditContact ? handleUpdateContact : handleAddContact}>
+              <SolidGradBtn type="button" onClick={showEditContact ? handleUpdateContact : handleAddContact}>
                 {showEditContact ? 'Actualizar contacto' : 'Agregar contacto'}
               </SolidGradBtn>
             </div>
