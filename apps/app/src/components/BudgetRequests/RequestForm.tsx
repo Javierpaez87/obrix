@@ -359,7 +359,7 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
   const composeInviteTail = (_: string) => `\n\nNo tenés cuenta en Obrix aún. Unite acá y gestionemos todo desde la app: https://obrix.app/`;
   const composeActionTail = (_: string) => {
     if (formData.type === 'materials') {
-      return `\n\nAbrí Obrix para ofertar o rechazar por esta lista de materiales.`;
+      return `\n\n*Abrí Obrix para ofertar o rechazar por esta lista de materiales.*`;
     }
     return `\n\nAbrí Obrix para **Aceptar** o **Rechazar** esta solicitud.`;
   };
