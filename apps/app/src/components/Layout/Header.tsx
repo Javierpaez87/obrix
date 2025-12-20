@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
@@ -20,6 +20,30 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user, signOut } = useApp();
   const navigate = useNavigate();
   const [backupOpen, setBackupOpen] = useState(false);
+
+  // ✅ medir altura real del header "Panel" y guardarla en CSS var global
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const apply = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      document.documentElement.style.setProperty('--panel-header-h', `${h}px`);
+    };
+
+    apply();
+
+    const ro = new ResizeObserver(() => apply());
+    ro.observe(el);
+
+    window.addEventListener('resize', apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', apply);
+    };
+  }, []);
 
   const openWhatsApp = () => {
     if (user?.phone) {
@@ -62,7 +86,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     <>
       <BackupModal isOpen={backupOpen} onClose={() => setBackupOpen(false)} />
 
-      <header className="sticky top-0 z-10 backdrop-blur bg-neutral-950/70 border-b border-white/10">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-50 backdrop-blur bg-neutral-950/90 border-b border-white/10"
+      >
         <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <button
@@ -73,21 +100,17 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <Bars3Icon className="h-6 w-6" />
             </button>
 
-            <h1 className="text-lg sm:text-2xl font-semibold text-white hidden sm:block">
-              Panel de Control
-            </h1>
+            <h1 className="text-lg sm:text-2xl font-semibold text-white hidden sm:block">Panel de Control</h1>
             <h1 className="text-lg font-semibold text-white sm:hidden">Panel</h1>
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* User Role Badge */}
             <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-white/10 border border-white/20 text-white rounded-lg">
               <span className="text-xs sm:text-sm font-medium">
                 {user?.role === 'constructor' ? 'Perfil de Constructor' : 'Perfil de Cliente'}
               </span>
             </div>
 
-            {/* Desktop: BackUp */}
             <button
               onClick={() => setBackupOpen(true)}
               className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/20 transition-colors"
@@ -97,7 +120,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <span className="text-sm font-medium">BackUp</span>
             </button>
 
-            {/* Desktop: Share */}
             <button
               onClick={handleShareApp}
               className="hidden sm:block p-2 text-white/70 hover:text-white transition-colors"
@@ -127,7 +149,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 <PhoneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
 
-              {/* Mobile: BackUp (icon-only) */}
               <button
                 onClick={() => setBackupOpen(true)}
                 className="flex sm:hidden items-center justify-center w-8 h-8 bg-white/10 border border-white/20 text-white rounded-full hover:bg-white/20 transition-colors"
@@ -136,7 +157,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 <CircleStackIcon className="h-4 w-4" />
               </button>
 
-              {/* Mobile: Share (icon-only) */}
               <button
                 onClick={handleShareApp}
                 className="flex sm:hidden items-center justify-center w-8 h-8 bg-white/10 border border-white/20 text-white rounded-full hover:bg-white/20 transition-colors"
@@ -154,7 +174,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               </button>
             </div>
 
-            {/* Logout Button */}
             <button
               onClick={handleLogout}
               className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/20 transition-colors"
@@ -164,7 +183,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <span className="text-sm font-medium">Cerrar Sesión</span>
             </button>
 
-            {/* Mobile Logout Button */}
             <button
               onClick={handleLogout}
               className="flex sm:hidden items-center justify-center w-8 h-8 bg-white/10 border border-white/20 text-white rounded-full hover:bg-white/20 transition-colors"
