@@ -60,29 +60,33 @@ const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({
   </div>
 );
 
-// ✅ StatCard optimizada para mobile + números largos + hints largos
+// ✅ StatCard: FIX mobile rendering (evita que el monto se corte en 2/3 líneas)
 const StatCard: React.FC<{
   icon: React.ReactNode;
   label: string;
   value: string | number;
   hint?: string;
 }> = ({ icon, label, value, hint }) => (
-  <NeonCard>
-    <div className="p-3 sm:p-5 flex items-start gap-3">
+  <NeonCard className="h-full">
+    <div className="p-3 sm:p-5 flex items-start gap-3 min-h-[104px] sm:min-h-[120px]">
       <div className="shrink-0 rounded-xl bg-white/5 border border-white/10 p-2.5 sm:p-3">{icon}</div>
 
       <div className="flex-1 min-w-0">
         <p className="text-[11px] sm:text-sm text-white/60 truncate">{label}</p>
 
-        <p
-          className="mt-1 font-semibold text-white tracking-tight leading-tight tabular-nums break-words"
-          style={{
-            // mobile: 18px, desktop: sube hasta 30px pero sin romper
-            fontSize: 'clamp(18px, 2.2vw, 30px)',
-          }}
-        >
-          {value}
-        </p>
+        {/* Contenedor que asegura overflow controlado */}
+        <div className="mt-1 overflow-hidden">
+          <p
+            className="font-semibold text-white tracking-tight leading-tight tabular-nums whitespace-nowrap truncate"
+            style={{
+              // Mobile más conservador para evitar cortes, desktop escala bien
+              fontSize: 'clamp(16px, 4.6vw, 28px)',
+            }}
+            title={String(value)}
+          >
+            {value}
+          </p>
+        </div>
 
         {hint && (
           <div className="mt-2 flex items-center gap-1.5 text-emerald-400 text-[11px] sm:text-xs font-medium min-w-0">
@@ -135,8 +139,8 @@ const WhatsAppButton: React.FC<{ phone?: string; text: string }> = ({ phone, tex
 };
 
 const SectionHeader: React.FC<{ title: string; right?: React.ReactNode }> = ({ title, right }) => (
-  <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between">
-    <h2 className="text-base sm:text-lg font-semibold tracking-tight">{title}</h2>
+  <div className="px-4 sm:px-6 py-4 border-b border-white/10 flex items-center justify-between gap-3">
+    <h2 className="text-base sm:text-lg font-semibold tracking-tight truncate">{title}</h2>
     {right}
   </div>
 );
@@ -384,16 +388,16 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       <div className="sticky top-0 z-10 backdrop-blur bg-neutral-950/70 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500" />
-            <div>
-              <h1 className="text-lg sm:text-2xl font-semibold tracking-tight">Dashboard</h1>
-              <p className="text-xs text-white/60">Bienvenido, {user?.name}</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-semibold tracking-tight truncate">Dashboard</h1>
+              <p className="text-xs text-white/60 truncate">Bienvenido, {user?.name}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <div className="hidden sm:flex items-center gap-2 text-xs text-white/60">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               Sistema operativo OK
@@ -422,6 +426,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+        {/* MOBILE: mantenemos 2 columnas pero ahora los montos no se rompen */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {topStats.map((s) => (
             <StatCard key={s.key} icon={s.icon} label={s.label} value={s.value} hint={s.hint} />
@@ -452,7 +457,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
                       <p className="text-xs sm:text-sm text-white/60 truncate">{p?.address}</p>
                       <div className="mt-2 flex items-center gap-2">
                         <StatusPill status={p?.status} />
-                        <span className="text-xs text-white/50">
+                        <span className="text-xs text-white/50 truncate">
                           {formatARS(toNumber(p?.spent))} / {formatARS(toNumber(p?.budget))}
                         </span>
                       </div>
