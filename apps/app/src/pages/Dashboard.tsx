@@ -60,7 +60,6 @@ const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({
   </div>
 );
 
-// ✅ StatCard: usa mejor el espacio + muestra value/hint completos
 const StatCard: React.FC<{
   icon: React.ReactNode;
   label: string;
@@ -76,9 +75,7 @@ const StatCard: React.FC<{
 
         <p
           className="mt-1 font-semibold text-white tracking-tight leading-tight tabular-nums whitespace-nowrap"
-          style={{
-            fontSize: 'clamp(15px, 4.2vw, 26px)',
-          }}
+          style={{ fontSize: 'clamp(15px, 4.2vw, 26px)' }}
           title={String(value)}
         >
           {value}
@@ -223,10 +220,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           icon: <CurrencyDollarIcon className="w-5 h-5 text-cyan-300" />,
           label: 'Pagos pendientes (ARS)',
           value: formatARS(clientData.pendingPaymentsArs.total),
-          hint:
-            clientData.pendingPaymentsArs.overdue > 0
-              ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}`
-              : undefined,
+          hint: clientData.pendingPaymentsArs.overdue > 0 ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}` : undefined,
         },
         {
           key: 'delays',
@@ -386,12 +380,9 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
-      {/* ✅ Header Dashboard sticky pegado debajo de "Panel" SIN paddingTop que coma pantalla */}
-      <div
-        className="sticky z-20 bg-neutral-950/95 backdrop-blur border-b border-white/10"
-        style={{ top: 'var(--panel-header-h, 56px)' }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
+      {/* ✅ NO sticky acá. Solo un encabezado compacto dentro del flujo normal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-8">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 shrink-0" />
             <div className="min-w-0">
@@ -400,30 +391,23 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-white/60">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              Sistema operativo OK
-            </div>
-
-            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
-              <button
-                onClick={() => setMockRole('client')}
-                className={`px-3 py-1.5 text-xs rounded-lg transition ${
-                  role === 'client' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'
-                }`}
-              >
-                Cliente
-              </button>
-              <button
-                onClick={() => setMockRole('constructor')}
-                className={`px-3 py-1.5 text-xs rounded-lg transition ${
-                  role === 'constructor' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'
-                }`}
-              >
-                Constructor
-              </button>
-            </div>
+          <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1 shrink-0">
+            <button
+              onClick={() => setMockRole('client')}
+              className={`px-3 py-1.5 text-xs rounded-lg transition ${
+                role === 'client' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'
+              }`}
+            >
+              Cliente
+            </button>
+            <button
+              onClick={() => setMockRole('constructor')}
+              className={`px-3 py-1.5 text-xs rounded-lg transition ${
+                role === 'constructor' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'
+              }`}
+            >
+              Constructor
+            </button>
           </div>
         </div>
       </div>
