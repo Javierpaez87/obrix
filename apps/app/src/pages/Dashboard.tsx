@@ -223,7 +223,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           icon: <CurrencyDollarIcon className="w-5 h-5 text-cyan-300" />,
           label: 'Pagos pendientes (ARS)',
           value: formatARS(clientData.pendingPaymentsArs.total),
-          hint: clientData.pendingPaymentsArs.overdue > 0 ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}` : undefined,
+          hint:
+            clientData.pendingPaymentsArs.overdue > 0
+              ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}`
+              : undefined,
         },
         {
           key: 'delays',
@@ -382,14 +385,13 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
   };
 
   return (
-    // ✅ CLAVE: evita que el contenido quede "debajo" del header Panel
-    <div
-      className="min-h-screen bg-neutral-950 text-white"
-      style={{ paddingTop: 'var(--panel-header-h, 56px)' }}
-    >
-      {/* ✅ NO sticky en mobile (ya hay uno arriba: Panel). En sm+ puede ser sticky si querés */}
-      <div className="bg-neutral-950/90 backdrop-blur border-b border-white/10 sm:sticky sm:top-0 sm:z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+    <div className="min-h-screen bg-neutral-950 text-white">
+      {/* ✅ Header Dashboard sticky pegado debajo de "Panel" SIN paddingTop que coma pantalla */}
+      <div
+        className="sticky z-20 bg-neutral-950/95 backdrop-blur border-b border-white/10"
+        style={{ top: 'var(--panel-header-h, 56px)' }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 shrink-0" />
             <div className="min-w-0">
@@ -426,7 +428,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-10 space-y-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {topStats.map((s) => (
             <StatCard key={s.key} icon={s.icon} label={s.label} value={s.value} hint={s.hint} />
