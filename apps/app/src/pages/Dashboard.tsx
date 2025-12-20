@@ -10,7 +10,6 @@ import {
   ExclamationTriangleIcon,
   BanknotesIcon,
   ClipboardDocumentCheckIcon,
-  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 
 import RequestForm from '../components/BudgetRequests/RequestForm';
@@ -61,6 +60,7 @@ const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({
   </div>
 );
 
+// ✅ StatCard optimizada para mobile + números largos + hints largos
 const StatCard: React.FC<{
   icon: React.ReactNode;
   label: string;
@@ -68,18 +68,24 @@ const StatCard: React.FC<{
   hint?: string;
 }> = ({ icon, label, value, hint }) => (
   <NeonCard>
-    <div className="p-4 sm:p-6 flex items-start gap-3">
-      <div className="shrink-0 rounded-xl bg-white/5 border border-white/10 p-3">{icon}</div>
+    <div className="p-3 sm:p-5 flex items-start gap-3">
+      <div className="shrink-0 rounded-xl bg-white/5 border border-white/10 p-2.5 sm:p-3">{icon}</div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-xs sm:text-sm text-white/60">{label}</p>
+        <p className="text-[11px] sm:text-sm text-white/60 truncate">{label}</p>
 
-        <p className="mt-0.5 text-2xl sm:text-3xl font-semibold text-white tracking-tight leading-none break-words">
+        <p
+          className="mt-1 font-semibold text-white tracking-tight leading-tight tabular-nums break-words"
+          style={{
+            // mobile: 18px, desktop: sube hasta 30px pero sin romper
+            fontSize: 'clamp(18px, 2.2vw, 30px)',
+          }}
+        >
           {value}
         </p>
 
         {hint && (
-          <div className="mt-2 flex items-center gap-1.5 text-emerald-400 text-xs font-medium min-w-0">
+          <div className="mt-2 flex items-center gap-1.5 text-emerald-400 text-[11px] sm:text-xs font-medium min-w-0">
             <ChartBarIcon className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{hint}</span>
           </div>
@@ -542,12 +548,6 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
             </div>
           </NeonCard>
         </div>
-
-        <NeonCard className="opacity-0 pointer-events-none">
-          <div className="p-1">
-            <ClipboardDocumentListIcon className="w-0 h-0" />
-          </div>
-        </NeonCard>
       </div>
 
       <RequestForm
