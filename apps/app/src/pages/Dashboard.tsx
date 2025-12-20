@@ -72,10 +72,8 @@ const StatCard: React.FC<{
       <div className="shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 sm:p-3">{icon}</div>
 
       <div className="flex-1 min-w-0">
-        {/* label: una línea, pero un pelín más chica para ganar espacio */}
         <p className="text-[11px] sm:text-sm text-white/60 truncate leading-snug">{label}</p>
 
-        {/* value: NO truncar, NO romper dígitos. Ajustamos tamaño para que entre */}
         <p
           className="mt-1 font-semibold text-white tracking-tight leading-tight tabular-nums whitespace-nowrap"
           style={{
@@ -86,13 +84,10 @@ const StatCard: React.FC<{
           {value}
         </p>
 
-        {/* hint: ahora SI mostramos completo (hasta 2 líneas aprox), sin truncate */}
         {hint && (
           <div className="mt-2 flex items-start gap-1.5 text-emerald-400 text-[11px] sm:text-xs font-medium">
             <ChartBarIcon className="w-3.5 h-3.5 shrink-0 mt-[1px]" />
-            <span className="text-emerald-300/95 whitespace-normal leading-snug">
-              {hint}
-            </span>
+            <span className="text-emerald-300/95 whitespace-normal leading-snug">{hint}</span>
           </div>
         )}
       </div>
@@ -228,7 +223,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           icon: <CurrencyDollarIcon className="w-5 h-5 text-cyan-300" />,
           label: 'Pagos pendientes (ARS)',
           value: formatARS(clientData.pendingPaymentsArs.total),
-          hint: clientData.pendingPaymentsArs.overdue > 0 ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}` : undefined,
+          hint:
+            clientData.pendingPaymentsArs.overdue > 0
+              ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}`
+              : undefined,
         },
         {
           key: 'delays',
@@ -242,7 +240,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           icon: <ExclamationTriangleIcon className="w-5 h-5 text-cyan-200" />,
           label: 'Pendientes críticos',
           value: clientData.criticalPending.length,
-          hint: clientData.pendingPaymentsArs.next7Days > 0 ? `7 días ${formatARS(clientData.pendingPaymentsArs.next7Days)}` : undefined,
+          hint:
+            clientData.pendingPaymentsArs.next7Days > 0
+              ? `7 días ${formatARS(clientData.pendingPaymentsArs.next7Days)}`
+              : undefined,
         },
       ];
     }
@@ -301,7 +302,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{p.title}</p>
                     <div className="mt-1">
-                      <MiniPill label={p.severity === 'high' ? 'Alta' : 'Media'} tone={p.severity === 'high' ? 'danger' : 'warn'} />
+                      <MiniPill
+                        label={p.severity === 'high' ? 'Alta' : 'Media'}
+                        tone={p.severity === 'high' ? 'danger' : 'warn'}
+                      />
                     </div>
                   </div>
                   <a
@@ -353,7 +357,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{a.title}</p>
                   <div className="mt-1 flex items-center gap-2">
-                    <MiniPill label={a.type === 'payment' ? 'Cobros' : a.type === 'approval' ? 'Presupuestos' : 'Delays'} tone="warn" />
+                    <MiniPill
+                      label={a.type === 'payment' ? 'Cobros' : a.type === 'approval' ? 'Presupuestos' : 'Delays'}
+                      tone="warn"
+                    />
                     <MiniPill label={a.severity === 'high' ? 'Alta' : 'Media'} tone={a.severity === 'high' ? 'danger' : 'warn'} />
                   </div>
                 </div>
@@ -388,8 +395,11 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
-      {/* ✅ FIX GAP: sticky debajo del header "Panel" en mobile */}
-      <div className="sticky top-14 sm:top-0 z-10 backdrop-blur bg-neutral-950/90 border-b border-white/10">
+      {/* ✅ Pegado perfecto debajo del header "Panel" usando CSS var */}
+      <div
+        className="sticky z-10 bg-neutral-950/90 backdrop-blur border-b border-white/10"
+        style={{ top: 'var(--panel-header-h, 56px)' }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 shrink-0" />
