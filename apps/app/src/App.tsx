@@ -18,10 +18,57 @@ import TicketDetail from './pages/TicketDetail';
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading } = useApp();
 
+  // 🟢 Loader global neón (antes de cualquier ruta)
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="text-white text-lg">Cargando...</div>
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-6">
+        <div className="flex flex-col items-center gap-4">
+          {/* Spinner neón */}
+          <div className="relative">
+            {/* Glow */}
+            <div
+              className="absolute -inset-6 rounded-full blur-2xl opacity-60"
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(0,255,163,0.35) 0%, rgba(0,255,163,0) 70%)',
+              }}
+            />
+
+            {/* Ring base */}
+            <div
+              className="h-14 w-14 rounded-full border border-emerald-300/25"
+              style={{ boxShadow: '0 0 30px rgba(0,255,163,0.25)' }}
+            />
+
+            {/* Spinner */}
+            <div
+              className="absolute inset-0 h-14 w-14 rounded-full border-2 border-emerald-300/20 border-t-emerald-300 animate-spin"
+              style={{ boxShadow: '0 0 22px rgba(0,255,163,0.35)' }}
+            />
+          </div>
+
+          {/* Texto */}
+          <div className="text-center">
+            <div
+              className="text-base sm:text-lg font-semibold tracking-wide"
+              style={{
+                color: '#00FFA3',
+                textShadow: '0 0 16px rgba(0,255,163,0.35)',
+              }}
+            >
+              Cargando
+              <span className="inline-flex w-10 justify-start">
+                <span className="animate-pulse">.</span>
+                <span className="animate-pulse [animation-delay:150ms]">.</span>
+                <span className="animate-pulse [animation-delay:300ms]">.</span>
+              </span>
+            </div>
+
+            <div className="mt-2 text-xs sm:text-sm text-white/60">
+              Preparando tu workspace
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -32,22 +79,17 @@ const AppContent: React.FC = () => {
         path="/login"
         element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />}
       />
+
       <Route
         path="/forgot-password"
         element={!isAuthenticated ? <ForgotPassword /> : <Navigate to="/" replace />}
       />
-      <Route
-        path="/reset-password"
-        element={<ResetPassword />}
-      />
-      <Route
-        path="/ticket/:ticketId"
-        element={<TicketDetail />}
-      />
-      <Route
-        path="/tickets/:ticketId"
-        element={<TicketDetail />}
-      />
+
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      <Route path="/ticket/:ticketId" element={<TicketDetail />} />
+      <Route path="/tickets/:ticketId" element={<TicketDetail />} />
+
       <Route
         path="/*"
         element={
