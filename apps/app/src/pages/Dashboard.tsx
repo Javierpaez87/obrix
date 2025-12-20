@@ -223,10 +223,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           icon: <CurrencyDollarIcon className="w-5 h-5 text-cyan-300" />,
           label: 'Pagos pendientes (ARS)',
           value: formatARS(clientData.pendingPaymentsArs.total),
-          hint:
-            clientData.pendingPaymentsArs.overdue > 0
-              ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}`
-              : undefined,
+          hint: clientData.pendingPaymentsArs.overdue > 0 ? `Vencidos ${formatARS(clientData.pendingPaymentsArs.overdue)}` : undefined,
         },
         {
           key: 'delays',
@@ -240,10 +237,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
           icon: <ExclamationTriangleIcon className="w-5 h-5 text-cyan-200" />,
           label: 'Pendientes críticos',
           value: clientData.criticalPending.length,
-          hint:
-            clientData.pendingPaymentsArs.next7Days > 0
-              ? `7 días ${formatARS(clientData.pendingPaymentsArs.next7Days)}`
-              : undefined,
+          hint: clientData.pendingPaymentsArs.next7Days > 0 ? `7 días ${formatARS(clientData.pendingPaymentsArs.next7Days)}` : undefined,
         },
       ];
     }
@@ -302,10 +296,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{p.title}</p>
                     <div className="mt-1">
-                      <MiniPill
-                        label={p.severity === 'high' ? 'Alta' : 'Media'}
-                        tone={p.severity === 'high' ? 'danger' : 'warn'}
-                      />
+                      <MiniPill label={p.severity === 'high' ? 'Alta' : 'Media'} tone={p.severity === 'high' ? 'danger' : 'warn'} />
                     </div>
                   </div>
                   <a
@@ -357,10 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{a.title}</p>
                   <div className="mt-1 flex items-center gap-2">
-                    <MiniPill
-                      label={a.type === 'payment' ? 'Cobros' : a.type === 'approval' ? 'Presupuestos' : 'Delays'}
-                      tone="warn"
-                    />
+                    <MiniPill label={a.type === 'payment' ? 'Cobros' : a.type === 'approval' ? 'Presupuestos' : 'Delays'} tone="warn" />
                     <MiniPill label={a.severity === 'high' ? 'Alta' : 'Media'} tone={a.severity === 'high' ? 'danger' : 'warn'} />
                   </div>
                 </div>
@@ -394,12 +382,13 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
-      {/* ✅ Pegado perfecto debajo del header "Panel" usando CSS var */}
-      <div
-        className="sticky z-10 bg-neutral-950/90 backdrop-blur border-b border-white/10"
-        style={{ top: 'var(--panel-header-h, 56px)' }}
-      >
+    // ✅ CLAVE: evita que el contenido quede "debajo" del header Panel
+    <div
+      className="min-h-screen bg-neutral-950 text-white"
+      style={{ paddingTop: 'var(--panel-header-h, 56px)' }}
+    >
+      {/* ✅ NO sticky en mobile (ya hay uno arriba: Panel). En sm+ puede ser sticky si querés */}
+      <div className="bg-neutral-950/90 backdrop-blur border-b border-white/10 sm:sticky sm:top-0 sm:z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 shrink-0" />
