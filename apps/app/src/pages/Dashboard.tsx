@@ -60,7 +60,7 @@ const NeonCard: React.FC<{ className?: string; children: React.ReactNode }> = ({
   </div>
 );
 
-// ✅ StatCard: FIX mobile rendering (evita que el monto se corte en 2/3 líneas)
+// ✅ StatCard: usa mejor el espacio + muestra value/hint completos
 const StatCard: React.FC<{
   icon: React.ReactNode;
   label: string;
@@ -68,30 +68,31 @@ const StatCard: React.FC<{
   hint?: string;
 }> = ({ icon, label, value, hint }) => (
   <NeonCard className="h-full">
-    <div className="p-3 sm:p-5 flex items-start gap-3 min-h-[104px] sm:min-h-[120px]">
-      <div className="shrink-0 rounded-xl bg-white/5 border border-white/10 p-2.5 sm:p-3">{icon}</div>
+    <div className="p-3 sm:p-5 flex items-start gap-2.5 sm:gap-3">
+      <div className="shrink-0 rounded-xl bg-white/5 border border-white/10 p-2 sm:p-3">{icon}</div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] sm:text-sm text-white/60 truncate">{label}</p>
+        {/* label: una línea, pero un pelín más chica para ganar espacio */}
+        <p className="text-[11px] sm:text-sm text-white/60 truncate leading-snug">{label}</p>
 
-        {/* Contenedor que asegura overflow controlado */}
-        <div className="mt-1 overflow-hidden">
-          <p
-            className="font-semibold text-white tracking-tight leading-tight tabular-nums whitespace-nowrap truncate"
-            style={{
-              // Mobile más conservador para evitar cortes, desktop escala bien
-              fontSize: 'clamp(16px, 4.6vw, 28px)',
-            }}
-            title={String(value)}
-          >
-            {value}
-          </p>
-        </div>
+        {/* value: NO truncar, NO romper dígitos. Ajustamos tamaño para que entre */}
+        <p
+          className="mt-1 font-semibold text-white tracking-tight leading-tight tabular-nums whitespace-nowrap"
+          style={{
+            fontSize: 'clamp(15px, 4.2vw, 26px)',
+          }}
+          title={String(value)}
+        >
+          {value}
+        </p>
 
+        {/* hint: ahora SI mostramos completo (hasta 2 líneas aprox), sin truncate */}
         {hint && (
-          <div className="mt-2 flex items-center gap-1.5 text-emerald-400 text-[11px] sm:text-xs font-medium min-w-0">
-            <ChartBarIcon className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{hint}</span>
+          <div className="mt-2 flex items-start gap-1.5 text-emerald-400 text-[11px] sm:text-xs font-medium">
+            <ChartBarIcon className="w-3.5 h-3.5 shrink-0 mt-[1px]" />
+            <span className="text-emerald-300/95 whitespace-normal leading-snug">
+              {hint}
+            </span>
           </div>
         )}
       </div>
@@ -387,7 +388,8 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
-      <div className="sticky top-0 z-10 backdrop-blur bg-neutral-950/70 border-b border-white/10">
+      {/* ✅ FIX GAP: sticky debajo del header "Panel" en mobile */}
+      <div className="sticky top-14 sm:top-0 z-10 backdrop-blur bg-neutral-950/90 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-emerald-500 shrink-0" />
@@ -426,7 +428,6 @@ const Dashboard: React.FC<DashboardProps> = ({ projects: inputProjects, user: in
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
-        {/* MOBILE: mantenemos 2 columnas pero ahora los montos no se rompen */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {topStats.map((s) => (
             <StatCard key={s.key} icon={s.icon} label={s.label} value={s.value} hint={s.hint} />
