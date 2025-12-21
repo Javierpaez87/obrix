@@ -5,7 +5,6 @@ import {
   Home,
   FolderOpen,
   FileText,
-  MessageSquare,
   TrendingUp,
   TrendingDown,
   BookOpen,
@@ -18,11 +17,14 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-// Estilos compartidos para el look "neon dark" (match con Agenda)
+// ✅ Usa la altura real del header (setea por Header.tsx en --panel-header-h)
+// Fallback a 56px por si la var todavía no está seteada en el primer render.
 const shell =
-  'fixed lg:relative z-50 min-h-screen w-72 transition-transform duration-300 ease-in-out lg:translate-x-0';
+  'fixed left-0 top-[var(--panel-header-h,56px)] h-[calc(100vh-var(--panel-header-h,56px))] lg:top-0 lg:h-auto lg:relative z-50 w-72 transition-transform duration-300 ease-in-out lg:translate-x-0';
+
 const panel =
   'h-full bg-neutral-950/95 backdrop-blur border-r border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset]';
+
 const headerWrap = 'px-5 py-5 border-b border-white/10 relative';
 
 const itemBase =
@@ -55,16 +57,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   return (
     <aside className={`${shell} ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-      {/* Fondo semitransparente para mobile */}
+      {/* Fondo semitransparente para mobile (NO tapa el header) */}
       <div
-        className={`lg:hidden fixed inset-0 bg-black/50 transition-opacity ${
+        className={`lg:hidden fixed left-0 right-0 top-[var(--panel-header-h,56px)] bottom-0 bg-black/50 transition-opacity ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
       />
 
       {/* Panel lateral */}
-      <div className={`${panel} w-72`}>        
+      <div className={`${panel} w-72`}>
         {/* Header */}
         <div className={headerWrap}>
           {/* Botón cerrar en mobile */}
@@ -76,7 +78,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <X className="w-5 h-5" />
           </button>
 
-          <NavLink to="/" className="flex items-center justify-center py-2 hover:opacity-80 transition">
+          <NavLink
+            to="/"
+            className="flex items-center justify-center py-2 hover:opacity-80 transition"
+          >
             <img
               src="/obrix-logo.png"
               alt="Obrix"
@@ -92,15 +97,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               key={item.to}
               to={item.to}
               onClick={onClose}
-              className={({ isActive }) =>
-                [itemBase, isActive ? itemActive : itemIdle].join(' ')
-              }
+              className={({ isActive }) => [itemBase, isActive ? itemActive : itemIdle].join(' ')}
             >
               {/* Indicador neon a la izquierda */}
-              <span
-                className="relative inline-flex w-1.5 h-6 rounded-full overflow-hidden"
-                aria-hidden
-              >
+              <span className="relative inline-flex w-1.5 h-6 rounded-full overflow-hidden" aria-hidden>
                 <span className="absolute inset-0 bg-gradient-to-b from-cyan-400 via-fuchsia-400 to-emerald-400 opacity-0 group-hover:opacity-70 transition" />
                 <span className="absolute inset-0 bg-white/10 group-[.active]:opacity-0" />
               </span>
@@ -115,21 +115,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="mt-auto px-5 py-4 space-y-4">
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/60 hidden lg:block">
             {isClient && (
-              <p>Estás en vista de <span className="text-white">Cliente</span>.</p>
+              <p>
+                Estás en vista de <span className="text-white">Cliente</span>.
+              </p>
             )}
             {isConstructor && (
-              <p>Estás en vista de <span className="text-white">Constructor/a</span>.</p>
+              <p>
+                Estás en vista de <span className="text-white">Constructor/a</span>.
+              </p>
             )}
-            {!isClient && !isConstructor && (
-              <p>Seleccioná un rol para ver menús específicos.</p>
-            )}
+            {!isClient && !isConstructor && <p>Seleccioná un rol para ver menús específicos.</p>}
           </div>
 
           <div className="flex flex-col items-center gap-3">
             <div className="text-center text-xs leading-relaxed">
               <p className="font-medium text-white">¿Buscás servicios?</p>
-              <p className="text-white/70">
-              </p>
+              <p className="text-white/70"></p>
             </div>
 
             <a
