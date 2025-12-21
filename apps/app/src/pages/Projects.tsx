@@ -340,17 +340,18 @@ const Projects: React.FC = () => {
   );
 
   const Section = ({ title, cta, onClick, right }: { title: string; cta?: string; onClick?: () => void; right?: React.ReactNode }) => (
-    <div className="flex items-center justify-between">
-      <h1 className={`text-2xl sm:text-3xl font-bold ${neonText}`} style={{ textShadow: '0 0 12px rgba(0,255,163,0.35)' }}>
-        {title}
-      </h1>
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <h1 className={`text-2xl sm:text-3xl font-bold ${neonText} break-words leading-tight`} style={{ textShadow: '0 0 12px rgba(0,255,163,0.35)' }}>
+          {title}
+        </h1>
+      </div>
+      <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:gap-3">
         {right}
         {cta && (
-          <button className={neonCTA} style={neonCTAStyle} onClick={onClick}>
+          <button className={`${neonCTA} w-full sm:w-auto justify-center whitespace-nowrap text-sm sm:text-base min-h-[44px] px-3 py-2`} style={neonCTAStyle} onClick={onClick}>
             <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">{cta}</span>
-            <span className="sm:hidden">Nuevo</span>
+            {cta}
           </button>
         )}
       </div>
@@ -383,7 +384,7 @@ const Projects: React.FC = () => {
         cta="Nuevo Proyecto"
         onClick={() => setShowProjectForm(true)}
         right={
-          <button className={neonCTA} style={neonCTAStyle} onClick={() => setShowTaskForm(true)}>
+          <button className={`${neonCTA} w-full sm:w-auto justify-center whitespace-nowrap text-sm sm:text-base min-h-[44px] px-3 py-2`} style={neonCTAStyle} onClick={() => setShowTaskForm(true)}>
             <PlusIcon className="h-4 w-4 mr-2" />
             Nueva Tarea
           </button>
