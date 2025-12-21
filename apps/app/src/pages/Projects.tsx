@@ -426,69 +426,62 @@ const Projects: React.FC = () => {
 
           return (
             <Card key={`task-${task.id}`} className="border-2 cursor-pointer" >
-              <div className="flex items-start justify-between mb-4" onClick={() => setActionEntity({ type: 'task', id: task.id, title: task.title })}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4" onClick={() => setActionEntity({ type: 'task', id: task.id, title: task.title })}>
                 <div className="flex-1">
-                  <div className="flex items-center mb-2">
+                  <div className="flex items-center flex-wrap gap-2 mb-2">
                     <CheckCircleIcon className="h-4 w-4 mr-2" style={{ color: NEON_HEX }} />
                     <span className={`${neonChip}`}>TAREA</span>
-                    {visibility === 'snapshot' && <span className={pill('bg-white/10','ml-2')}>Compartido (revocado)</span>}
+                    {visibility === 'snapshot' && <span className={pill('bg-white/10')}>Compartido (revocado)</span>}
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-1">{title}</h3>
-                  <p className={`${neonSubtle} text-xs sm:text-sm mb-2`}>{task.description}</p>
-                  <p className={`${neonMuted} text-xs sm:text-sm`}>{project?.name}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-1 break-words">{title}</h3>
+                  <p className={`${neonSubtle} text-xs sm:text-sm mb-2 break-words`}>{task.description}</p>
+                  <p className={`${neonMuted} text-xs sm:text-sm break-words`}>{project?.name}</p>
                 </div>
                 <span className={taskStatusPill(task.status)}>{taskStatusText(task.status)}</span>
               </div>
 
               <div className="space-y-2 mb-4 text-sm">
                 {task.estimatedStartDate && (
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                     <span className={neonMuted}>Inicio estimado:</span>
-                    <span className={neonText}>{task.estimatedStartDate.toLocaleDateString('es-AR')}</span>
+                    <span className={`${neonText} sm:text-right break-words`}>{task.estimatedStartDate.toLocaleDateString('es-AR')}</span>
                   </div>
                 )}
                 {task.estimatedEndDate && (
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                     <span className={neonMuted}>Fin estimado:</span>
-                    <span className={neonText}>{task.estimatedEndDate.toLocaleDateString('es-AR')}</span>
+                    <span className={`${neonText} sm:text-right break-words`}>{task.estimatedEndDate.toLocaleDateString('es-AR')}</span>
                   </div>
                 )}
                 {task.materialRequests && task.materialRequests.length > 0 && (
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                     <span className={neonMuted}>Solicitudes de materiales:</span>
-                    <span className={neonText}>{task.materialRequests.length}</span>
+                    <span className={`${neonText} sm:text-right`}>{task.materialRequests.length}</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0">
-                <div className="flex gap-2">
-                  <button onClick={() => handleTaskClick(task)} className={neonButton}>
-                    <EyeIcon className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Ver Tarea</span>
-                    <span className="sm:hidden">Ver</span>
-                  </button>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <button onClick={() => handleTaskClick(task)} className={`${neonButton} w-full sm:w-auto justify-center`}>
+                  <EyeIcon className="h-4 w-4 mr-2" />
+                  Ver Tarea
+                </button>
 
-                  {/* Menú rápido */}
-                  <button className={neonButton} onClick={() => setActionEntity({ type: 'task', id: task.id, title: task.title })}>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button className={`${neonButton} hidden sm:flex`} onClick={() => setActionEntity({ type: 'task', id: task.id, title: task.title })}>
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
-                </div>
-
-                <div className="flex gap-2">
-                  <button className={neonButton}>
+                  <button className={`${neonButton} hidden sm:flex`}>
                     <PencilIcon className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Editar</span>
-                    <span className="sm:hidden">Edit</span>
+                    Editar
                   </button>
                   <button
                     onClick={() => openWhatsApp('+54 9 11 9876-5432')}
-                    className={neonButton}
+                    className={`${neonButton} hidden sm:flex`}
                     title="Contactar"
                   >
                     <PhoneIcon className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Contactar</span>
-                    <span className="sm:hidden">📞</span>
+                    Contactar
                   </button>
                 </div>
               </div>
@@ -503,32 +496,32 @@ const Projects: React.FC = () => {
 
           return (
             <Card key={`project-${project.id}`} className="cursor-pointer">
-              <div className="flex items-start justify-between mb-4" onClick={() => setActionEntity({ type: 'project', id: project.id, title: project.name })}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4" onClick={() => setActionEntity({ type: 'project', id: project.id, title: project.name })}>
                 <div className="flex-1">
-                  <div className="flex items-center mb-2">
+                  <div className="flex items-center flex-wrap gap-2 mb-2">
                     <TruckIcon className="h-4 w-4 mr-2" style={{ color: NEON_HEX }} />
                     <span className={`${neonChip}`}>PROYECTO</span>
-                    {visibility === 'snapshot' && <span className={pill('bg-white/10','ml-2')}>Compartido (revocado)</span>}
+                    {visibility === 'snapshot' && <span className={pill('bg-white/10')}>Compartido (revocado)</span>}
                   </div>
-                  <h3 className="text-lg sm:text-xl font-semibold mb-1">{title}</h3>
-                  <p className={`${neonSubtle} text-xs sm:text-sm mb-2`}>{project.description}</p>
-                  <p className={`${neonMuted} text-xs sm:text-sm`}>{project.address}</p>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-1 break-words">{title}</h3>
+                  <p className={`${neonSubtle} text-xs sm:text-sm mb-2 break-words`}>{project.description}</p>
+                  <p className={`${neonMuted} text-xs sm:text-sm break-words`}>{project.address}</p>
                 </div>
                 <span className={getStatusPill(project.status)}>{statusText(project.status)}</span>
               </div>
 
               <div className="space-y-3 mb-4 text-sm">
-                <div className="flex justify-between">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                   <span className={neonMuted}>Presupuesto:</span>
-                  <span className="font-medium text-white">${project.budget.toLocaleString('es-AR')}</span>
+                  <span className="font-medium text-white sm:text-right break-words">${project.budget.toLocaleString('es-AR')}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                   <span className={neonMuted}>Gastado:</span>
-                  <span className="font-medium text-red-300">${project.spent.toLocaleString('es-AR')}</span>
+                  <span className="font-medium text-red-300 sm:text-right break-words">${project.spent.toLocaleString('es-AR')}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                   <span className={neonMuted}>Restante:</span>
-                  <span className="font-medium text-emerald-300">
+                  <span className="font-medium text-emerald-300 sm:text-right break-words">
                     ${(project.budget - project.spent).toLocaleString('es-AR')}
                   </span>
                 </div>
@@ -538,29 +531,25 @@ const Projects: React.FC = () => {
                 <Progress value={spentPct} />
               </div>
 
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex gap-2">
-                  <button className={neonButton} onClick={() => { setSelectedProject(project); setShowProjectDetail(true); }}>
-                    <EyeIcon className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Ver</span>
-                    <span className="sm:hidden">Ver</span>
-                  </button>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <button className={`${neonButton} w-full sm:w-auto justify-center`} onClick={() => { setSelectedProject(project); setShowProjectDetail(true); }}>
+                  <EyeIcon className="h-4 w-4 mr-2" />
+                  Ver
+                </button>
 
-                  {/* Menú rápido */}
-                  <button className={neonButton} onClick={() => setActionEntity({ type: 'project', id: project.id, title: project.name })}>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button className={`${neonButton} hidden sm:flex`} onClick={() => setActionEntity({ type: 'project', id: project.id, title: project.name })}>
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
+                  <button
+                    onClick={() => openWhatsApp('+54 9 11 9876-5432')}
+                    className={`${neonButton} hidden sm:flex`}
+                    title="Contactar cliente"
+                  >
+                    <PhoneIcon className="h-4 w-4 mr-2" />
+                    Cliente
+                  </button>
                 </div>
-
-                <button
-                  onClick={() => openWhatsApp('+54 9 11 9876-5432')}
-                  className={neonButton}
-                  title="Contactar cliente"
-                >
-                  <PhoneIcon className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Cliente</span>
-                  <span className="sm:hidden">📞</span>
-                </button>
               </div>
             </Card>
           );
