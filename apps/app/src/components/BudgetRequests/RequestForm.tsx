@@ -186,59 +186,76 @@ const RequestForm: React.FC<RequestFormProps> = ({
   const persistMaterialsForTicket = async (ticketId: string) => {
     if (formData.type !== 'materials') return;
 
-    try {
-      const name = (materialsListName || defaultListName).trim() || defaultListName;
-      const description = materialsListDescription.trim();
+    const name = (materialsListName || defaultListName).trim() || defaultListName;
+    const description = materialsListDescription.trim();
 
-      const cleanRows = materials
-        .map((r, idx) => ({ ...r, position: idx + 1 }))
-        .filter((r) => String(r.material || '').trim().length > 0);
+    const cleanRows = materials
+      .map((r, idx) => ({ ...r, position: idx + 1 }))
+      .filter((r) => String(r.material || '').trim().length > 0);
 
-      const { data: list, error: listErr } = await supabase
-        .from('material_lists')
-        .upsert({
-          ticket_id: ticketId,
-          name,
-          description: description || null,
-          created_by: user?.id ?? null,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'ticket_id' })
-        .select('id')
-        .single();
-
-      if (listErr || !list) {
-        console.error('[RequestForm] Error upserting material list:', listErr);
-        throw listErr;
-      }
-
-      await supabase.from('material_items').delete().eq('list_id', list.id);
-
-      if (cleanRows.length) {
-        const payload = cleanRows.map((r) => ({
-          list_id: list.id,
-          position: r.position,
-          material: r.material,
-          quantity: r.quantity ? Number(String(r.quantity).replace(',', '.')) : null,
-          unit: r.unit || null,
-          thickness_value: null,
-          thickness_unit: null,
-          width_value: null,
-          width_unit: null,
-          length_value: null,
-          length_unit: null,
-          spec: r.spec || null,
-          comment: r.comment || null,
-        }));
-
-        const { error: itemsErr } = await supabase.from('material_items').insert(payload);
-        if (itemsErr) {
-          console.error('[RequestForm] Error inserting material items:', itemsErr);
-          throw itemsErr;
-        }
-      }
-    } catch (err) {
-      console.error('[RequestForm] Error persisting materials:', err);
+    if (cleanRows.length === 0) {
+      throw new Error('Debe haber al menos un material en la lista para guardar.');
     }
+
+    const { data: list, error: listErr } = await supabase
+      .from('material_lists')
+      .upsert({
+        ticket_id: ticketId,
+        name,
+        description: description || null,
+        created_by: user?.id ?? null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'ticket_id' })
+      .select('id')
+      .single();
+
+    if (listErr) {
+      console.error('[RequestForm] Error upserting material list:', listErr);
+      throw new Error(`No se pudo guardar la lista de materiales: ${listErr.message || 'Error de base de datos'}`);
+    }
+
+    if (!list) {
+      throw new Error('No se pudo crear la lista de materiales (no se recibió ID).');
+    }
+
+    const { error: deleteErr } = await supabase
+      .from('material_items')
+      .delete()
+      .eq('list_id', list.id);
+
+    if (deleteErr) {
+      console.error('[RequestForm] Error deleting old material items:', deleteErr);
+    }
+
+    const payload = cleanRows.map((r) => ({
+      list_id: list.id,
+      position: r.position,
+      material: r.material,
+      quantity: r.quantity ? Number(String(r.quantity).replace(',', '.')) : null,
+      unit: r.unit || null,
+      thickness_value: null,
+      thickness_unit: null,
+      width_value: null,
+      width_unit: null,
+      length_value: null,
+      length_unit: null,
+      spec: r.spec || null,
+      comment: r.comment || null,
+    }));
+
+    const { error: itemsErr } = await supabase
+      .from('material_items')
+      .insert(payload);
+
+    if (itemsErr) {
+      console.error('[RequestForm] Error inserting material items:', itemsErr);
+      throw new Error(`No se pudieron guardar los materiales: ${itemsErr.message || 'Error de base de datos'}`);
+    }
+
+    console.log('[RequestForm] Materials persisted successfully:', {
+      listId: list.id,
+      itemCount: payload.length,
+    });
   };
 
   const padRight = (str: string, len: number): string => {
