@@ -197,38 +197,63 @@ const RequestForm: React.FC<RequestFormProps> = ({
       throw new Error('Debe haber al menos un material en la lista para guardar.');
     }
 
-    const { data: list, error: listErr } = await supabase
+    const { data: existingList } = await supabase
       .from('material_lists')
-      .upsert({
-        ticket_id: ticketId,
-        name,
-        description: description || null,
-        created_by: user?.id ?? null,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'ticket_id' })
       .select('id')
-      .single();
+      .eq('ticket_id', ticketId)
+      .maybeSingle();
 
-    if (listErr) {
-      console.error('[RequestForm] Error upserting material list:', listErr);
-      throw new Error(`No se pudo guardar la lista de materiales: ${listErr.message || 'Error de base de datos'}`);
-    }
+    let listId: string;
 
-    if (!list) {
-      throw new Error('No se pudo crear la lista de materiales (no se recibió ID).');
+    if (existingList) {
+      const { error: updateErr } = await supabase
+        .from('material_lists')
+        .update({
+          name,
+          description: description || null,
+        })
+        .eq('id', existingList.id);
+
+      if (updateErr) {
+        console.error('[RequestForm] Error updating material list:', updateErr);
+        throw new Error(`No se pudo actualizar la lista de materiales: ${updateErr.message || 'Error de base de datos'}`);
+      }
+
+      listId = existingList.id;
+    } else {
+      const { data: newList, error: insertErr } = await supabase
+        .from('material_lists')
+        .insert({
+          ticket_id: ticketId,
+          name,
+          description: description || null,
+        })
+        .select('id')
+        .single();
+
+      if (insertErr) {
+        console.error('[RequestForm] Error inserting material list:', insertErr);
+        throw new Error(`No se pudo guardar la lista de materiales: ${insertErr.message || 'Error de base de datos'}`);
+      }
+
+      if (!newList) {
+        throw new Error('No se pudo crear la lista de materiales (no se recibió ID).');
+      }
+
+      listId = newList.id;
     }
 
     const { error: deleteErr } = await supabase
       .from('material_items')
       .delete()
-      .eq('list_id', list.id);
+      .eq('list_id', listId);
 
     if (deleteErr) {
       console.error('[RequestForm] Error deleting old material items:', deleteErr);
     }
 
     const payload = cleanRows.map((r) => ({
-      list_id: list.id,
+      list_id: listId,
       position: r.position,
       material: r.material,
       quantity: r.quantity ? Number(String(r.quantity).replace(',', '.')) : null,
@@ -253,7 +278,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
     }
 
     console.log('[RequestForm] Materials persisted successfully:', {
-      listId: list.id,
+      listId,
       itemCount: payload.length,
     });
   };
