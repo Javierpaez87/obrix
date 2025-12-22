@@ -258,12 +258,6 @@ const RequestForm: React.FC<RequestFormProps> = ({
       material: r.material,
       quantity: r.quantity ? Number(String(r.quantity).replace(',', '.')) : null,
       unit: r.unit || null,
-      thickness_value: null,
-      thickness_unit: null,
-      width_value: null,
-      width_unit: null,
-      length_value: null,
-      length_unit: null,
       spec: r.spec || null,
       comment: r.comment || null,
     }));
