@@ -41,6 +41,33 @@ interface Recipient {
   offer_estimated_days?: number | null;
 }
 
+interface MaterialsList {
+  id: string;
+  ticket_id: string;
+  name: string;
+  description: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MaterialItem {
+  id: string;
+  list_id: string;
+  position: number;
+  material: string;
+  quantity: number | null;
+  unit: string | null;
+  thickness_value: number | null;
+  thickness_unit: string | null;
+  width_value: number | null;
+  width_unit: string | null;
+  length_value: number | null;
+  length_unit: string | null;
+  spec: string | null;
+  comment: string | null;
+}
+
 const TicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
@@ -51,6 +78,9 @@ const TicketDetail: React.FC = () => {
   const [recipients, setRecipients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [materialsList, setMaterialsList] = useState<MaterialsList | null>(null);
+  const [materialsItems, setMaterialsItems] = useState<MaterialItem[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [actionCompleted, setActionCompleted] = useState(false);
@@ -106,6 +136,32 @@ const TicketDetail: React.FC = () => {
         }
 
         setTicket(ticketData);
+
+        if (ticketData.type === 'materials') {
+          const { data: listData, error: listError } = await supabase
+            .from('material_lists')
+            .select('*')
+            .eq('ticket_id', ticketId)
+            .maybeSingle();
+
+          if (listError) {
+            console.error('[TicketDetail] Error loading material_lists:', listError);
+          } else if (listData) {
+            setMaterialsList(listData);
+
+            const { data: itemsData, error: itemsError } = await supabase
+              .from('material_items')
+              .select('*')
+              .eq('list_id', listData.id)
+              .order('position');
+
+            if (itemsError) {
+              console.error('[TicketDetail] Error loading material_items:', itemsError);
+            } else {
+              setMaterialsItems(itemsData || []);
+            }
+          }
+        }
 
         const isOriginator = (ticketData as any).created_by === user.id;
 
@@ -519,6 +575,63 @@ const TicketDetail: React.FC = () => {
             <h2 className="text-sm font-medium text-white/70 mb-2">Descripción</h2>
             <p className="text-white whitespace-pre-wrap">{ticket.description}</p>
           </div>
+
+          {/* Lista de Materiales */}
+          {ticket.type === 'materials' && materialsList && materialsItems.length > 0 && (
+            <div className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold text-white mb-1">{materialsList.name}</h2>
+                {materialsList.description && (
+                  <p className="text-sm text-white/60">{materialsList.description}</p>
+                )}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left py-3 px-2 text-white/70 font-medium">Material / Producto</th>
+                      <th className="text-left py-3 px-2 text-white/70 font-medium">Cantidad</th>
+                      <th className="text-left py-3 px-2 text-white/70 font-medium">Unidad</th>
+                      <th className="text-left py-3 px-2 text-white/70 font-medium">Medidas</th>
+                      <th className="text-left py-3 px-2 text-white/70 font-medium">Comentario</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {materialsItems.map((item, idx) => (
+                      <tr key={item.id} className={idx !== materialsItems.length - 1 ? 'border-b border-white/5' : ''}>
+                        <td className="py-3 px-2 text-white">{item.material}</td>
+                        <td className="py-3 px-2 text-white/80">{item.quantity ?? '-'}</td>
+                        <td className="py-3 px-2 text-white/80">{item.unit ?? '-'}</td>
+                        <td className="py-3 px-2 text-white/80">{item.spec ?? '-'}</td>
+                        <td className="py-3 px-2 text-white/60">{item.comment ?? '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-white/10 text-xs text-white/50">
+                Total de items: {materialsItems.length}
+              </div>
+            </div>
+          )}
+
+          {ticket.type === 'materials' && materialsList && materialsItems.length === 0 && (
+            <div className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10 text-center">
+              <h2 className="text-lg font-semibold text-white mb-2">{materialsList.name}</h2>
+              {materialsList.description && (
+                <p className="text-sm text-white/60 mb-3">{materialsList.description}</p>
+              )}
+              <p className="text-white/50">No hay materiales en esta lista.</p>
+            </div>
+          )}
+
+          {ticket.type === 'materials' && !materialsList && (
+            <div className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10 text-center">
+              <p className="text-white/50">No se encontró lista de materiales para este ticket.</p>
+            </div>
+          )}
 
           {/* Fechas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
