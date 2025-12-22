@@ -24,18 +24,13 @@ interface Ticket {
 interface Recipient {
   id: string;
   ticket_id: string;
-
-  // OJO: dejamos string para permitir nuevos estados sin romper TS
   status: string;
-
   recipient_phone: string | null;
   recipient_email: string | null;
   accepted_at: string | null;
   rejected_at: string | null;
   recipient_profile_id?: string | null;
   ticket_creator_id?: string | null;
-
-  // Opcionales (si existen en DB)
   offer_amount?: number | null;
   offer_message?: string | null;
   offer_estimated_days?: number | null;
@@ -46,24 +41,16 @@ interface MaterialsList {
   ticket_id: string;
   name: string;
   description: string | null;
-  created_by: string | null;
   created_at: string;
-  updated_at: string;
 }
 
 interface MaterialItem {
   id: string;
   list_id: string;
-  position: number;
+  position: number | null;
   material: string;
   quantity: number | null;
   unit: string | null;
-  thickness_value: number | null;
-  thickness_unit: string | null;
-  width_value: number | null;
-  width_unit: string | null;
-  length_value: number | null;
-  length_unit: string | null;
   spec: string | null;
   comment: string | null;
 }
@@ -85,7 +72,6 @@ const TicketDetail: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [actionCompleted, setActionCompleted] = useState(false);
 
-  // Modal oferta
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [offerAmount, setOfferAmount] = useState<string>('');
   const [offerMessage, setOfferMessage] = useState<string>('');
@@ -113,6 +99,10 @@ const TicketDetail: React.FC = () => {
         setLoading(true);
         setError(null);
 
+        // limpiar materiales al cambiar de ticket
+        setMaterialsList(null);
+        setMaterialsItems([]);
+
         console.log('[TicketDetail] Loading ticket for user:', user.id, 'ticket:', ticketId);
 
         const { data: ticketData, error: ticketError } = await supabase
@@ -137,10 +127,13 @@ const TicketDetail: React.FC = () => {
 
         setTicket(ticketData);
 
-        if (ticketData.type === 'materials') {
+        const shouldLoadMaterials =
+          ticketData.type === 'materials' || ticketData.type === 'combined';
+
+        if (shouldLoadMaterials) {
           const { data: listData, error: listError } = await supabase
             .from('material_lists')
-            .select('*')
+            .select('id,ticket_id,name,description,created_at')
             .eq('ticket_id', ticketId)
             .maybeSingle();
 
@@ -151,9 +144,9 @@ const TicketDetail: React.FC = () => {
 
             const { data: itemsData, error: itemsError } = await supabase
               .from('material_items')
-              .select('*')
+              .select('id,list_id,position,material,quantity,unit,spec,comment')
               .eq('list_id', listData.id)
-              .order('position');
+              .order('position', { ascending: true, nullsFirst: false });
 
             if (itemsError) {
               console.error('[TicketDetail] Error loading material_items:', itemsError);
@@ -163,10 +156,9 @@ const TicketDetail: React.FC = () => {
           }
         }
 
-        const isOriginator = (ticketData as any).created_by === user.id;
+        const isOriginatorLocal = (ticketData as any).created_by === user.id;
 
-        // ✅ ORIGINADOR: ve TODAS las respuestas/ofertas
-        if (isOriginator) {
+        if (isOriginatorLocal) {
           const { data: allRecipients, error: recipientsError } = await supabase
             .from('ticket_recipients')
             .select(`
@@ -195,7 +187,6 @@ const TicketDetail: React.FC = () => {
           return;
         }
 
-        // ✅ OFERENTE: busca (o crea) su fila en ticket_recipients
         const { data: myRecipient, error: myRecipientError } = await supabase
           .from('ticket_recipients')
           .select('*')
@@ -260,7 +251,6 @@ const TicketDetail: React.FC = () => {
     fetchData();
   }, [ticketId, isAuthenticated, authLoading, navigate, user?.id]);
 
-  // Helpers de contexto por ticket
   const isOriginator = !!ticket && !!user?.id && (ticket.created_by ?? null) === user.id;
   const isBidder = !!ticket && !!user?.id && !isOriginator;
 
@@ -295,7 +285,6 @@ const TicketDetail: React.FC = () => {
     }
   };
 
-  // “Rechazar” (ofertante)
   const handleReject = async () => {
     if (!recipient) return;
 
@@ -325,7 +314,6 @@ const TicketDetail: React.FC = () => {
     }
   };
 
-  // Abrir modal de oferta
   const handleOpenOfferModal = () => {
     if (!recipient) return;
     setOfferAmount(recipient.offer_amount != null ? String(recipient.offer_amount) : '');
@@ -334,21 +322,16 @@ const TicketDetail: React.FC = () => {
     setShowOfferModal(true);
   };
 
-  // Enviar oferta (ofertante)
   const handleSubmitOffer = async () => {
     if (!recipient) return;
 
-    const amountNumber =
-      offerAmount.trim() === '' ? null : Number(offerAmount.replace(',', '.'));
-
+    const amountNumber = offerAmount.trim() === '' ? null : Number(offerAmount.replace(',', '.'));
     if (amountNumber !== null && (Number.isNaN(amountNumber) || amountNumber < 0)) {
       alert('El monto no es válido.');
       return;
     }
 
-    const daysNumber =
-      offerDays.trim() === '' ? null : Number(offerDays.replace(',', '.'));
-
+    const daysNumber = offerDays.trim() === '' ? null : Number(offerDays.replace(',', '.'));
     if (daysNumber !== null && (Number.isNaN(daysNumber) || daysNumber < 0)) {
       alert('Los días estimados no son válidos.');
       return;
@@ -356,7 +339,6 @@ const TicketDetail: React.FC = () => {
 
     setSubmitting(true);
     try {
-      // Intento 1: guardar oferta + status
       let error = await safeUpdateRecipient(recipient.id, {
         status: 'offered',
         accepted_at: null,
@@ -366,12 +348,8 @@ const TicketDetail: React.FC = () => {
         offer_estimated_days: daysNumber,
       });
 
-      // Si falla por columnas inexistentes, reintento guardando SOLO status
       if (error) {
-        console.warn(
-          '[TicketDetail] Offer fields update failed. Retrying with status only. Error:',
-          error
-        );
+        console.warn('[TicketDetail] Offer fields update failed. Retrying with status only. Error:', error);
 
         const retryError = await safeUpdateRecipient(recipient.id, {
           status: 'offered',
@@ -385,9 +363,7 @@ const TicketDetail: React.FC = () => {
           return;
         }
 
-        alert(
-          'Oferta enviada, pero el monto/mensaje no se pudieron guardar (faltan columnas en ticket_recipients).'
-        );
+        alert('Oferta enviada, pero el monto/mensaje no se pudieron guardar (faltan columnas en ticket_recipients).');
         setRecipient({ ...recipient, status: 'offered', accepted_at: null, rejected_at: null });
       } else {
         setRecipient({
@@ -522,9 +498,10 @@ const TicketDetail: React.FC = () => {
     );
   }
 
-  // Ahora el “ya respondió” aplica a cualquier no-originador
   const alreadyResponded = recipient ? (recipient.status || 'sent') !== 'sent' : false;
   const canRespond = isBidder && !!recipient && !actionCompleted;
+
+  const shouldShowMaterials = ticket.type === 'materials' || ticket.type === 'combined';
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white p-4 py-8">
@@ -563,7 +540,6 @@ const TicketDetail: React.FC = () => {
                 {getTypeLabel(ticket.type)}
               </span>
 
-              {/* Contexto visible */}
               <span className="text-white/40">
                 {isOriginator ? 'Vista: Originador (tu licitación)' : 'Vista: Oferente (licitación de otro)'}
               </span>
@@ -577,57 +553,62 @@ const TicketDetail: React.FC = () => {
           </div>
 
           {/* Lista de Materiales */}
-          {ticket.type === 'materials' && materialsList && materialsItems.length > 0 && (
-            <div className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-white mb-1">{materialsList.name}</h2>
-                {materialsList.description && (
-                  <p className="text-sm text-white/60">{materialsList.description}</p>
-                )}
-              </div>
+          {shouldShowMaterials && materialsList && (
+            <>
+              {materialsItems.length > 0 ? (
+                <div className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10">
+                  <div className="mb-4">
+                    <h2 className="text-lg font-semibold text-white mb-1">{materialsList.name}</h2>
+                    {materialsList.description && (
+                      <p className="text-sm text-white/60">{materialsList.description}</p>
+                    )}
+                  </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-2 text-white/70 font-medium">Material / Producto</th>
-                      <th className="text-left py-3 px-2 text-white/70 font-medium">Cantidad</th>
-                      <th className="text-left py-3 px-2 text-white/70 font-medium">Unidad</th>
-                      <th className="text-left py-3 px-2 text-white/70 font-medium">Medidas</th>
-                      <th className="text-left py-3 px-2 text-white/70 font-medium">Comentario</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {materialsItems.map((item, idx) => (
-                      <tr key={item.id} className={idx !== materialsItems.length - 1 ? 'border-b border-white/5' : ''}>
-                        <td className="py-3 px-2 text-white">{item.material}</td>
-                        <td className="py-3 px-2 text-white/80">{item.quantity ?? '-'}</td>
-                        <td className="py-3 px-2 text-white/80">{item.unit ?? '-'}</td>
-                        <td className="py-3 px-2 text-white/80">{item.spec ?? '-'}</td>
-                        <td className="py-3 px-2 text-white/60">{item.comment ?? '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="text-left py-3 px-2 text-white/70 font-medium">Material / Producto</th>
+                          <th className="text-left py-3 px-2 text-white/70 font-medium">Cantidad</th>
+                          <th className="text-left py-3 px-2 text-white/70 font-medium">Unidad</th>
+                          <th className="text-left py-3 px-2 text-white/70 font-medium">Especificación</th>
+                          <th className="text-left py-3 px-2 text-white/70 font-medium">Comentario</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {materialsItems.map((item, idx) => (
+                          <tr
+                            key={item.id}
+                            className={idx !== materialsItems.length - 1 ? 'border-b border-white/5' : ''}
+                          >
+                            <td className="py-3 px-2 text-white">{item.material}</td>
+                            <td className="py-3 px-2 text-white/80">{item.quantity ?? '-'}</td>
+                            <td className="py-3 px-2 text-white/80">{item.unit ?? '-'}</td>
+                            <td className="py-3 px-2 text-white/80">{item.spec ?? '-'}</td>
+                            <td className="py-3 px-2 text-white/60">{item.comment ?? '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-              <div className="mt-4 pt-4 border-t border-white/10 text-xs text-white/50">
-                Total de items: {materialsItems.length}
-              </div>
-            </div>
-          )}
-
-          {ticket.type === 'materials' && materialsList && materialsItems.length === 0 && (
-            <div className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10 text-center">
-              <h2 className="text-lg font-semibold text-white mb-2">{materialsList.name}</h2>
-              {materialsList.description && (
-                <p className="text-sm text-white/60 mb-3">{materialsList.description}</p>
+                  <div className="mt-4 pt-4 border-t border-white/10 text-xs text-white/50">
+                    Total de items: {materialsItems.length}
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <h2 className="text-lg font-semibold text-white mb-2">{materialsList.name}</h2>
+                  {materialsList.description && (
+                    <p className="text-sm text-white/60 mb-3">{materialsList.description}</p>
+                  )}
+                  <p className="text-white/50">No hay materiales en esta lista.</p>
+                </div>
               )}
-              <p className="text-white/50">No hay materiales en esta lista.</p>
-            </div>
+            </>
           )}
 
-          {ticket.type === 'materials' && !materialsList && (
+          {shouldShowMaterials && !materialsList && (
             <div className="mb-8 p-6 rounded-xl bg-white/5 border border-white/10 text-center">
               <p className="text-white/50">No se encontró lista de materiales para este ticket.</p>
             </div>
@@ -693,7 +674,6 @@ const TicketDetail: React.FC = () => {
                             {r.profiles?.name || r.recipient_phone || r.recipient_email || 'Oferente'}
                           </h3>
 
-                          {/* Monto/Mensaje si existen */}
                           {(r.offer_amount != null || r.offer_message) && (
                             <div className="mt-2 text-sm text-white/70">
                               {r.offer_amount != null && (
@@ -807,7 +787,6 @@ const TicketDetail: React.FC = () => {
                 </button>
               </div>
 
-              {/* Si ya respondió y vuelve a entrar, dejamos que pueda re-ofertar (por ahora no bloqueamos). */}
               {alreadyResponded && (
                 <div className="text-center text-xs text-white/50">
                   Ya registraste una acción. Si necesitás cambiarla, por ahora podés volver a ofertar.
@@ -896,10 +875,7 @@ const TicketDetail: React.FC = () => {
           )}
 
           <div className="mt-8 text-center">
-            <button
-              onClick={() => navigate('/')}
-              className="text-white/60 hover:text-white transition-colors text-sm"
-            >
+            <button onClick={() => navigate('/')} className="text-white/60 hover:text-white transition-colors text-sm">
               Volver al Dashboard
             </button>
           </div>
