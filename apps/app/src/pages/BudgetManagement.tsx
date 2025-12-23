@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Budget, Task } from '../types';
 import {
@@ -19,7 +19,7 @@ import {
 import RequestForm from '../components/BudgetRequests/RequestForm';
 import QuoteForm from '../components/BudgetRequests/QuoteForm';
 import BudgetReview from '../components/BudgetRequests/BudgetReview';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // ✅ Import del cliente Supabase (ajustá si tu ruta es distinta)
 import { supabase } from '../lib/supabase';
@@ -121,6 +121,8 @@ const getTypeText = (type: string) => {
 const BudgetManagement: React.FC = () => {
   const { budgetRequests, budgets, projects, user, tasks, setTasks, contacts, deletedRequests, refreshBudgetRequests } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [activeTab, setActiveTab] = useState<'requests' | 'quotes' | 'sent' | 'received' | 'deleted'>(
     'requests',
   );
@@ -400,28 +402,28 @@ const BudgetManagement: React.FC = () => {
     }
   };
 
-const handleDeleteRequest = async (requestId: string) => {
-  console.log('[BudgetManagement] Soft delete ticket:', requestId);
+  const handleDeleteRequest = async (requestId: string) => {
+    console.log('[BudgetManagement] Soft delete ticket:', requestId);
 
-  const { data, error } = await supabase
-    .from('tickets') // 👈 tu tabla real
-    .update({
-      deleted_at: new Date().toISOString(),
-    })
-    .eq('id', requestId)
-    .select();
+    const { data, error } = await supabase
+      .from('tickets') // 👈 tu tabla real
+      .update({
+        deleted_at: new Date().toISOString(),
+      })
+      .eq('id', requestId)
+      .select();
 
-  console.log('[SoftDelete] data:', data);
-  console.log('[SoftDelete] error:', error);
+    console.log('[SoftDelete] data:', data);
+    console.log('[SoftDelete] error:', error);
 
-  if (error) {
-    alert('No se pudo eliminar la solicitud');
-    return;
-  }
+    if (error) {
+      alert('No se pudo eliminar la solicitud');
+      return;
+    }
 
-  // 🔁 refrescar listas
-  await refreshBudgetRequests();
-};
+    // 🔁 refrescar listas
+    await refreshBudgetRequests();
+  };
 
   const handleNewRequest = (type: 'constructor' | 'supplier') => {
     setEditingRequest(null);
@@ -487,6 +489,63 @@ const handleDeleteRequest = async (requestId: string) => {
       alert('Error al enviar por WhatsApp');
     }
   };
+
+  // ✅ NUEVO: wiring de deep-links desde TicketDetail
+  // /budget-management?tab=deleted
+  // /budget-management?edit=<ticketId>
+  // /budget-management?edit=<ticketId>&send=1
+  const lastHandledKeyRef = useRef<string>('');
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = (params.get('tab') || '').toLowerCase();
+    const editId = params.get('edit') || '';
+    const send = params.get('send') || '';
+
+    const key = `${tab}|${editId}|${send}|${myRequests.length}|${deletedRequests.length}`;
+    if (lastHandledKeyRef.current === key) return;
+
+    // tab
+    if (tab === 'deleted') {
+      setActiveTab('deleted');
+    } else if (tab === 'received') {
+      setActiveTab('received');
+    } else if (tab === 'quotes') {
+      setActiveTab('quotes');
+    } else if (tab === 'requests') {
+      setActiveTab('requests');
+    }
+
+    // edit + send
+    if (editId) {
+      // si todavía no llegó myRequests, esperamos al próximo render
+      const req = myRequests.find((r: any) => String(r.id) === String(editId));
+      if (req) {
+        // requestType coherente con el tipo
+        const inferredType: 'constructor' | 'supplier' =
+          req?.type === 'materials' ? 'supplier' : 'constructor';
+
+        setRequestType(inferredType);
+        setEditingRequest(req);
+
+        // si send=1, abrimos modal de envío (y NO forzamos abrir RequestForm)
+        if (send === '1' || send === 'true') {
+          setSendRequest(req);
+          setShowSendModal(true);
+          setShowRequestForm(false);
+        } else {
+          setShowRequestForm(true);
+        }
+
+        // si venimos a editar, tiene sentido mostrar la tab requests
+        setActiveTab('requests');
+
+        lastHandledKeyRef.current = key;
+        return;
+      }
+    }
+
+    lastHandledKeyRef.current = key;
+  }, [location.search, myRequests, deletedRequests.length]);
 
   return (
     <div className="space-y-4 sm:space-y-6 bg-black/0 text-white">
