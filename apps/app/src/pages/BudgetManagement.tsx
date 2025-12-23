@@ -174,18 +174,31 @@ const BudgetManagement: React.FC = () => {
     return Array.from(ids);
   }, [budgetRequests]);
 
+  // ✅ IDs únicos de creadores presentes en receivedRequests
+const receivedCreatorIds = useMemo(() => {
+  const ids = new Set<string>();
+  receivedRequests.forEach((row) => {
+    const id = row.ticket?.created_by || null;
+    if (id) ids.add(id);
+  });
+  return Array.from(ids);
+}, [receivedRequests]);
+
   // ✅ Traer profiles(name) para esos IDs
   useEffect(() => {
     let isMounted = true;
 
     const fetchProfiles = async () => {
       try {
-        if (!creatorIds.length) return;
+        const allCreatorIds = Array.from(
+  new Set([...creatorIds, ...receivedCreatorIds])
+);
+if (!allCreatorIds.length) return;
 
         const { data, error } = await supabase
           .from('profiles')
           .select('id, name')
-          .in('id', creatorIds);
+          .in('id', allCreatorIds);
 
         if (error) {
           console.error('Error trayendo profiles:', error.message);
