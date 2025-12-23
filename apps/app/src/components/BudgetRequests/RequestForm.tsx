@@ -5,6 +5,7 @@ import { BudgetRequest } from '../../types';
 import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../../lib/supabase'; // 👈 IMPORTANTE
 import ContactsList from './ContactsList';
+import { cleanPhone, splitRecipients, padRight, truncate, waSanitize, truncateSafe, padRightSafe, joinCols, composeInviteTail } from './whatsappUtils';
 
 interface RequestFormProps {
   isOpen: boolean;
@@ -161,11 +162,6 @@ const RequestForm: React.FC<RequestFormProps> = ({
   const set = <K extends keyof typeof formData>(k: K, v: (typeof formData)[K]) =>
     setFormData((s) => ({ ...s, [k]: v }));
 
-  // Utils
-  const cleanPhone = (raw: string) => raw.replace(/\D/g, '');
-  const splitRecipients = (s: string) =>
-    s.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
-
   // Heurística: está en contactos/usuarios? por teléfono o email
   const isUserInObrix = (phoneOrEmail: string) => {
     const key = phoneOrEmail.toLowerCase();
@@ -278,38 +274,7 @@ const RequestForm: React.FC<RequestFormProps> = ({
     });
   };
 
-  const padRight = (str: string, len: number): string => {
-    const s = String(str || '').slice(0, len);
-    return s + ' '.repeat(Math.max(0, len - s.length));
-  };
-
-  const truncate = (str: string, max: number): string => {
-    const s = String(str || '');
-    return s.length > max ? s.slice(0, max - 1) + '…' : s;
-  };
-
-  const waSanitize = (s: string) =>
-  String(s ?? '')
-    .replace(/m²/g, 'm2')
-    .replace(/m³/g, 'm3')
-    .replace(/\t/g, ' ')
-    .replace(/…/g, '...')
-    .trim();
-
-const truncateSafe = (str: string, max: number): string => {
-  const s = waSanitize(str);
-  return s.length > max ? s.slice(0, Math.max(0, max - 3)) + '...' : s;
-};
-
-const padRightSafe = (str: string, len: number): string => {
-  const s = truncateSafe(str, len);
-  return s + ' '.repeat(Math.max(0, len - s.length));
-};
-
-const joinCols = (cols: string[], widths: number[]) =>
-  cols.map((c, i) => padRightSafe(c, widths[i])).join('  '); // 👈 2 espacios entre columnas
-
-const composeMaterialsText = () => {
+  const composeMaterialsText = () => {
   const rows = materials.filter(r => String(r.material || '').trim());
   const name = (materialsListName || defaultListName).trim() || defaultListName;
   const desc = materialsListDescription.trim();
@@ -393,7 +358,6 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     );
   };
 
-  const composeInviteTail = (_: string) => `\n\nNo tenés cuenta en Obrix aún. Unite acá y gestionemos todo desde la app: https://obrix.app/`;
   const composeActionTail = (_: string) => {
     if (formData.type === 'materials') {
       return `\n\n*Abrí Obrix para ofertar o rechazar por esta lista de materiales.*`;
