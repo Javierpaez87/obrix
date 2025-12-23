@@ -223,7 +223,7 @@ if (!allCreatorIds.length) return;
     return () => {
       isMounted = false;
     };
-  }, [creatorIds]);
+  }, [creatorIds, receivedCreatorIds]);
 
   useEffect(() => {
     let isMounted = true;
