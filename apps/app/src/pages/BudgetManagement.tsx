@@ -735,14 +735,27 @@ const handleDeleteRequest = async (requestId: string) => {
                   '—';
 
                 return (
-                  <div key={request.id} className={cardBase}>
+                  <div
+                    key={request.id}
+                    className={`${cardBase} cursor-pointer transition-all hover:border-[--neon]/60 hover:shadow-[0_0_25px_rgba(0,255,163,0.25)] active:scale-[0.99]`}
+                    style={{
+                      ['--neon' as any]: NEON,
+                      borderColor: `${NEON}30`,
+                      boxShadow: `0 0 20px rgba(0,255,163,0.15)`
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/tickets/${request.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate(`/tickets/${request.id}`);
+                      }
+                    }}
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3
-                          className="text-base sm:text-lg font-semibold text-white mb-1 cursor-pointer hover:text-[--neon] transition-colors"
-                          onClick={() => navigate(`/tickets/${request.id}`)}
-                          style={{ ['--neon' as any]: NEON }}
-                        >
+                        <h3 className="text-base sm:text-lg font-semibold text-white mb-1">
                           {request.title}
                         </h3>
                         <p className="text-xs sm:text-sm text-white/70 mb-2">
@@ -822,60 +835,13 @@ const handleDeleteRequest = async (requestId: string) => {
                       )}
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-3 border-t border-white/10">
-                      <div className="flex gap-2">
-                        {/* Ver / editar */}
-                        <button
-                          onClick={() => handleViewRequest(request.id)}
-                          className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
-                                           bg-zinc-800 border border-white/10 text-white/90 rounded-md
-                                           hover:bg-zinc-700 transition-colors flex-1 sm:flex-none"
-                        >
-                          <EyeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          <span className="hidden sm:inline">Ver / editar</span>
-                          <span className="sm:hidden">Ver</span>
-                        </button>
-
-                        {/* Cotizar (solo constructor, estado pendiente) */}
-                        {isConstructor && request.status === 'pending' && (
-                          <button
-                            onClick={() => handleCreateQuote(request.id)}
-                            className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
-                                       text-[--neon] border border-[--neon]/60 rounded-md
-                                       hover:bg-[--neon]/10 transition-colors flex-1 sm:flex-none"
-                            style={{ ['--neon' as any]: NEON }}
-                          >
-                            <DocumentTextIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                            <span className="hidden sm:inline">Cotizar</span>
-                          </button>
-                        )}
-
-                        {/* Eliminar (de momento solo UI + console.log) */}
-                        <button
-                          onClick={() => handleDeleteRequest(request.id)}
-                          className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
-                                     bg-zinc-800 border border-red-500/50 text-red-400 rounded-md
-                                     hover:bg-zinc-800/80 transition-colors flex-1 sm:flex-none"
-                        >
-                          <TrashIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          <span className="hidden sm:inline">Eliminar</span>
-                          <span className="sm:hidden">🗑</span>
-                        </button>
-                      </div>
-
-                      {/* Enviar */}
-                      {isClient && (
-                        <button
-                          onClick={() => handleSendRequest(request)}
-                          className="flex items-center justify-center px-2 sm:px-3 py-1 text-xs sm:text-sm
-                                     bg-zinc-800 border border-white/10 text-white/90 rounded-md
-                                     hover:bg-zinc-700 transition-colors"
-                        >
-                          <ChatBubbleLeftRightIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          <span className="hidden sm:inline">Enviar</span>
-                          <span className="sm:hidden">💬</span>
-                        </button>
-                      )}
+                    <div className="flex justify-end">
+                      <span
+                        className="text-[10px] text-white/30"
+                        title={request.id}
+                      >
+                        ID: {request.id.substring(0, 8)}
+                      </span>
                     </div>
                   </div>
                 );

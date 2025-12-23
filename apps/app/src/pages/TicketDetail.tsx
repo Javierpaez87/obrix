@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
-import { CheckCircle, XCircle, Calendar, AlertTriangle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, Calendar, AlertTriangle, Clock, MessageCircle, Edit, Send } from 'lucide-react';
 
 const NEON = '#00FFA3';
 
@@ -653,69 +653,117 @@ const TicketDetail: React.FC = () => {
 
           {/* ✅ ORIGINADOR: lista de ofertas/respuestas */}
           {isOriginator && (
-            <div className="mb-8">
-              <h2 className="text-xl font-bold mb-4">Ofertas / Respuestas recibidas</h2>
+            <>
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-4">Ofertas / Respuestas recibidas</h2>
 
-              {recipients.length === 0 ? (
-                <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center">
-                  <p className="text-white/60">Todavía no hay respuestas para esta licitación.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {recipients.map((r: any) => {
-                    const meta = getRecipientStatusMeta(r.status);
-                    return (
-                      <div
-                        key={r.id}
-                        className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between"
-                      >
-                        <div className="flex-1 pr-4">
-                          <h3 className="font-medium text-white">
-                            {r.profiles?.name || r.recipient_phone || r.recipient_email || 'Oferente'}
-                          </h3>
-
-                          {(r.offer_amount != null || r.offer_message) && (
-                            <div className="mt-2 text-sm text-white/70">
-                              {r.offer_amount != null && (
-                                <div>
-                                  <span className="text-white/50">Monto: </span>
-                                  <span className="font-semibold">${r.offer_amount}</span>
-                                </div>
-                              )}
-                              {r.offer_message && (
-                                <div className="mt-1 whitespace-pre-wrap">
-                                  <span className="text-white/50">Mensaje: </span>
-                                  {r.offer_message}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {(r.accepted_at || r.rejected_at) && (
-                            <p className="text-xs text-white/60 mt-2">
-                              {r.accepted_at
-                                ? `Aceptado el ${new Date(r.accepted_at).toLocaleDateString('es-AR')}`
-                                : `Rechazado el ${new Date(r.rejected_at).toLocaleDateString('es-AR')}`}
-                            </p>
-                          )}
-                        </div>
-
-                        <span
-                          className="px-3 py-1 rounded-full text-sm font-medium"
-                          style={{
-                            backgroundColor: `${meta.color}20`,
-                            color: meta.color,
-                            border: `1px solid ${meta.color}40`,
-                          }}
+                {recipients.length === 0 ? (
+                  <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center">
+                    <p className="text-white/60">Todavía no hay respuestas para esta licitación.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {recipients.map((r: any) => {
+                      const meta = getRecipientStatusMeta(r.status);
+                      const phone = r.recipient_phone ? String(r.recipient_phone).replace(/\D/g, '') : null;
+                      return (
+                        <div
+                          key={r.id}
+                          className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between"
                         >
-                          {meta.label}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                          <div className="flex-1 pr-4">
+                            <h3 className="font-medium text-white">
+                              {r.profiles?.name || r.recipient_phone || r.recipient_email || 'Oferente'}
+                            </h3>
+
+                            {(r.offer_amount != null || r.offer_message) && (
+                              <div className="mt-2 text-sm text-white/70">
+                                {r.offer_amount != null && (
+                                  <div>
+                                    <span className="text-white/50">Monto: </span>
+                                    <span className="font-semibold">${r.offer_amount}</span>
+                                  </div>
+                                )}
+                                {r.offer_message && (
+                                  <div className="mt-1 whitespace-pre-wrap">
+                                    <span className="text-white/50">Mensaje: </span>
+                                    {r.offer_message}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {(r.accepted_at || r.rejected_at) && (
+                              <p className="text-xs text-white/60 mt-2">
+                                {r.accepted_at
+                                  ? `Aceptado el ${new Date(r.accepted_at).toLocaleDateString('es-AR')}`
+                                  : `Rechazado el ${new Date(r.rejected_at).toLocaleDateString('es-AR')}`}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {phone && (
+                              <button
+                                onClick={() => window.open(`https://wa.me/${phone}`, '_blank')}
+                                className="p-2 rounded-lg transition-all hover:scale-110"
+                                style={{
+                                  backgroundColor: `${NEON}15`,
+                                  color: NEON,
+                                  border: `1px solid ${NEON}40`,
+                                }}
+                                title="Contactar por WhatsApp"
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                              </button>
+                            )}
+
+                            <span
+                              className="px-3 py-1 rounded-full text-sm font-medium"
+                              style={{
+                                backgroundColor: `${meta.color}20`,
+                                color: meta.color,
+                                border: `1px solid ${meta.color}40`,
+                              }}
+                            >
+                              {meta.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-8 flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => navigate(`/budget-management`)}
+                  className="flex-1 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border"
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    color: 'white',
+                    borderColor: 'rgba(255,255,255,0.15)',
+                  }}
+                >
+                  <Edit className="w-5 h-5" />
+                  Editar solicitud
+                </button>
+
+                <button
+                  onClick={() => navigate(`/budget-management`)}
+                  className="flex-1 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                  style={{
+                    backgroundColor: NEON,
+                    color: '#0a0a0a',
+                    boxShadow: `0 0 20px ${NEON}40`,
+                  }}
+                >
+                  <Send className="w-5 h-5" />
+                  Enviar a más contactos
+                </button>
+              </div>
+            </>
           )}
 
           {/* ✅ OFERENTE: estado actual */}
