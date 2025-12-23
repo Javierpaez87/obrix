@@ -1031,6 +1031,51 @@ const [deleteBusy, setDeleteBusy] = useState(false);
           </div>
         </div>
       </div>
+      {/* ✅ Modal confirm delete */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => !deleteBusy && setShowDeleteConfirm(false)}
+          />
+          <div
+            className="relative w-full max-w-md rounded-2xl border p-6"
+            style={{
+              backgroundColor: 'rgba(10,10,10,0.95)',
+              borderColor: 'rgba(255,255,255,0.12)',
+              boxShadow: `0 0 30px rgba(0,255,163,0.12)`,
+            }}
+          >
+            <h3 className="text-lg font-bold mb-2">¿Mover a Eliminados?</h3>
+            <p className="text-sm text-white/70">
+              Esta solicitud se moverá a <b>Eliminados</b>. Podés restaurarla más adelante desde esa sección.
+            </p>
+
+            <div className="mt-5 flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleteBusy}
+                className="px-4 py-2 rounded-lg border border-white/10 text-white/70 hover:text-white transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleteBusy}
+                className="px-5 py-2 rounded-lg font-semibold transition-all disabled:opacity-50"
+                style={{
+                  backgroundColor: 'rgba(255,68,68,0.15)',
+                  color: '#FF6B6B',
+                  border: '1px solid rgba(255,68,68,0.35)',
+                }}
+              >
+                {deleteBusy ? 'Moviendo…' : 'Mover a Eliminados'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ✅ Modal deleted notice */}
       {showDeletedNotice && (
