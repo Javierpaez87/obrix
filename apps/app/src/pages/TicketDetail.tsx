@@ -94,9 +94,10 @@ const TicketDetail: React.FC = () => {
   const [offerMessage, setOfferMessage] = useState<string>('');
   const [offerDays, setOfferDays] = useState<string>('');
 
-  // ✅ Delete UX
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
+// ✅ Delete UX
+const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+const [showDeletedNotice, setShowDeletedNotice] = useState(false);
+const [deleteBusy, setDeleteBusy] = useState(false);
 
   console.log('[TicketDetail] MOUNTED', ticketId, 'global role:', user?.role);
 
