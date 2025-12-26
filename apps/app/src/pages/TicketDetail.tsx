@@ -151,30 +151,41 @@ const [deleteBusy, setDeleteBusy] = useState(false);
 
         const shouldLoadMaterials = ticketData.type === 'materials' || ticketData.type === 'combined';
 
-        if (shouldLoadMaterials) {
-          const { data: listData, error: listError } = await supabase
-            .from('material_lists')
-            .select('id,ticket_id,name,description,created_at')
-            .eq('ticket_id', ticketId)
-            .maybeSingle();
+if (shouldLoadMaterials) {
+  console.log('[TicketDetail] Fetching material list for ticket', ticketId, 'as user', user.id);
+
+  const { data: listData, error: listError } = await supabase
+    .from('material_lists')
+    .select('id,ticket_id,name,description,created_at')
+    .eq('ticket_id', ticketId)
+    .maybeSingle();
+
+  console.log('[TicketDetail] material_lists result:', { listData, listError });
 
           if (listError) {
             console.error('[TicketDetail] Error loading material_lists:', listError);
-          } else if (listData) {
-            setMaterialsList(listData);
+} else if (listData) {
+  setMaterialsList(listData);
 
-            const { data: itemsData, error: itemsError } = await supabase
-              .from('material_items')
-              .select('id,list_id,position,material,quantity,unit,spec,comment')
-              .eq('list_id', listData.id)
-              .order('position', { ascending: true, nullsFirst: false });
+  const { data: itemsData, error: itemsError } = await supabase
+    .from('material_items')
+    .select('id,list_id,position,material,quantity,unit,spec,comment')
+    .eq('list_id', listData.id)
+    .order('position', { ascending: true, nullsFirst: false });
 
-            if (itemsError) {
-              console.error('[TicketDetail] Error loading material_items:', itemsError);
-            } else {
-              setMaterialsItems(itemsData || []);
-            }
-          }
+  console.log('[TicketDetail] material_items result:', {
+    listId: listData.id,
+    itemsCount: itemsData?.length,
+    itemsError,
+  });
+
+  if (itemsError) {
+    console.error('[TicketDetail] Error loading material_items:', itemsError);
+  } else {
+    setMaterialsItems(itemsData || []);
+  }
+}
+
         }
 
         const isOriginatorLocal = (ticketData as any).created_by === user.id;
