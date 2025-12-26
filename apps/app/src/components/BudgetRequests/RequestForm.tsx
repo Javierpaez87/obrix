@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import type ReactCSS from 'react'; // solo para React.CSSProperties si hace falta
+import type ReactCSS from 'react';
 import { useApp } from '../../context/AppContext';
 import { BudgetRequest } from '../../types';
-import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
-import { supabase } from '../../lib/supabase'; // 👈 IMPORTANTE
-import ContactsList from './ContactsList';
-import { cleanPhone, splitRecipients, padRight, truncate, waSanitize, truncateSafe, padRightSafe, joinCols, composeInviteTail } from './whatsappUtils';
+import { supabase } from '../../lib/supabase';
+import { cleanPhone, padRight, truncate, composeInviteTail } from './whatsappUtils';
+import RequestFormModalShell from './RequestFormParts/RequestFormModalShell';
+import TicketMainFieldsSection from './RequestFormParts/TicketMainFieldsSection';
+import MaterialsListSection from './RequestFormParts/MaterialsListSection';
+import ProjectSelectSection from './RequestFormParts/ProjectSelectSection';
+import DatesSection from './RequestFormParts/DatesSection';
+import PrioritySection from './RequestFormParts/PrioritySection';
+import WhatsAppSection from './RequestFormParts/WhatsAppSection';
+import ContactsPickerModal from './RequestFormParts/ContactsPickerModal';
 
 interface RequestFormProps {
   isOpen: boolean;
@@ -702,8 +708,6 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
     onClose();
   };
 
-  if (!isOpen) return null;
-
   // CSS Vars
   const vars: ReactCSS.CSSProperties = {
     ['--neon' as any]: NEON,
@@ -724,369 +728,100 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
 
   return (
     <>
-    <div className="fixed inset-0 flex items-center justify-center z-50" style={vars}>
-      {/* Overlay claro y suave */}
-      <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: LIGHT_BG, opacity: 0.85 }} />
-
-      {/* Modal */}
-      <div
-        className="relative rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border"
-        style={{ backgroundColor: LIGHT_SURFACE, borderColor: NEON }}
+      <RequestFormModalShell
+        isOpen={isOpen}
+        onClose={onClose}
+        editingRequest={editingRequest}
+        requestType={requestType}
+        LIGHT_BG={LIGHT_BG}
+        LIGHT_SURFACE={LIGHT_SURFACE}
+        NEON={NEON}
+        LIGHT_TEXT={LIGHT_TEXT}
+        LIGHT_MUTED={LIGHT_MUTED}
+        vars={vars}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 sm:p-6 border-b" style={{ borderColor: NEON }}>
-          <div>
-            <h2 className="text-xl font-semibold" style={{ color: LIGHT_TEXT }}>
-              {editingRequest ? 'Editar Solicitud' : (requestType === 'constructor' ? 'Solicitar Presupuesto a Constructor' : 'Solicitar Presupuesto de Materiales')}
-            </h2>
-            <p className="text-sm mt-1" style={{ color: LIGHT_MUTED }}>
-              {editingRequest ? 'Modificá los datos de tu solicitud' : (requestType === 'constructor' ? 'Mano de obra y/o materiales' : 'Corralones, ferreterías, etc.')}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg transition-colors hover:bg-[--neon]/10"
-            aria-label="Cerrar"
-            title="Cerrar"
-            style={{ color: LIGHT_MUTED }}
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
-
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-6">
-          {/* Campos principales */}
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
-            <div className="mb-3">
-              <h3 className="text-sm font-semibold text-slate-900">Campos principales</h3>
-            </div>
+          <TicketMainFieldsSection
+            requestType={requestType}
+            formType={formData.type}
+            title={formData.title}
+            description={formData.description}
+            onTypeChange={(type) => set('type', type)}
+            onTitleChange={(title) => set('title', title)}
+            onDescriptionChange={(description) => set('description', description)}
+            fieldBase={fieldBase}
+            labelBase={labelBase}
+          />
 
-            {/* Tipo de Presupuesto */}
-            <div className="mb-4">
-              <label className={labelBase}>Tipo de Presupuesto</label>
-              <select
-                value={formData.type}
-                onChange={(e) => set('type', e.target.value as any)}
-                className={fieldBase}
-                required
-              >
-                {requestType === 'constructor' ? (
-                  <>
-                    <option value="labor">Solo Mano de Obra</option>
-                    <option value="combined">Mano de Obra + Materiales</option>
-                  </>
-                ) : (
-                  <option value="materials">Solo Materiales</option>
-                )}
-              </select>
-            </div>
-
-            {/* Título */}
-            <div className="mb-4">
-              <label className={labelBase}>
-                {requestType === 'constructor' ? 'Título del Trabajo' : 'Lista de Materiales'}
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => set('title', e.target.value)}
-                placeholder={requestType === 'constructor' ? 'Ej: Colocación de cerámicos' : 'Ej: Materiales para fundación'}
-                className={fieldBase}
-                required
-              />
-            </div>
-
-            {/* Descripción */}
-            <div>
-              <label className={labelBase}>
-                {formData.type === 'materials' ? 'Notas generales (opcional)' : 'Descripción Detallada'}
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => set('description', e.target.value)}
-                placeholder={
-                  requestType === 'constructor'
-                    ? 'Describe en detalle: superficie, especificaciones, materiales incluidos, etc.'
-                    : 'Notas adicionales sobre la lista de materiales'
-                }
-                rows={4}
-                className={fieldBase}
-                required={formData.type !== 'materials'}
-              />
-            </div>
-          </div>
-
-{/* Lista de Materiales - Solo para tipo materials */}
-{formData.type === 'materials' && (
-  <div className={sectionCard} style={{ borderColor: NEON }}>
-    <label className={labelBase}>Nombre de la lista</label>
-    <input
-      type="text"
-      value={materialsListName}
-      onChange={(e) => setMaterialsListName(e.target.value)}
-      placeholder="Ej: Fundación / Terminaciones"
-      className={fieldBase}
-      required
-    />
-
-    <div className="mt-4">
-      <label className={labelBase}>Descripción de la lista (opcional)</label>
-      <input
-        type="text"
-        value={materialsListDescription}
-        onChange={(e) => setMaterialsListDescription(e.target.value)}
-        placeholder="Descripción breve de esta lista"
-        className={fieldBase}
-      />
-    </div>
-
-    {/* Materiales */}
-    <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-sm font-semibold" style={{ color: LIGHT_TEXT }}>
-          Materiales solicitados
-        </h4>
-
-        <button
-          type="button"
-          onClick={addMaterialRow}
-          className="px-3 py-2 rounded-lg text-sm font-medium"
-          style={{
-            backgroundColor: `${NEON}20`,
-            color: LIGHT_TEXT,
-            border: `1px solid ${NEON}33`
-          }}
-        >
-          + Agregar material
-        </button>
-      </div>
-
-      {/* Tabla (desktop + mobile por ahora) */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr style={{ color: LIGHT_MUTED }}>
-              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[140px]">
-                Material / Producto
-              </th>
-
-              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 w-[56px] md:w-20">
-                Cant.
-              </th>
-
-              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 w-[76px] md:w-24">
-                Unidad
-              </th>
-
-              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[120px]">
-                Medidas
-              </th>
-
-              <th className="text-left py-1 md:py-2 pr-1 md:pr-2 min-w-[110px] md:min-w-[100px]">
-                Comentario
-              </th>
-
-              <th className="py-1 md:py-2 w-10"></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {materials.map((row, idx) => (
-              <tr key={idx}>
-                <td className="py-1 md:py-2 pr-1 md:pr-2">
-                  <input
-                    value={row.material}
-                    onChange={(e) => updateMaterialRow(idx, { material: e.target.value })}
-                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
-                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-                    placeholder="Ej: Madera pino"
-                  />
-                </td>
-
-                <td className="py-1 md:py-2 pr-1 md:pr-2">
-                  <input
-                    value={row.quantity}
-                    onChange={(e) => updateMaterialRow(idx, { quantity: e.target.value })}
-                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
-                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-                    placeholder="0"
-                    inputMode="decimal"
-                  />
-                </td>
-
-                <td className="py-1 md:py-2 pr-1 md:pr-2">
-                  <select
-                    value={row.unit}
-                    onChange={(e) => updateMaterialRow(idx, { unit: e.target.value })}
-                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
-                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-                  >
-                    <option value="unidad">unidad</option>
-                    <option value="bolsa/s">bolsa/s</option>
-                    <option value="kg">kg</option>
-                    <option value="mm">mm</option>
-                    <option value="cm">cm</option>
-                    <option value="m">m</option>
-                    <option value="m²">m²</option>
-                    <option value="m³">m³</option>
-                    <option value="litro">litro</option>
-                  </select>
-                </td>
-
-                <td className="py-1 md:py-2 pr-1 md:pr-2">
-                  <input
-                    value={row.spec}
-                    onChange={(e) => updateMaterialRow(idx, { spec: e.target.value })}
-                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
-                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-                    placeholder="Ej: 1'' x 3m"
-                  />
-                </td>
-
-                <td className="py-1 md:py-2 pr-1 md:pr-2">
-                  <input
-                    value={row.comment}
-                    onChange={(e) => updateMaterialRow(idx, { comment: e.target.value })}
-                    className={`${fieldBase} !px-2 !py-1 text-xs md:text-sm`}
-                    style={{ color: LIGHT_TEXT, backgroundColor: '#fff' }}
-                    placeholder="Opcional"
-                  />
-                </td>
-
-                <td className="py-1 md:py-2">
-                  <button
-                    type="button"
-                    onClick={() => removeMaterialRow(idx)}
-                    className="p-1 md:p-2 rounded-lg hover:opacity-80"
-                    style={{ color: LIGHT_MUTED, border: `1px solid ${LIGHT_BORDER}` }}
-                    aria-label="Eliminar fila"
-                    title="Eliminar fila"
-                  >
-                    🗑
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <p className="text-xs mt-2" style={{ color: LIGHT_MUTED }}>
-        Tip: solo completá "Material / Producto" para que el ítem cuente. El resto es opcional.
-      </p>
-    </div>
-  </div>
-)}
-
-          {/* Obra */}
-          <div className={sectionCard} style={{ borderColor: NEON }}>
-            <label className={labelBase}>Obra (Opcional)</label>
-            <select
-              value={formData.projectId}
-              onChange={(e) => set('projectId', e.target.value)}
-              className={fieldBase}
-            >
-              <option value="">Sin obra asignada</option>
-              {Array.isArray(projects) && projects.map((project: any) => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Fechas */}
-          <div className={sectionCard} style={{ borderColor: NEON }}>
-            <div>
-              <label className={labelBase}>Fecha Límite (Opcional)</label>
-              <input
-                type="date"
-                value={formData.dueDate}
-                onChange={(e) => set('dueDate', e.target.value)}
-                className={fieldBase}
-              />
-            </div>
-
-            <div className="mt-4 flex items-center gap-3">
-              <input
-                id="useStartDate"
-                type="checkbox"
-                checked={formData.useStartDate}
-                onChange={(e) => set('useStartDate', e.target.checked)}
-                className="h-4 w-4 rounded border-[--border] text-[--neon] focus:ring-[--neon]"
-              />
-              <label htmlFor="useStartDate" className="text-sm" style={{ color: LIGHT_MUTED }}>
-                Incluir Fecha de Inicio
-              </label>
-            </div>
-            <input
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => set('startDate', e.target.value)}
-              className={`${fieldBase} mt-2 ${!formData.useStartDate ? 'opacity-50 pointer-events-none' : ''}`}
+          {formData.type === 'materials' && (
+            <MaterialsListSection
+              materialsListName={materialsListName}
+              materialsListDescription={materialsListDescription}
+              materials={materials}
+              onListNameChange={setMaterialsListName}
+              onListDescriptionChange={setMaterialsListDescription}
+              onAddRow={addMaterialRow}
+              onRemoveRow={removeMaterialRow}
+              onUpdateRow={updateMaterialRow}
+              fieldBase={fieldBase}
+              labelBase={labelBase}
+              sectionCard={sectionCard}
+              NEON={NEON}
+              LIGHT_TEXT={LIGHT_TEXT}
+              LIGHT_MUTED={LIGHT_MUTED}
+              LIGHT_BORDER={LIGHT_BORDER}
             />
+          )}
 
-            <div className="mt-4 flex items-center gap-3">
-              <input
-                id="useEndDate"
-                type="checkbox"
-                checked={formData.useEndDate}
-                onChange={(e) => set('useEndDate', e.target.checked)}
-                className="h-4 w-4 rounded border-[--border] text-[--neon] focus:ring-[--neon]"
-              />
-              <label htmlFor="useEndDate" className="text-sm" style={{ color: LIGHT_MUTED }}>
-                Incluir Fecha de Fin
-              </label>
-            </div>
-            <input
-              type="date"
-              value={formData.endDate}
-              onChange={(e) => set('endDate', e.target.value)}
-              className={`${fieldBase} mt-2 ${!formData.useEndDate ? 'opacity-50 pointer-events-none' : ''}`}
-            />
-          </div>
+          <ProjectSelectSection
+            projectId={formData.projectId}
+            projects={projects}
+            onProjectChange={(projectId) => set('projectId', projectId)}
+            fieldBase={fieldBase}
+            labelBase={labelBase}
+            sectionCard={sectionCard}
+            NEON={NEON}
+          />
 
-          {/* Prioridad */}
-          <div className={sectionCard} style={{ borderColor: NEON }}>
-            <label className={labelBase}>Prioridad (opcional)</label>
-            <select
-              value={formData.priority}
-              onChange={(e) => set('priority', e.target.value as any)}
-              className={fieldBase}
-            >
-              <option value="low">Baja</option>
-              <option value="medium">Media</option>
-              <option value="high">Alta</option>
-              <option value="urgent">Urgente</option>
-            </select>
-            <p className="mt-2 text-xs" style={{ color: LIGHT_MUTED }}>
-              Podés dejarlo en "Media".
-            </p>
-          </div>
+          <DatesSection
+            dueDate={formData.dueDate}
+            useStartDate={formData.useStartDate}
+            startDate={formData.startDate}
+            useEndDate={formData.useEndDate}
+            endDate={formData.endDate}
+            onDueDateChange={(date) => set('dueDate', date)}
+            onUseStartDateChange={(use) => set('useStartDate', use)}
+            onStartDateChange={(date) => set('startDate', date)}
+            onUseEndDateChange={(use) => set('useEndDate', use)}
+            onEndDateChange={(date) => set('endDate', date)}
+            fieldBase={fieldBase}
+            labelBase={labelBase}
+            sectionCard={sectionCard}
+            NEON={NEON}
+            LIGHT_MUTED={LIGHT_MUTED}
+          />
 
-          {/* Envío por WhatsApp */}
-          <div className={sectionCard} style={{ borderColor: NEON }}>
-            <label className={labelBase}>Envío por WhatsApp</label>
-            <p className="text-sm mb-3" style={{ color: LIGHT_MUTED }}>
-              Seleccioná contactos de tu agenda para enviar esta solicitud por WhatsApp.
-              {requestType === 'constructor' ? ' Constructores y maestros de obra.' : ' Corralones y proveedores de materiales.'}
-            </p>
+          <PrioritySection
+            priority={formData.priority}
+            onPriorityChange={(priority) => set('priority', priority)}
+            fieldBase={fieldBase}
+            labelBase={labelBase}
+            sectionCard={sectionCard}
+            NEON={NEON}
+            LIGHT_MUTED={LIGHT_MUTED}
+          />
 
-            <button
-              type="button"
-              onClick={handleWhatsAppBlast}
-              className="w-full px-4 py-3 rounded-lg font-medium transition-colors hover:opacity-90 flex items-center justify-center gap-2"
-              style={{ backgroundColor: NEON, color: '#0a0a0a', boxShadow: `0 0 10px ${NEON}40`, border: `1px solid ${NEON}33` }}
-              title="Crear solicitud y enviar por WhatsApp"
-            >
-              <PaperAirplaneIcon className="h-5 w-5" />
-              {editingRequest ? 'Actualizar y Enviar por WhatsApp' : 'Crear y Enviar por WhatsApp'}
-            </button>
+          <WhatsAppSection
+            editingRequest={editingRequest}
+            requestType={requestType}
+            onWhatsAppClick={handleWhatsAppBlast}
+            fieldBase={fieldBase}
+            labelBase={labelBase}
+            sectionCard={sectionCard}
+            NEON={NEON}
+            LIGHT_MUTED={LIGHT_MUTED}
+          />
 
-            <p className="text-xs mt-2" style={{ color: LIGHT_MUTED }}>
-              Tip: Si el contacto usa Obrix, el mensaje pedirá Aceptar/Rechazar desde la app. Si no, incluirá una invitación automática.
-            </p>
-          </div>
-
-          {/* Footer acciones */}
           <div className={`flex flex-col sm:flex-row justify-end gap-3 pt-4 ${divider}`} style={{ borderColor: NEON }}>
             <button
               type="button"
@@ -1116,50 +851,20 @@ ${fechas.length ? fechas.join(' · ') : ''}`.trim()
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </RequestFormModalShell>
 
-    {/* Modal de Selección de Contactos */}
-    {showContactsModal && (
-      <div className="fixed inset-0 flex items-center justify-center z-[60]" style={vars}>
-        <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: LIGHT_BG, opacity: 0.9 }} onClick={() => setShowContactsModal(false)} />
-
-        <div
-          className="relative rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto border"
-          style={{ backgroundColor: LIGHT_SURFACE, borderColor: NEON }}
-        >
-          <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: NEON }}>
-            <h3 className="text-lg font-semibold" style={{ color: LIGHT_TEXT }}>
-              Seleccionar Contactos para WhatsApp
-            </h3>
-            <button
-              onClick={() => setShowContactsModal(false)}
-              className="p-2 rounded-lg transition-colors hover:bg-[--neon]/10"
-              aria-label="Cerrar"
-              style={{ color: LIGHT_MUTED }}
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-          </div>
-
-          <div className="p-5">
-            {relevantContacts.length === 0 ? (
-              <p className="text-center py-8" style={{ color: LIGHT_MUTED }}>
-                No hay contactos disponibles para este tipo de solicitud.
-                <br />
-                <span className="text-sm">Agregá contactos en la sección Agenda primero.</span>
-              </p>
-            ) : (
-              <ContactsList
-                contacts={relevantContacts}
-                onSend={sendWhatsAppToContacts}
-                onCancel={() => setShowContactsModal(false)}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-    )}
+      <ContactsPickerModal
+        isOpen={showContactsModal}
+        onClose={() => setShowContactsModal(false)}
+        relevantContacts={relevantContacts}
+        onSend={sendWhatsAppToContacts}
+        LIGHT_BG={LIGHT_BG}
+        LIGHT_SURFACE={LIGHT_SURFACE}
+        NEON={NEON}
+        LIGHT_TEXT={LIGHT_TEXT}
+        LIGHT_MUTED={LIGHT_MUTED}
+        vars={vars}
+      />
     </>
   );
 };
