@@ -201,7 +201,7 @@ if (shouldLoadMaterials) {
               recipient_profile_id,
               recipient_phone,
               recipient_email,
-              profiles!recipient_profile_id ( name, phone )
+              profiles:recipient_profile_id ( name, phone )
             `)
             .eq('ticket_id', ticketId);
 
@@ -239,38 +239,96 @@ if (shouldLoadMaterials) {
         let recipientRow = myRecipient;
 
         if (!recipientRow) {
-          console.log('[TicketDetail] No recipient row found for bidder. Creating one...');
+          console.log('[TicketDetail] No recipient row found for bidder. Checking for orphan...');
 
-          const { data: createdRecipient, error: createRecipientError } = await supabase
-            .from('ticket_recipients')
-            .insert({
-              ticket_id: ticketId,
-              ticket_creator_id: (ticketData as any).created_by ?? null,
-              recipient_profile_id: user.id,
-              status: 'sent',
-              recipient_phone: null,
-              recipient_email: null,
-            })
-            .select('*')
-            .maybeSingle();
+          const userPhone = (user as any).phone || null;
+          const cleanedPhone = userPhone ? cleanDigits(userPhone) : null;
 
-          if (createRecipientError) {
-            console.error('[TicketDetail] createRecipientError:', createRecipientError?.message || createRecipientError);
-            setError(
-              `No se pudo crear tu respuesta: ${createRecipientError.message || 'Error desconocido'}. Revisá policies de ticket_recipients.`
-            );
-            setLoading(false);
-            return;
+          console.log('[TicketDetail] User phone:', { userPhone, cleanedPhone });
+
+          let orphanRow = null;
+
+          if (cleanedPhone) {
+            const { data: orphanData, error: orphanError } = await supabase
+              .from('ticket_recipients')
+              .select('*')
+              .eq('ticket_id', ticketId)
+              .is('recipient_profile_id', null)
+              .eq('recipient_phone', cleanedPhone)
+              .maybeSingle();
+
+            if (orphanError) {
+              console.error('[TicketDetail] Error searching for orphan:', orphanError);
+            } else if (orphanData) {
+              console.log('[TicketDetail] Found orphan row:', orphanData.id);
+              orphanRow = orphanData;
+            }
           }
 
-          if (!createdRecipient) {
-            console.error('[TicketDetail] No data returned after insert');
-            setError('No se pudo crear tu respuesta para este ticket (no data). Revisá policies de ticket_recipients.');
-            setLoading(false);
-            return;
-          }
+          if (orphanRow) {
+            console.log('[TicketDetail] Reconciling orphan row:', orphanRow.id);
 
-          recipientRow = createdRecipient;
+            const { data: updatedRecipient, error: updateError } = await supabase
+              .from('ticket_recipients')
+              .update({
+                recipient_profile_id: user.id,
+              })
+              .eq('id', orphanRow.id)
+              .select('*')
+              .maybeSingle();
+
+            if (updateError) {
+              console.error('[TicketDetail] Error reconciling orphan:', updateError?.message || updateError);
+              setError(
+                `No se pudo vincular tu cuenta: ${updateError.message || 'Error desconocido'}. Revisá policies de ticket_recipients.`
+              );
+              setLoading(false);
+              return;
+            }
+
+            if (!updatedRecipient) {
+              console.error('[TicketDetail] No data returned after orphan update');
+              setError('No se pudo vincular tu cuenta (no data). Revisá policies de ticket_recipients.');
+              setLoading(false);
+              return;
+            }
+
+            console.log('[TicketDetail] Orphan reconciled successfully:', updatedRecipient.id);
+            recipientRow = updatedRecipient;
+          } else {
+            console.log('[TicketDetail] No orphan found, creating new recipient row...');
+
+            const { data: createdRecipient, error: createRecipientError } = await supabase
+              .from('ticket_recipients')
+              .insert({
+                ticket_id: ticketId,
+                ticket_creator_id: (ticketData as any).created_by ?? null,
+                recipient_profile_id: user.id,
+                status: 'sent',
+                recipient_phone: null,
+                recipient_email: null,
+              })
+              .select('*')
+              .maybeSingle();
+
+            if (createRecipientError) {
+              console.error('[TicketDetail] createRecipientError:', createRecipientError?.message || createRecipientError);
+              setError(
+                `No se pudo crear tu respuesta: ${createRecipientError.message || 'Error desconocido'}. Revisá policies de ticket_recipients.`
+              );
+              setLoading(false);
+              return;
+            }
+
+            if (!createdRecipient) {
+              console.error('[TicketDetail] No data returned after insert');
+              setError('No se pudo crear tu respuesta para este ticket (no data). Revisá policies de ticket_recipients.');
+              setLoading(false);
+              return;
+            }
+
+            recipientRow = createdRecipient;
+          }
         }
 
         setRecipient(recipientRow);
