@@ -201,12 +201,15 @@ if (shouldLoadMaterials) {
               recipient_profile_id,
               recipient_phone,
               recipient_email,
-              offer_amount,
-              offer_message,
-              offer_estimated_days,
-              profiles:recipient_profile_id ( name )
+              profiles!recipient_profile_id ( name, phone )
             `)
             .eq('ticket_id', ticketId);
+
+          console.log('[TicketDetail] Recipients query result:', {
+            count: allRecipients?.length,
+            recipientsError,
+            sample: allRecipients?.[0]
+          });
 
           if (recipientsError) {
             console.error('[TicketDetail] recipientsError:', recipientsError?.message || recipientsError);
@@ -348,9 +351,9 @@ if (shouldLoadMaterials) {
 
   const handleOpenOfferModal = () => {
     if (!recipient) return;
-    setOfferAmount(recipient.offer_amount != null ? String(recipient.offer_amount) : '');
-    setOfferMessage(recipient.offer_message ?? '');
-    setOfferDays(recipient.offer_estimated_days != null ? String(recipient.offer_estimated_days) : '');
+    setOfferAmount('');
+    setOfferMessage('');
+    setOfferDays('');
     setShowOfferModal(true);
   };
 
@@ -403,9 +406,6 @@ if (shouldLoadMaterials) {
           status: 'offered',
           accepted_at: null,
           rejected_at: null,
-          offer_amount: amountNumber ?? undefined,
-          offer_message: offerMessage.trim() || undefined,
-          offer_estimated_days: daysNumber ?? undefined,
         });
       }
 
@@ -473,28 +473,6 @@ if (shouldLoadMaterials) {
   };
 
   const cleanDigits = (v: string) => (v || '').replace(/\D/g, '');
-
-  // ✅ Resolver teléfono de un recipient (para WhatsApp):
-  // 1) recipient_phone
-  // 2) users[recipient_profile_id].phone
-  const resolveRecipientPhone = useMemo(() => {
-    const byId = new Map<string, any>();
-    for (const u of users) {
-      if (u?.id) byId.set(String(u.id), u);
-    }
-
-    return (r: any): string | null => {
-      const direct = r?.recipient_phone ? cleanDigits(String(r.recipient_phone)) : '';
-      if (direct) return direct;
-
-      const pid = r?.recipient_profile_id ? String(r.recipient_profile_id) : '';
-      if (!pid) return null;
-
-      const u = byId.get(pid);
-      const p = u?.phone ? cleanDigits(String(u.phone)) : '';
-      return p || null;
-    };
-  }, [users]);
 
   const handleOpenWhatsApp = (phone: string) => {
     const p = cleanDigits(phone);
@@ -748,7 +726,18 @@ if (shouldLoadMaterials) {
                   <div className="space-y-3">
                     {recipients.map((r: any) => {
                       const meta = getRecipientStatusMeta(r.status);
-                      const resolvedPhone = resolveRecipientPhone(r);
+                      const displayName = r.profiles?.name || r.recipient_email || r.recipient_phone || 'Oferente';
+                      const phoneForWA = r.recipient_phone || r.profiles?.phone || null;
+                      const cleanedPhone = phoneForWA ? cleanDigits(phoneForWA) : null;
+
+                      console.log('[TicketDetail] Recipient render:', {
+                        id: r.id,
+                        displayName,
+                        profilesObj: r.profiles,
+                        recipient_phone: r.recipient_phone,
+                        profiles_phone: r.profiles?.phone,
+                        cleanedPhone
+                      });
 
                       return (
                         <div
@@ -757,25 +746,8 @@ if (shouldLoadMaterials) {
                         >
                           <div className="flex-1 pr-4">
                             <h3 className="font-medium text-white">
-                              {r.profiles?.name || r.recipient_email || r.recipient_phone || 'Oferente'}
+                              {displayName}
                             </h3>
-
-                            {(r.offer_amount != null || r.offer_message) && (
-                              <div className="mt-2 text-sm text-white/70">
-                                {r.offer_amount != null && (
-                                  <div>
-                                    <span className="text-white/50">Monto: </span>
-                                    <span className="font-semibold">${r.offer_amount}</span>
-                                  </div>
-                                )}
-                                {r.offer_message && (
-                                  <div className="mt-1 whitespace-pre-wrap">
-                                    <span className="text-white/50">Mensaje: </span>
-                                    {r.offer_message}
-                                  </div>
-                                )}
-                              </div>
-                            )}
 
                             {(r.accepted_at || r.rejected_at) && (
                               <p className="text-xs text-white/60 mt-2">
@@ -788,15 +760,15 @@ if (shouldLoadMaterials) {
 
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => resolvedPhone && handleOpenWhatsApp(resolvedPhone)}
-                              disabled={!resolvedPhone}
-                              className={`p-2 rounded-lg transition-all ${resolvedPhone ? 'hover:scale-110' : 'opacity-40 cursor-not-allowed'}`}
+                              onClick={() => cleanedPhone && handleOpenWhatsApp(cleanedPhone)}
+                              disabled={!cleanedPhone}
+                              className={`p-2 rounded-lg transition-all ${cleanedPhone ? 'hover:scale-110' : 'opacity-40 cursor-not-allowed'}`}
                               style={{
                                 backgroundColor: `${NEON}15`,
                                 color: NEON,
                                 border: `1px solid ${NEON}40`,
                               }}
-                              title={resolvedPhone ? 'Contactar por WhatsApp' : 'Sin teléfono'}
+                              title={cleanedPhone ? 'Contactar por WhatsApp' : 'Sin teléfono'}
                             >
                               <MessageCircle className="w-4 h-4" />
                             </button>
@@ -882,11 +854,6 @@ if (shouldLoadMaterials) {
                 Tu estado en esta licitación:{' '}
                 <span className="font-semibold">{getRecipientStatusMeta(recipient.status).label}</span>
               </p>
-              {recipient.offer_amount != null && (
-                <p className="text-xs mt-1 text-white/70">
-                  Monto enviado: <span className="font-semibold">${recipient.offer_amount}</span>
-                </p>
-              )}
             </div>
           )}
 
