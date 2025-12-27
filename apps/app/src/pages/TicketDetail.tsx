@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
@@ -69,10 +69,13 @@ const TicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
   const navigate = useNavigate();
 
+  // ⚠️ Importante: users puede o no existir en el contexto según implementación.
+  // Lo tomamos con fallback seguro.
   const app: any = useApp();
   const user = app?.user;
   const isAuthenticated = app?.isAuthenticated;
   const authLoading = app?.loading;
+  const users = Array.isArray(app?.users) ? app.users : [];
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [recipient, setRecipient] = useState<Recipient | null>(null);
@@ -99,20 +102,6 @@ const TicketDetail: React.FC = () => {
   console.log('[TicketDetail] MOUNTED', ticketId, 'global role:', user?.role);
 
   const cleanDigits = (v: string) => (v || '').replace(/\D/g, '');
-
-  const isOriginator = !!ticket && !!user?.id && (ticket.created_by ?? null) === user.id;
-  const isBidder = !!ticket && !!user?.id && !isOriginator;
-
-  const safeUpdateRecipient = async (recipientId: string, payload: Record<string, any>) => {
-    const { error } = await supabase.from('ticket_recipients').update(payload).eq('id', recipientId);
-    return error;
-  };
-
-  const handleOpenWhatsApp = (phone: string) => {
-    const p = cleanDigits(phone);
-    if (!p) return;
-    window.open(`https://wa.me/${p}`, '_blank');
-  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -164,7 +153,7 @@ const TicketDetail: React.FC = () => {
 
         const shouldLoadMaterials = ticketData.type === 'materials' || ticketData.type === 'combined';
 
-        // ✅ Cargar materiales (se llama al final en bidder, y antes en originator)
+        // ✅ Cargar materiales en un paso separado (clave para RLS: en oferente se hace DESPUÉS de que exista ticket_recipients)
         const loadMaterials = async (tid: string) => {
           if (!shouldLoadMaterials) return;
 
@@ -175,8 +164,11 @@ const TicketDetail: React.FC = () => {
             shouldLoadMaterials,
           });
 
+          // limpiar antes de cargar (evita UI stale)
           setMaterialsList(null);
           setMaterialsItems([]);
+
+          console.log('[TicketDetail] Fetching material list for ticket', tid, 'as user', user.id);
 
           const { data: listData, error: listError } = await supabase
             .from('material_lists')
@@ -190,6 +182,7 @@ const TicketDetail: React.FC = () => {
             console.error('[TicketDetail] Error loading material_lists:', listError);
             return;
           }
+
           if (!listData) return;
 
           setMaterialsList(listData);
@@ -217,9 +210,8 @@ const TicketDetail: React.FC = () => {
 
         const isOriginatorLocal = (ticketData as any).created_by === user.id;
 
-        // ✅ ORIGINADOR
         if (isOriginatorLocal) {
-          // originador puede cargar materiales directo
+          // ✅ originador puede cargar materiales directo
           await loadMaterials(ticketId);
 
           const { data: allRecipients, error: recipientsError } = await supabase
@@ -232,14 +224,14 @@ const TicketDetail: React.FC = () => {
               recipient_profile_id,
               recipient_phone,
               recipient_email,
-              profiles:recipient_profile_id ( id, name, full_name, phone )
+              profiles:recipient_profile_id ( name, phone )
             `)
             .eq('ticket_id', ticketId);
 
           console.log('[TicketDetail] Recipients query result:', {
             count: allRecipients?.length,
             recipientsError,
-            sample: allRecipients?.[0],
+            sample: allRecipients?.[0]
           });
 
           if (recipientsError) {
@@ -253,7 +245,6 @@ const TicketDetail: React.FC = () => {
           return;
         }
 
-        // ✅ BIDDER (oferente)
         const { data: myRecipient, error: myRecipientError } = await supabase
           .from('ticket_recipients')
           .select('*')
@@ -363,29 +354,10 @@ const TicketDetail: React.FC = () => {
           }
         }
 
-        // ✅ asegurar phone en la fila “real” del bidder (para que requester pueda WhatsAppear aunque profiles no traiga phone)
-        try {
-          const userPhone = (user as any)?.phone ? cleanDigits((user as any).phone) : null;
-          if (userPhone && !recipientRow.recipient_phone) {
-            const { error: phoneErr } = await supabase
-              .from('ticket_recipients')
-              .update({ recipient_phone: userPhone })
-              .eq('id', recipientRow.id);
-
-            if (phoneErr) {
-              console.warn('[TicketDetail] Could not persist recipient_phone on bidder row:', phoneErr);
-            } else {
-              recipientRow = { ...recipientRow, recipient_phone: userPhone };
-            }
-          }
-        } catch (e) {
-          console.warn('[TicketDetail] bidder phone persist unexpected error:', e);
-        }
-
         setRecipient(recipientRow);
         setRecipients([]);
 
-        // ✅ CLAVE: recién ahora (con recipientRow existente) cargamos materiales para bidder
+        // ✅ CLAVE: ahora que el oferente ya tiene recipientRow (y RLS suele permitir por “recipients”), recién cargamos materiales
         await loadMaterials(ticketId);
 
         setLoading(false);
@@ -398,6 +370,14 @@ const TicketDetail: React.FC = () => {
 
     fetchData();
   }, [ticketId, isAuthenticated, authLoading, navigate, user?.id]);
+
+  const isOriginator = !!ticket && !!user?.id && (ticket.created_by ?? null) === user.id;
+  const isBidder = !!ticket && !!user?.id && !isOriginator;
+
+  const safeUpdateRecipient = async (recipientId: string, payload: Record<string, any>) => {
+    const { error } = await supabase.from('ticket_recipients').update(payload).eq('id', recipientId);
+    return error;
+  };
 
   const handleMarkInReview = async () => {
     if (!recipient) return;
@@ -577,6 +557,12 @@ const TicketDetail: React.FC = () => {
     return { label: status, color: '#888888' };
   };
 
+  const handleOpenWhatsApp = (phone: string) => {
+    const p = cleanDigits(phone);
+    if (!p) return;
+    window.open(`https://wa.me/${p}`, '_blank');
+  };
+
   // ✅ Eliminar (mover a eliminados) — sin asumir schema: intentamos deleted_at, si falla intentamos status='deleted'
   const handleConfirmDelete = async () => {
     if (!ticketId) return;
@@ -586,9 +572,11 @@ const TicketDetail: React.FC = () => {
     try {
       const now = new Date().toISOString();
 
+      // intento 1: deleted_at (soft delete típico)
       const { error: e1 } = await supabase.from('tickets').update({ deleted_at: now }).eq('id', ticketId);
 
       if (e1) {
+        // intento 2: status='deleted' (fallback)
         const { error: e2 } = await supabase.from('tickets').update({ status: 'deleted' }).eq('id', ticketId);
 
         if (e2) {
@@ -669,6 +657,7 @@ const TicketDetail: React.FC = () => {
 
   const alreadyResponded = recipient ? (recipient.status || 'sent') !== 'sent' : false;
   const canRespond = isBidder && !!recipient && !actionCompleted;
+
   const shouldShowMaterials = ticket.type === 'materials' || ticket.type === 'combined';
 
   return (
@@ -743,10 +732,7 @@ const TicketDetail: React.FC = () => {
                       </thead>
                       <tbody>
                         {materialsItems.map((item, idx) => (
-                          <tr
-                            key={item.id}
-                            className={idx !== materialsItems.length - 1 ? 'border-b border-white/5' : ''}
-                          >
+                          <tr key={item.id} className={idx !== materialsItems.length - 1 ? 'border-b border-white/5' : ''}>
                             <td className="py-3 px-2 text-white">{item.material}</td>
                             <td className="py-3 px-2 text-white/80">{item.quantity ?? '-'}</td>
                             <td className="py-3 px-2 text-white/80">{item.unit ?? '-'}</td>
@@ -823,18 +809,7 @@ const TicketDetail: React.FC = () => {
                   <div className="space-y-3">
                     {recipients.map((r: any) => {
                       const meta = getRecipientStatusMeta(r.status);
-
-                      const profileName =
-                        r.profiles?.name ||
-                        r.profiles?.full_name ||
-                        null;
-
-                      const displayName =
-                        profileName ||
-                        r.recipient_email ||
-                        r.recipient_phone ||
-                        'Oferente';
-
+                      const displayName = r.profiles?.name || r.recipient_email || r.recipient_phone || 'Oferente';
                       const phoneForWA = r.recipient_phone || r.profiles?.phone || null;
                       const cleanedPhone = phoneForWA ? cleanDigits(phoneForWA) : null;
 
@@ -844,7 +819,7 @@ const TicketDetail: React.FC = () => {
                         profilesObj: r.profiles,
                         recipient_phone: r.recipient_phone,
                         profiles_phone: r.profiles?.phone,
-                        cleanedPhone,
+                        cleanedPhone
                       });
 
                       return (
@@ -853,7 +828,9 @@ const TicketDetail: React.FC = () => {
                           className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between"
                         >
                           <div className="flex-1 pr-4">
-                            <h3 className="font-medium text-white">{displayName}</h3>
+                            <h3 className="font-medium text-white">
+                              {displayName}
+                            </h3>
 
                             {(r.accepted_at || r.rejected_at) && (
                               <p className="text-xs text-white/60 mt-2">
@@ -868,9 +845,7 @@ const TicketDetail: React.FC = () => {
                             <button
                               onClick={() => cleanedPhone && handleOpenWhatsApp(cleanedPhone)}
                               disabled={!cleanedPhone}
-                              className={`p-2 rounded-lg transition-all ${
-                                cleanedPhone ? 'hover:scale-110' : 'opacity-40 cursor-not-allowed'
-                              }`}
+                              className={`p-2 rounded-lg transition-all ${cleanedPhone ? 'hover:scale-110' : 'opacity-40 cursor-not-allowed'}`}
                               style={{
                                 backgroundColor: `${NEON}15`,
                                 color: NEON,
@@ -915,7 +890,9 @@ const TicketDetail: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => ticketId && navigate(`/budget-management?edit=${encodeURIComponent(ticketId)}&send=1`)}
+                  onClick={() =>
+                    ticketId && navigate(`/budget-management?edit=${encodeURIComponent(ticketId)}&send=1`)
+                  }
                   className="flex-1 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
                   style={{
                     backgroundColor: NEON,
@@ -1115,11 +1092,13 @@ const TicketDetail: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* ✅ Modal confirm delete */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70" onClick={() => !deleteBusy && setShowDeleteConfirm(false)} />
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => !deleteBusy && setShowDeleteConfirm(false)}
+          />
           <div
             className="relative w-full max-w-md rounded-2xl border p-6"
             style={{
