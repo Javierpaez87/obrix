@@ -94,12 +94,14 @@ const TicketDetail: React.FC = () => {
   const [offerMessage, setOfferMessage] = useState<string>('');
   const [offerDays, setOfferDays] = useState<string>('');
 
-// ✅ Delete UX
-const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-const [showDeletedNotice, setShowDeletedNotice] = useState(false);
-const [deleteBusy, setDeleteBusy] = useState(false);
+  // ✅ Delete UX
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeletedNotice, setShowDeletedNotice] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   console.log('[TicketDetail] MOUNTED', ticketId, 'global role:', user?.role);
+
+  const cleanDigits = (v: string) => (v || '').replace(/\D/g, '');
 
   useEffect(() => {
     if (authLoading) return;
@@ -151,46 +153,67 @@ const [deleteBusy, setDeleteBusy] = useState(false);
 
         const shouldLoadMaterials = ticketData.type === 'materials' || ticketData.type === 'combined';
 
-if (shouldLoadMaterials) {
-  console.log('[TicketDetail] Fetching material list for ticket', ticketId, 'as user', user.id);
+        // ✅ Cargar materiales en un paso separado (clave para RLS: en oferente se hace DESPUÉS de que exista ticket_recipients)
+        const loadMaterials = async (tid: string) => {
+          if (!shouldLoadMaterials) return;
 
-  const { data: listData, error: listError } = await supabase
-    .from('material_lists')
-    .select('id,ticket_id,name,description,created_at')
-    .eq('ticket_id', ticketId)
-    .maybeSingle();
+          console.log('[TicketDetail] MATERIAL DEBUG START', {
+            ticketId: tid,
+            userId: user?.id,
+            role: user?.role,
+            shouldLoadMaterials,
+          });
 
-  console.log('[TicketDetail] material_lists result:', { listData, listError });
+          // limpiar antes de cargar (evita UI stale)
+          setMaterialsList(null);
+          setMaterialsItems([]);
+
+          console.log('[TicketDetail] Fetching material list for ticket', tid, 'as user', user.id);
+
+          const { data: listData, error: listError } = await supabase
+            .from('material_lists')
+            .select('id,ticket_id,name,description,created_at')
+            .eq('ticket_id', tid)
+            .maybeSingle();
+
+          console.log('[TicketDetail] material_lists result:', { listData, listError });
 
           if (listError) {
             console.error('[TicketDetail] Error loading material_lists:', listError);
-} else if (listData) {
-  setMaterialsList(listData);
+            return;
+          }
 
-  const { data: itemsData, error: itemsError } = await supabase
-    .from('material_items')
-    .select('id,list_id,position,material,quantity,unit,spec,comment')
-    .eq('list_id', listData.id)
-    .order('position', { ascending: true, nullsFirst: false });
+          if (!listData) return;
 
-  console.log('[TicketDetail] material_items result:', {
-    listId: listData.id,
-    itemsCount: itemsData?.length,
-    itemsError,
-  });
+          setMaterialsList(listData);
 
-  if (itemsError) {
-    console.error('[TicketDetail] Error loading material_items:', itemsError);
-  } else {
-    setMaterialsItems(itemsData || []);
-  }
-}
+          const { data: itemsData, error: itemsError } = await supabase
+            .from('material_items')
+            .select('id,list_id,position,material,quantity,unit,spec,comment')
+            .eq('list_id', listData.id)
+            .order('position', { ascending: true, nullsFirst: false });
 
-        }
+          console.log('[TicketDetail] material_items result:', {
+            listId: listData.id,
+            itemsCount: itemsData?.length,
+            itemsError,
+          });
+
+          if (itemsError) {
+            console.error('[TicketDetail] Error loading material_items:', itemsError);
+            setMaterialsItems([]);
+            return;
+          }
+
+          setMaterialsItems(itemsData || []);
+        };
 
         const isOriginatorLocal = (ticketData as any).created_by === user.id;
 
         if (isOriginatorLocal) {
+          // ✅ originador puede cargar materiales directo
+          await loadMaterials(ticketId);
+
           const { data: allRecipients, error: recipientsError } = await supabase
             .from('ticket_recipients')
             .select(`
@@ -333,6 +356,10 @@ if (shouldLoadMaterials) {
 
         setRecipient(recipientRow);
         setRecipients([]);
+
+        // ✅ CLAVE: ahora que el oferente ya tiene recipientRow (y RLS suele permitir por “recipients”), recién cargamos materiales
+        await loadMaterials(ticketId);
+
         setLoading(false);
       } catch (err) {
         console.error('[TicketDetail] Unexpected error:', err);
@@ -529,8 +556,6 @@ if (shouldLoadMaterials) {
     if (s === 'sent') return { label: 'Pendiente de respuesta', color: '#888888' };
     return { label: status, color: '#888888' };
   };
-
-  const cleanDigits = (v: string) => (v || '').replace(/\D/g, '');
 
   const handleOpenWhatsApp = (phone: string) => {
     const p = cleanDigits(phone);
